@@ -15,7 +15,34 @@ const ACCESS_TOKEN = process.env.WABA_TOKEN;
 const GMAIL_USER = process.env.GMAIL_USER;
 const GMAIL_PASS = process.env.GMAIL_PASS;
 const EMAIL_FROM = process.env.EMAIL_FROM || GMAIL_USER;
+const SUPABASE_URL = (process.env.SUPABASE_URL || '').replace(/\/rest\/v1\/?$/, '').replace(/\/$/, '');
+const SUPABASE_KEY = process.env.SUPABASE_KEY;
 const ATTENDANCE_FILE = path.join(__dirname, 'attendance-data.json');
+const IS_SUPABASE_CONFIGURED = Boolean(SUPABASE_URL && SUPABASE_KEY);
+
+const timeoutMs = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout en Supabase.')), ms));
+
+const supabaseFetch = async (pathName, options = {}) => {
+  if (!IS_SUPABASE_CONFIGURED) {
+    throw new Error('Supabase no está configurado.');
+  }
+
+  const url = `${SUPABASE_URL}/rest/v1${pathName}`;
+  const headers = {
+    apikey: SUPABASE_KEY,
+    Authorization: `Bearer ${SUPABASE_KEY}`,
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+    ...(options.headers || {}),
+  };
+
+  const response = await Promise.race([
+    fetch(url, { ...options, headers }),
+    timeoutMs(15000),
+  ]);
+
+  return response;
+};
 
 const loadAttendanceData = () => {
   try {
@@ -40,6 +67,164 @@ const saveAttendanceData = (data) => {
   } catch (error) {
     console.error('Error guardando attendance-data.json:', error);
   }
+};
+
+const normalizeStudentRecord = (row = {}, fallbackYear = 1) => {
+  const year = Number(row.year ?? row.anio ?? row.ano ?? fallbackYear ?? 1);
+  return {
+    id: row.id ?? row.student_id ?? row.studentId ?? `student-${Date.now()}`,
+    name: row.name || '',
+    cedula: row.cedula || '',
+    email: row.email || '',
+    phone: row.phone || '',
+    year,
+    status: row.status || '',
+    paymentStatus: row.payment_status || row.paymentStatus || 'no_pago',
+    paidAmount: Number(row.paid_amount ?? row.paidAmount ?? 0),
+    payments: row.payments || {},
+    BoletaVisible: row.BoletaVisible || row.boleta_visible || 'NO',
+    attendance: row.attendance || {},
+    attendanceByDate: row.attendanceByDate || {},
+  };
+};
+
+const toSafeStudentPayload = (student = {}, dateOverride = null) => ({
+  id: student.id,
+  name: student.name || '',
+  cedula: student.cedula || null,
+  email: student.email || null,
+  phone: student.phone || null,
+  year: Number(student.year || 1),
+  status: student.status || '',
+  payment_status: student.paymentStatus || 'no_pago',
+  paid_amount: Number(student.paidAmount ?? 0),
+  payments: student.payments || {},
+  BoletaVisible: student.BoletaVisible || 'NO',
+  attendance: student.attendance || {},
+  attendanceByDate: student.attendanceByDate || (dateOverride ? { [dateOverride]: {} } : {}),
+});
+
+const syncLocalStudent = (student) => {
+  const data = loadAttendanceData();
+  const id = String(student.id);
+  const baseStudent = data.students[id] || { id, attendance: {}, attendanceByDate: {} };
+  const item = { ...baseStudent, ...normalizeStudentRecord(student, Number(student.year || baseStudent.year || 1)) };
+  if (!item.attendance) item.attendance = {};
+  if (!item.attendanceByDate) item.attendanceByDate = {};
+  data.students[id] = item;
+  saveAttendanceData(data);
+};
+
+const upsertStudentToSupabase = async (student) => {
+  const payload = [toSafeStudentPayload(student)];
+  const response = await supabaseFetch('/students?on_conflict=id', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    headers: { Prefer: 'return=representation,resolution=merge-duplicates' },
+  });
+  const result = await response.json().catch(() => []);
+  if (!response.ok) {
+    throw new Error(result.message || result.error || 'Supabase rechazó el estudiante.');
+  }
+
+  return Array.isArray(result) && result.length ? normalizeStudentRecord(result[0], Number(student.year || 1)) : normalizeStudentRecord(payload[0], Number(student.year || 1));
+};
+
+const patchStudentToSupabase = async (id, changes) => {
+  const response = await supabaseFetch(`/students?id=eq.${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(changes),
+    headers: { Prefer: 'return=representation' },
+  });
+  const result = await response.json().catch(() => []);
+  if (!response.ok) {
+    throw new Error(result.message || result.error || 'Supabase rechazó la actualización del estudiante.');
+  }
+  if (!Array.isArray(result) || !result.length) {
+    throw new Error('Estudiante no encontrado en Supabase.');
+  }
+  return normalizeStudentRecord(result[0]);
+};
+
+const deleteStudentFromSupabase = async (id) => {
+  const response = await supabaseFetch(`/students?id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' });
+  if (response.status === 204) return { success: true };
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(result.message || result.error || 'Supabase rechazó la eliminación.');
+  }
+  return result;
+};
+
+const getStudentsFromSupabase = async (year) => {
+  const query = year ? `?year=eq.${encodeURIComponent(String(year))}` : '';
+  const response = await supabaseFetch(`/students${query}`);
+  const result = await response.json().catch(() => []);
+  if (!response.ok) {
+    throw new Error(result.message || result.error || 'No se pudo consultar Supabase.');
+  }
+  return Array.isArray(result) ? result.map((row) => normalizeStudentRecord(row, Number(year || row.year || 1))) : [];
+};
+
+const writeAttendanceToSupabase = async ({ id, name, cedula, email, phone, year, subject, subjectLabel, status, date }) => {
+  const attendanceDate = date || new Date().toISOString().slice(0, 10);
+  const studentPayload = {
+    id,
+    name,
+    cedula: cedula || null,
+    email: email || null,
+    phone: phone || null,
+    year: Number(year),
+  };
+
+  const studentResponse = await supabaseFetch('/students?on_conflict=id', {
+    method: 'POST',
+    body: JSON.stringify([studentPayload]),
+    headers: { Prefer: 'return=representation,resolution=merge-duplicates' },
+  });
+  const studentResult = await studentResponse.json().catch(() => []);
+  if (!studentResponse.ok) {
+    throw new Error(studentResult.message || studentResult.error || 'No se pudo guardar el estudiante en Supabase.');
+  }
+
+  const query = `/attendances?student_id=eq.${encodeURIComponent(id)}&date=eq.${encodeURIComponent(attendanceDate)}&subject=eq.${encodeURIComponent(subject)}`;
+  const existingResponse = await supabaseFetch(query);
+  const existingRows = await existingResponse.json().catch(() => []);
+  if (!existingResponse.ok) {
+    throw new Error(existingRows.message || existingRows.error || 'No se pudo consultar la asistencia en Supabase.');
+  }
+
+  const attendanceRow = {
+    student_id: id,
+    date: attendanceDate,
+    subject,
+    subject_label: subjectLabel || subject,
+    status,
+  };
+
+  if (Array.isArray(existingRows) && existingRows.length) {
+    const updateResponse = await supabaseFetch(`/attendances?id=eq.${encodeURIComponent(existingRows[0].id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(attendanceRow),
+      headers: { Prefer: 'return=representation' },
+    });
+    const updateResult = await updateResponse.json().catch(() => []);
+    if (!updateResponse.ok) {
+      throw new Error(updateResult.message || updateResult.error || 'No se pudo actualizar la asistencia en Supabase.');
+    }
+    return Array.isArray(updateResult) && updateResult.length ? updateResult[0] : updateResult;
+  }
+
+  const insertResponse = await supabaseFetch('/attendances', {
+    method: 'POST',
+    body: JSON.stringify([attendanceRow]),
+    headers: { Prefer: 'return=representation' },
+  });
+  const insertResult = await insertResponse.json().catch(() => []);
+  if (!insertResponse.ok) {
+    throw new Error(insertResult.message || insertResult.error || 'No se pudo registrar la asistencia en Supabase.');
+  }
+  return Array.isArray(insertResult) && insertResult.length ? insertResult[0] : insertResult;
 };
 
 // Configurar hora de envío diaria en el servidor (por defecto 13:15)
@@ -165,105 +350,156 @@ const scheduleDailyAttendanceEmails = () => {
   }, delay);
 };
 
-// Si no usamos la integración WABA, no mostrar advertencia para evitar ruido.
-// La verificación se realiza al intentar usar el endpoint /api/send-whatsapp.
 if (!GMAIL_USER || !GMAIL_PASS) {
   console.warn('WARNING: Falta GMAIL_USER o GMAIL_PASS en el archivo .env');
+}
+
+if (IS_SUPABASE_CONFIGURED) {
+  console.log('Supabase conectado. La app usará la base de datos de Supabase y mantendrá respaldo local.');
+} else {
+  console.log('Supabase no configurado. La app continúa con respaldo local en attendance-data.json.');
 }
 
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
-app.post('/api/attendance', async (req, res) => {
-  const { id, name, cedula, email, phone, year, subject, subjectLabel, status, date } = req.body || {};
-  if (!id || !name || !email || !year || !subject || !status) {
-    return res.status(400).json({ error: 'Falta id, nombre, correo, año, materia o estado.' });
+app.get('/api/students', async (req, res) => {
+  try {
+    if (IS_SUPABASE_CONFIGURED) {
+      const students = await getStudentsFromSupabase(req.query.year);
+      return res.json(students);
+    }
+
+    const data = loadAttendanceData();
+    const year = req.query.year;
+    const students = Object.values(data.students).filter((student) => !year || String(student.year) === String(year));
+    return res.json(students);
+  } catch (error) {
+    console.error('Error cargando estudiantes:', error);
+    return res.status(500).json({ error: error.message || 'No se pudo cargar la lista de estudiantes.' });
+  }
+});
+
+app.post('/api/students', async (req, res) => {
+  const { id, name, cedula, email, phone, year, BoletaVisible, paymentStatus, paidAmount, payments } = req.body || {};
+  if (!name || !year) {
+    return res.status(400).json({ error: 'Falta nombre o año.' });
   }
 
-  const data = loadAttendanceData();
-  const student = data.students[id] || { id, name, email, phone: phone || '', year: Number(year), attendance: {} };
-  student.name = name;
-  student.cedula = cedula || student.cedula || '';
-  student.email = email;
-  student.phone = phone || student.phone;
-  student.year = Number(year);
-  student.attendance = student.attendance || {};
-  student.attendance[subject] = { status, label: subjectLabel || subject };
-  student.attendanceByDate = student.attendanceByDate || {};
-  student.attendanceByDate[date || new Date().toISOString().slice(0, 10)] = student.attendanceByDate[date || new Date().toISOString().slice(0, 10)] || {};
-  student.attendanceByDate[date || new Date().toISOString().slice(0, 10)][subject] = status;
-  data.students[id] = student;
-  saveAttendanceData(data);
+  try {
+    const student = {
+      id: id || `student-${Date.now()}`,
+      name,
+      cedula: cedula || '',
+      email: email || '',
+      phone: phone || '',
+      year: Number(year),
+      BoletaVisible: BoletaVisible === 'SI' ? 'SI' : 'NO',
+      paymentStatus: paymentStatus || 'no_pago',
+      paidAmount: Number(paidAmount || 0),
+      payments: payments || {},
+      attendance: {},
+      attendanceByDate: {},
+    };
 
-  const attendanceDate = date || new Date().toISOString().slice(0, 10);
-  const emailResult = await sendAttendanceNotification({
-    student,
-    subjectLabel: subjectLabel || subject,
-    status,
-    date: attendanceDate,
-  });
+    if (IS_SUPABASE_CONFIGURED) {
+      const savedStudent = await upsertStudentToSupabase(student);
+      syncLocalStudent(savedStudent);
+      return res.status(201).json(savedStudent);
+    }
 
-  res.json({ ...student, emailSent: emailResult.sent, emailError: emailResult.error || '' });
-});
-
-app.get('/api/students', (req, res) => {
-  const data = loadAttendanceData();
-  const year = req.query.year;
-  const students = Object.values(data.students).filter((student) => !year || String(student.year) === String(year));
-  res.json(students);
-});
-
-app.post('/api/students', (req, res) => {
-  const { id, name, cedula, email, phone, year, BoletaVisible } = req.body || {};
-  if (!name || !email || !year) {
-    return res.status(400).json({ error: 'Falta nombre, correo o año.' });
+    const data = loadAttendanceData();
+    const studentId = student.id;
+    const existing = data.students[studentId] || { id: studentId, attendance: {}, attendanceByDate: {} };
+    const merged = { ...existing, ...student };
+    data.students[studentId] = merged;
+    saveAttendanceData(data);
+    return res.status(201).json(merged);
+  } catch (error) {
+    console.error('Error guardando estudiante:', error);
+    return res.status(500).json({ error: error.message || 'No se pudo guardar el estudiante.' });
   }
-
-  const data = loadAttendanceData();
-  const studentId = id || `student-${Date.now()}`;
-  const student = data.students[studentId] || { id: studentId, attendance: {}, attendanceByDate: {} };
-  student.id = studentId;
-  student.name = name;
-  student.cedula = cedula || '';
-  student.email = email;
-  student.phone = phone || student.phone || '';
-  student.year = Number(year);
-  student.status = student.status || '';
-  student.attendance = student.attendance || {};
-  student.attendanceByDate = student.attendanceByDate || {};
-  student.BoletaVisible = BoletaVisible === 'SI' ? 'SI' : (student.BoletaVisible || 'NO');
-  data.students[studentId] = student;
-  saveAttendanceData(data);
-
-  res.json(student);
 });
 
-app.patch('/api/students', (req, res) => {
+app.patch('/api/students', async (req, res) => {
   const { id, name, cedula, email, phone, year, BoletaVisible, payments, paymentStatus, paidAmount } = req.body || {};
   if (!id) {
     return res.status(400).json({ error: 'Falta id del estudiante.' });
   }
 
-  const data = loadAttendanceData();
-  const student = data.students[id];
-  if (!student) {
-    return res.status(404).json({ error: 'Estudiante no encontrado.' });
+  try {
+    const changes = {
+      name,
+      cedula,
+      email,
+      phone,
+      year: year === undefined ? undefined : Number(year),
+      BoletaVisible,
+      payments,
+      payment_status: paymentStatus,
+      paid_amount: paidAmount === undefined ? undefined : Number(paidAmount),
+    };
+
+    Object.keys(changes).forEach((key) => {
+      if (changes[key] === undefined) delete changes[key];
+    });
+
+    if (IS_SUPABASE_CONFIGURED) {
+      const updated = await patchStudentToSupabase(id, changes);
+      syncLocalStudent(updated);
+      return res.json(updated);
+    }
+
+    const data = loadAttendanceData();
+    const student = data.students[id];
+    if (!student) {
+      return res.status(404).json({ error: 'Estudiante no encontrado.' });
+    }
+    if (name !== undefined) student.name = name;
+    if (cedula !== undefined) student.cedula = cedula;
+    if (email !== undefined) student.email = email;
+    if (phone !== undefined) student.phone = phone;
+    if (year !== undefined) student.year = Number(year);
+    if (BoletaVisible !== undefined) student.BoletaVisible = BoletaVisible;
+    if (payments !== undefined) student.payments = payments;
+    if (paymentStatus !== undefined) student.paymentStatus = paymentStatus;
+    if (paidAmount !== undefined) student.paidAmount = paidAmount;
+    data.students[id] = student;
+    saveAttendanceData(data);
+    return res.json(student);
+  } catch (error) {
+    console.error('Error actualizando estudiante:', error);
+    return res.status(500).json({ error: error.message || 'No se pudo actualizar el estudiante.' });
+  }
+});
+
+app.delete('/api/students', async (req, res) => {
+  const id = req.query.id || req.body?.id;
+  if (!id) {
+    return res.status(400).json({ error: 'Falta id del estudiante.' });
   }
 
-  if (name !== undefined) student.name = name;
-  if (cedula !== undefined) student.cedula = cedula;
-  if (email !== undefined) student.email = email;
-  if (phone !== undefined) student.phone = phone;
-  if (year !== undefined) student.year = Number(year);
-  if (BoletaVisible !== undefined) student.BoletaVisible = BoletaVisible;
-  if (payments !== undefined) student.payments = payments;
-  if (paymentStatus !== undefined) student.paymentStatus = paymentStatus;
-  if (paidAmount !== undefined) student.paidAmount = paidAmount;
-  data.students[id] = student;
-  saveAttendanceData(data);
+  try {
+    if (IS_SUPABASE_CONFIGURED) {
+      const result = await deleteStudentFromSupabase(id);
+      const data = loadAttendanceData();
+      delete data.students[id];
+      saveAttendanceData(data);
+      return res.json({ success: true, id, ...result });
+    }
 
-  res.json(student);
+    const data = loadAttendanceData();
+    if (!data.students[id]) {
+      return res.status(404).json({ error: 'Estudiante no encontrado.' });
+    }
+    delete data.students[id];
+    saveAttendanceData(data);
+    return res.json({ success: true, id });
+  } catch (error) {
+    console.error('Error eliminando estudiante:', error);
+    return res.status(500).json({ error: error.message || 'No se pudo eliminar el estudiante.' });
+  }
 });
 
 app.get('/api/sync-state', (req, res) => {
@@ -277,20 +513,68 @@ app.get('/api/sync-state', (req, res) => {
   res.json({ years, boletaVisibleState: 'NO' });
 });
 
-app.delete('/api/students', (req, res) => {
-  const id = req.query.id || req.body?.id;
-  if (!id) {
-    return res.status(400).json({ error: 'Falta id del estudiante.' });
+app.post('/api/attendance', async (req, res) => {
+  const { id, name, cedula, email, phone, year, subject, subjectLabel, status, date } = req.body || {};
+  if (!id || !name || !email || !year || !subject || !status) {
+    return res.status(400).json({ error: 'Falta id, nombre, correo, año, materia o estado.' });
   }
 
-  const data = loadAttendanceData();
-  if (!data.students[id]) {
-    return res.status(404).json({ error: 'Estudiante no encontrado.' });
-  }
+  try {
+    const attendanceDate = date || new Date().toISOString().slice(0, 10);
+    const student = {
+      id,
+      name,
+      cedula: cedula || '',
+      email,
+      phone: phone || '',
+      year: Number(year),
+      attendance: { [subject]: { status, label: subjectLabel || subject } },
+      attendanceByDate: {
+        [attendanceDate]: { [subject]: status },
+      },
+    };
 
-  delete data.students[id];
-  saveAttendanceData(data);
-  res.json({ success: true, id });
+    if (IS_SUPABASE_CONFIGURED) {
+      await writeAttendanceToSupabase({ id, name, cedula, email, phone, year, subject, subjectLabel, status, date: attendanceDate });
+      const data = loadAttendanceData();
+      const currentStudent = data.students[id] || { id, attendance: {}, attendanceByDate: {} };
+      currentStudent.name = name;
+      currentStudent.email = email;
+      currentStudent.phone = phone || '';
+      currentStudent.year = Number(year);
+      currentStudent.attendance = currentStudent.attendance || {};
+      currentStudent.attendance[subject] = { status, label: subjectLabel || subject };
+      currentStudent.attendanceByDate = currentStudent.attendanceByDate || {};
+      currentStudent.attendanceByDate[attendanceDate] = currentStudent.attendanceByDate[attendanceDate] || {};
+      currentStudent.attendanceByDate[attendanceDate][subject] = status;
+      data.students[id] = currentStudent;
+      saveAttendanceData(data);
+
+      const emailResult = await sendAttendanceNotification({ student: currentStudent, subjectLabel: subjectLabel || subject, status, date: attendanceDate });
+      return res.json({ ...currentStudent, emailSent: emailResult.sent, emailError: emailResult.error || '' });
+    }
+
+    const data = loadAttendanceData();
+    const currentStudent = data.students[id] || { id, name, email, phone: phone || '', year: Number(year), attendance: {} };
+    currentStudent.name = name;
+    currentStudent.cedula = cedula || currentStudent.cedula || '';
+    currentStudent.email = email;
+    currentStudent.phone = phone || currentStudent.phone || '';
+    currentStudent.year = Number(year);
+    currentStudent.attendance = currentStudent.attendance || {};
+    currentStudent.attendance[subject] = { status, label: subjectLabel || subject };
+    currentStudent.attendanceByDate = currentStudent.attendanceByDate || {};
+    currentStudent.attendanceByDate[attendanceDate] = currentStudent.attendanceByDate[attendanceDate] || {};
+    currentStudent.attendanceByDate[attendanceDate][subject] = status;
+    data.students[id] = currentStudent;
+    saveAttendanceData(data);
+
+    const emailResult = await sendAttendanceNotification({ student: currentStudent, subjectLabel: subjectLabel || subject, status, date: attendanceDate });
+    return res.json({ ...currentStudent, emailSent: emailResult.sent, emailError: emailResult.error || '' });
+  } catch (error) {
+    console.error('Error guardando asistencia:', error);
+    return res.status(500).json({ error: error.message || 'No se pudo guardar la asistencia.' });
+  }
 });
 
 app.get('/api/attendance', (req, res) => {
