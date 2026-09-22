@@ -83,8 +83,8 @@ const normalizeStudentRecord = (row = {}, fallbackYear = 1) => {
     paidAmount: Number(row.paid_amount ?? row.paidAmount ?? 0),
     payments: row.payments || {},
     BoletaVisible: row.BoletaVisible || row.boleta_visible || 'NO',
-    attendance: row.attendance || {},
-    attendanceByDate: row.attendanceByDate || {},
+    attendance: row.attendance || row.attendance_json || {},
+    attendanceByDate: row.attendance_by_date || row.attendanceByDate || {},
   };
 };
 
@@ -101,7 +101,7 @@ const toSafeStudentPayload = (student = {}, dateOverride = null) => ({
   payments: student.payments || {},
   BoletaVisible: student.BoletaVisible || 'NO',
   attendance: student.attendance || {},
-  attendanceByDate: student.attendanceByDate || (dateOverride ? { [dateOverride]: {} } : {}),
+  attendance_by_date: student.attendanceByDate || (dateOverride ? { [dateOverride]: {} } : {}),
 });
 
 const syncLocalStudent = (student) => {
@@ -131,9 +131,13 @@ const upsertStudentToSupabase = async (student) => {
 };
 
 const patchStudentToSupabase = async (id, changes) => {
+  const payload = { ...changes };
+  if (payload.attendance !== undefined) payload.attendance = payload.attendance;
+  if (payload.attendance_by_date !== undefined) payload.attendance_by_date = payload.attendance_by_date;
+
   const response = await supabaseFetch(`/students?id=eq.${encodeURIComponent(id)}`, {
     method: 'PATCH',
-    body: JSON.stringify(changes),
+    body: JSON.stringify(payload),
     headers: { Prefer: 'return=representation' },
   });
   const result = await response.json().catch(() => []);
@@ -186,6 +190,24 @@ const writeAttendanceToSupabase = async ({ id, name, cedula, email, phone, year,
   if (!studentResponse.ok) {
     throw new Error(studentResult.message || studentResult.error || 'No se pudo guardar el estudiante en Supabase.');
   }
+
+  const currentStudentResponse = await supabaseFetch(`/students?id=eq.${encodeURIComponent(id)}`);
+  const currentStudents = await currentStudentResponse.json().catch(() => []);
+  const currentStudent = Array.isArray(currentStudents) && currentStudents.length ? currentStudents[0] : {};
+  const attendanceMap = currentStudent.attendance || {};
+  const byDate = currentStudent.attendance_by_date || {};
+  attendanceMap[subject] = { status, label: subjectLabel || subject };
+  byDate[attendanceDate] = byDate[attendanceDate] || {};
+  byDate[attendanceDate][subject] = status;
+
+  await supabaseFetch(`/students?id=eq.${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify({
+      attendance: attendanceMap,
+      attendance_by_date: byDate,
+    }),
+    headers: { Prefer: 'return=representation' },
+  });
 
   const query = `/attendances?student_id=eq.${encodeURIComponent(id)}&date=eq.${encodeURIComponent(attendanceDate)}&subject=eq.${encodeURIComponent(subject)}`;
   const existingResponse = await supabaseFetch(query);
@@ -440,6 +462,13 @@ app.patch('/api/students', async (req, res) => {
       payment_status: paymentStatus,
       paid_amount: paidAmount === undefined ? undefined : Number(paidAmount),
     };
+
+    if (req.body && typeof req.body === 'object' && req.body.attendance !== undefined) {
+      changes.attendance = req.body.attendance;
+    }
+    if (req.body && typeof req.body === 'object' && req.body.attendanceByDate !== undefined) {
+      changes.attendance_by_date = req.body.attendanceByDate;
+    }
 
     Object.keys(changes).forEach((key) => {
       if (changes[key] === undefined) delete changes[key];
