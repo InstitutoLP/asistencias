@@ -1355,7 +1355,8 @@ const mostrarReciboPago = (student, year) => {
   document.getElementById('reciboPagosBody').innerHTML = pagos.length
     ? pagos.map(([periodo, pago]) => {
       const montoPagado = obtenerMontoPago(periodo, pago);
-      return `<tr><td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #000000;">${nombrePeriodo(periodo)}</td><td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #000000;">${pago.date || 'Sin fecha'}</td><td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #000000;">${pago.status === 'abono' ? 'Sí' : '-'}</td><td class="admin-receipt-amount">$${montoPagado.toFixed(2)}</td></tr>`;
+      const montoAbono = pago.status === 'abono' ? `$${montoPagado.toFixed(2)}` : '-';
+      return `<tr><td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #000000;">${nombrePeriodo(periodo)}</td><td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #000000;">${pago.date || 'Sin fecha'}</td><td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #000000;">${montoAbono}</td><td class="admin-receipt-amount">$${montoPagado.toFixed(2)}</td></tr>`;
     }).join('')
     : '<tr><td colspan="4" style="padding: 15px; text-align: center;">No hay pagos registrados.</td></tr>';
   document.getElementById('reciboTotal').textContent = pagos.reduce((total, [periodo, pago]) => total + obtenerMontoPago(periodo, pago), 0).toFixed(2);

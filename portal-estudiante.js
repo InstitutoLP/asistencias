@@ -425,7 +425,11 @@ const renderizarReciboEstudiante = async () => {
   document.getElementById('reciboEstudianteAno').textContent = datosEstudianteActual[obtenerClaveEstudiante(datosEstudianteActual, 'ano')] || `${anoEstudiante}° Año`;
 
   document.getElementById('reciboEstudiantePagosBody').innerHTML = pagosFiltrados.length
-    ? pagosFiltrados.map((pago) => `<tr><td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #000000;">${nombrePeriodo(pago.periodo)}</td><td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #000000;">${pago.date || 'Sin fecha'}</td><td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #000000;">${pago.status === 'abono' ? 'Sí' : '-'}</td><td class="recibo-amount">$${obtenerMontoPago(pago).toFixed(2)}</td></tr>`).join('')
+    ? pagosFiltrados.map((pago) => {
+      const montoPagado = obtenerMontoPago(pago);
+      const montoAbono = pago.status === 'abono' ? `$${montoPagado.toFixed(2)}` : '-';
+      return `<tr><td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #000000;">${nombrePeriodo(pago.periodo)}</td><td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #000000;">${pago.date || 'Sin fecha'}</td><td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #000000;">${montoAbono}</td><td class="recibo-amount">$${montoPagado.toFixed(2)}</td></tr>`;
+    }).join('')
     : '<tr><td colspan="4" style="padding: 15px; text-align: center;">No hay pagos registrados.</td></tr>';
 
   const totalPagado = pagosFiltrados.reduce((total, pago) => total + obtenerMontoPago(pago), 0);
