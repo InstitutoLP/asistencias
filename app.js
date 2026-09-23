@@ -991,6 +991,14 @@ const handleStudentFormSubmit = async (event) => {
   const resolvedYear = Number(selectedYear || document.getElementById('yearSelect')?.value || 1);
   const targetYearKey = String(resolvedYear);
 
+  console.log('payload estudiante antes de guardar:', {
+    name,
+    email,
+    year: resolvedYear,
+    selectedYear,
+    yearSelect: document.getElementById('yearSelect')?.value,
+  });
+
   const newStudent = {
     id: window.crypto?.randomUUID?.() || `student-${Date.now()}`,
     name,
