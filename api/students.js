@@ -19,6 +19,11 @@ const parseBody = async (req) => {
   });
 };
 
+const safeNumber = (value, fallback = 0) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
 const supabaseFetch = async (path, options = {}) => {
   const url = `${SUPABASE_URL}/rest/v1${path}`;
   const headers = {
@@ -77,7 +82,7 @@ module.exports = async function handler(req, res) {
         status: body?.status || '',
         BoletaVisible: BoletaVisible === 'SI' ? 'SI' : 'NO',
         payment_status: paymentStatus || 'no_pago',
-        paid_amount: Number(paidAmount || 0),
+        paid_amount: safeNumber(paidAmount, 0),
         payments: payments || {},
         attendance: attendance || {},
         attendance_by_date: attendanceByDate || {},
@@ -116,7 +121,7 @@ module.exports = async function handler(req, res) {
       if (year !== undefined) changes.year = Number(year);
       if (BoletaVisible !== undefined) changes.BoletaVisible = BoletaVisible === 'SI' ? 'SI' : 'NO';
       if (paymentStatus !== undefined) changes.payment_status = paymentStatus;
-      if (paidAmount !== undefined) changes.paid_amount = Number(paidAmount || 0);
+      if (paidAmount !== undefined) changes.paid_amount = safeNumber(paidAmount, 0);
       if (payments !== undefined) changes.payments = payments;
       if (attendance !== undefined) changes.attendance = attendance;
       if (attendanceByDate !== undefined) changes.attendance_by_date = attendanceByDate;
