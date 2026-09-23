@@ -264,7 +264,25 @@ const obtenerEstadoGlobalBackend = async () => {
   return null;
 };
 
+const valorBoletaAutorizada = (estudiante) => {
+  if (!estudiante) return null;
+  const estado = estudiante.BoletaVisible
+    ?? estudiante.boleta_visible
+    ?? estudiante.boletaVisible
+    ?? estudiante.boletaAutorizada;
+  if (estado === undefined || estado === null || estado === '') return null;
+  if (typeof estado === 'boolean') return estado;
+  const valorNormalizado = String(estado).toUpperCase().trim();
+  if (['SI', 'SÍ', 'TRUE', '1', 'AUTORIZADO', 'AUTORIZADA'].includes(valorNormalizado)) return true;
+  if (['NO', 'FALSE', '0', 'DESAUTORIZADO', 'DESAUTORIZADA'].includes(valorNormalizado)) return false;
+  return null;
+};
+
 const verificarAutorizacionBoleta = async (estudiante) => {
+  const estudianteRegistrado = await obtenerEstudiantePagosBackend(estudiante);
+  const autorizacionDirecta = valorBoletaAutorizada(estudianteRegistrado);
+  if (autorizacionDirecta !== null) return autorizacionDirecta;
+
   const backendData = await obtenerEstadoGlobalBackend();
   
   if (backendData && backendData.years) {
@@ -274,19 +292,12 @@ const verificarAutorizacionBoleta = async (estudiante) => {
       const estudianteEncontrado = estudiantesAno.find(st => coincideConEstudiante(st, estudiante));
       
       if (estudianteEncontrado) {
-        if (estudianteEncontrado.BoletaVisible !== undefined) estadoEstudianteBackend = estudianteEncontrado.BoletaVisible;
-        else if (estudianteEncontrado.boleta_visible !== undefined) estadoEstudianteBackend = estudianteEncontrado.boleta_visible;
-        else if (estudianteEncontrado.boletaVisible !== undefined) estadoEstudianteBackend = estudianteEncontrado.boletaVisible;
-        else if (estudianteEncontrado.boletaAutorizada !== undefined) estadoEstudianteBackend = estudianteEncontrado.boletaAutorizada ? 'SI' : 'NO';
+        estadoEstudianteBackend = valorBoletaAutorizada(estudianteEncontrado);
         break;
       }
     }
 
-    if (estadoEstudianteBackend !== null && estadoEstudianteBackend !== '') {
-      const valNorm = String(estadoEstudianteBackend).toUpperCase().trim();
-      if (valNorm === 'SI' || valNorm === 'TRUE') return true;
-      if (valNorm === 'NO' || valNorm === 'FALSE' || valNorm === 'DESAUTORIZADO') return false;
-    }
+    if (estadoEstudianteBackend !== null) return estadoEstudianteBackend;
   }
 
   return false;
