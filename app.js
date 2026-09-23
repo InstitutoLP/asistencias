@@ -591,7 +591,7 @@ const normalizeStudentYearData = (data) => {
   return normalized;
 };
 
-const loadData = async () => {
+const cargarTodosLosEstudiantesDesdeSupabase = async () => {
   const emptyYears = {};
   for (let year = 1; year <= 5; year += 1) {
     emptyYears[year] = { students: [] };
@@ -601,40 +601,46 @@ const loadData = async () => {
   attendanceData.selectedDate = selectedDate;
 
   try {
-    const response = await fetch(`${API_STUDENTS}?year=${encodeURIComponent(selectedYear || 1)}`, {
+    const response = await fetch(API_STUDENTS, {
       headers: { 'Cache-Control': 'no-cache' }
     });
+
     if (!response.ok) {
-      console.warn('No se pudo cargar estudiantes desde Supabase; se muestra estado vacío en memoria.');
+      console.warn('No se pudo cargar todos los estudiantes desde Supabase; se muestra estado vacío en memoria.');
       return;
     }
+
     const data = await response.json().catch(() => []);
-    if (Array.isArray(data)) {
-      data.forEach((row) => {
-        const year = Number(row.year || selectedYear || 1);
-        attendanceData.years[year] = attendanceData.years[year] || { students: [] };
-        attendanceData.years[year].students.push({
-          id: row.id,
-          name: row.name,
-          cedula: row.cedula || '',
-          email: row.email || '',
-          phone: row.phone || '',
-          status: row.status || '',
-          paymentStatus: row.paymentStatus || row.payment_status || 'no_pago',
-          paidAmount: row.paidAmount ?? row.paid_amount ?? 0,
-          payments: row.payments || {},
-          BoletaVisible: row.BoletaVisible || row.boleta_visible || 'NO',
-          attendance: row.attendance || {},
-          attendanceByDate: row.attendanceByDate || {
-            [selectedDate]: Object.fromEntries(Object.entries(row.attendance || {}).map(([subject, entry]) => [subject, entry?.status || entry])),
-          },
-          year,
-        });
+    if (!Array.isArray(data)) return;
+
+    data.forEach((row) => {
+      const year = Number(row.year || 1);
+      attendanceData.years[year] = attendanceData.years[year] || { students: [] };
+      attendanceData.years[year].students.push({
+        id: row.id,
+        name: row.name,
+        cedula: row.cedula || '',
+        email: row.email || '',
+        phone: row.phone || '',
+        status: row.status || '',
+        paymentStatus: row.paymentStatus || row.payment_status || 'no_pago',
+        paidAmount: row.paidAmount ?? row.paid_amount ?? 0,
+        payments: row.payments || {},
+        BoletaVisible: row.BoletaVisible || row.boleta_visible || 'NO',
+        attendance: row.attendance || {},
+        attendanceByDate: row.attendanceByDate || {
+          [selectedDate]: Object.fromEntries(Object.entries(row.attendance || {}).map(([subject, entry]) => [subject, entry?.status || entry])),
+        },
+        year,
       });
-    }
+    });
   } catch (error) {
     console.warn('No se pudo conectar con Supabase para cargar estudiantes:', error);
   }
+};
+
+const loadData = async () => {
+  await cargarTodosLosEstudiantesDesdeSupabase();
 };
 
 const saveData = () => {
@@ -1107,7 +1113,7 @@ const handleStudentListClick = (event) => {
   }
 };
 
-const abrirAdminNestor = () => {
+const abrirAdminNestor = async () => {
   const esProfNestor = currentUser && (currentUser.name.includes("Néstor") || currentUser.name.includes("Nestor"));
   const esAdminExclusivo = currentUser && currentUser.soloAdmin;
 
@@ -1121,6 +1127,7 @@ const abrirAdminNestor = () => {
     btnCerrar.textContent = currentUser.soloAdmin ? '🚪 Cerrar Sesión' : '← Volver al Sistema';
   }
 
+  await cargarTodosLosEstudiantesDesdeSupabase();
   actualizarVistaAdminNestor();
   showView('adminNestor');
 };
