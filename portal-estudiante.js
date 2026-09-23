@@ -374,16 +374,17 @@ const renderizarReciboEstudiante = async () => {
     });
   }
 
-  let pagosGuardados = estudianteBackend?.payments || {};
-  if (typeof pagosGuardados === 'string') {
-    try {
-      pagosGuardados = JSON.parse(pagosGuardados || '{}');
-    } catch (error) {
-      console.warn('No se pudieron leer los pagos del estudiante:', error);
-      pagosGuardados = {};
-    }
-  }
-  const pagos = Object.entries(pagosGuardados)
+  const pagosRegistrados = estudianteBackend?.payments && typeof estudianteBackend.payments === 'object'
+    ? estudianteBackend.payments
+    : {};
+  const estadoPago = estudianteBackend?.paymentStatus || estudianteBackend?.payment_status;
+  const montoPago = estudianteBackend?.paidAmount ?? estudianteBackend?.paid_amount;
+  const pagos = Object.keys(pagosRegistrados).length
+    ? Object.entries(pagosRegistrados)
+    : (estadoPago === 'pago' || estadoPago === 'abono')
+      ? [['actual', { status: estadoPago, amount: montoPago, date: '' }]]
+      : [];
+  const pagosFiltrados = pagos
     .filter(([, pago]) => pago.status === 'pago' || pago.status === 'abono')
     .sort(([, first], [, second]) => String(first.date || '').localeCompare(String(second.date || '')));
   
@@ -395,10 +396,10 @@ const renderizarReciboEstudiante = async () => {
   document.getElementById('reciboEstudianteNombre').textContent = datosEstudianteActual.Nombre;
   document.getElementById('reciboEstudianteCedula').textContent = datosEstudianteActual[cedulaKey] || estudianteBackend?.cedula || 'No registrada';
   document.getElementById('reciboEstudianteAno').textContent = datosEstudianteActual[obtenerClaveEstudiante(datosEstudianteActual, 'ano')] || `${anoEstudiante}° Año`;
-  document.getElementById('reciboEstudiantePagosBody').innerHTML = pagos.length
-    ? pagos.map(([periodo, pago]) => `<tr><td>${periodos[periodo] || periodo}${pago.status === 'abono' ? ' (Abono)' : ''}</td><td>${pago.date || 'Sin fecha'}</td><td class="recibo-amount">$${obtenerMontoPago(periodo, pago).toFixed(2)}</td></tr>`).join('')
+  document.getElementById('reciboEstudiantePagosBody').innerHTML = pagosFiltrados.length
+    ? pagosFiltrados.map(([periodo, pago]) => `<tr><td>${periodos[periodo] || 'Período actual'}${pago.status === 'abono' ? ' (Abono)' : ''}</td><td>${pago.date || 'Sin fecha'}</td><td class="recibo-amount">$${obtenerMontoPago(periodo, pago).toFixed(2)}</td></tr>`).join('')
     : '<tr><td colspan="3" style="text-align: center;">No hay pagos registrados.</td></tr>';
-  document.getElementById('reciboEstudianteTotal').textContent = pagos.reduce((total, [periodo, pago]) => total + obtenerMontoPago(periodo, pago), 0).toFixed(2);
+  document.getElementById('reciboEstudianteTotal').textContent = pagosFiltrados.reduce((total, [periodo, pago]) => total + obtenerMontoPago(periodo, pago), 0).toFixed(2);
 };
 
 window.cerrarSesion = () => {
