@@ -53,7 +53,13 @@ module.exports = async function handler(req, res) {
   try {
     if (req.method === 'GET') {
       const year = req.query?.year;
-      const query = year ? `?year=eq.${encodeURIComponent(String(year))}` : '?select=*';
+      const id = req.query?.id;
+      const cedula = req.query?.cedula;
+      const filters = [];
+      if (year) filters.push(`year=eq.${encodeURIComponent(String(year))}`);
+      if (id) filters.push(`id=eq.${encodeURIComponent(String(id))}`);
+      if (cedula) filters.push(`cedula=eq.${encodeURIComponent(String(cedula))}`);
+      const query = filters.length ? `?${filters.join('&')}` : '?select=*';
       const response = await supabaseFetch(`/students${query}`);
       const data = await response.json().catch(() => []);
       if (!response.ok) {

@@ -2,6 +2,7 @@
 const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/e/2PACX-1vSDsgr1HsQGzCill3gzGk3mdFuWQad7AvbmHE1qKkUGMXR4sH9gVegK97UFCTscSg/pub?output=csv`;
 const API_BASE_URL = window.location.protocol === 'file:' ? 'http://localhost:3000' : window.location.origin;
 const API_SYNC_STATE = `${API_BASE_URL}/api/sync-state`; // Endpoint hacia la base de datos
+const API_STUDENTS = `${API_BASE_URL}/api/students`;
 const PERIODOS_PAGO = [
   { id: 'inscripcion', label: 'Inscripción' },
   { id: 'enero', label: 'Enero' },
@@ -291,6 +292,27 @@ const verificarAutorizacionBoleta = async (estudiante) => {
   return false;
 };
 
+const obtenerEstudiantePagosBackend = async (estudiante) => {
+  const cedulaKey = obtenerClaveEstudiante(estudiante, 'cedula');
+  const cedula = estudiante?.[cedulaKey];
+  if (!cedula) return null;
+
+  try {
+    const response = await fetch(`${API_STUDENTS}?cedula=${encodeURIComponent(cedula)}&t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache' },
+    });
+    if (!response.ok) return null;
+    const estudiantes = await response.json().catch(() => []);
+    return Array.isArray(estudiantes)
+      ? estudiantes.find((registro) => coincideConEstudiante(registro, estudiante)) || estudiantes[0] || null
+      : null;
+  } catch (error) {
+    console.warn('No se pudieron consultar los pagos del estudiante:', error);
+    return null;
+  }
+};
+
 document.getElementById('loginEstudianteForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const cedulaIngresada = document.getElementById('estudianteCedula').value;
@@ -345,6 +367,9 @@ const mostrarDashboard = () => {
 };
 
 const mostrarDocumento = (documento) => {
+  if (documento === 'recibo' && datosEstudianteActual) {
+    renderizarReciboEstudiante();
+  }
   const mostrarBoleta = documento === 'boleta' && boletaAutorizadaActual;
   const boletaPanel = document.getElementById('boletaPanel');
   const reciboPanel = document.getElementById('reciboPanel');
@@ -371,9 +396,12 @@ const renderizarReciboEstudiante = async () => {
   let estudianteBackend = null;
   let anoEstudiante = '';
 
+  estudianteBackend = await obtenerEstudiantePagosBackend(datosEstudianteActual);
+  if (estudianteBackend) anoEstudiante = estudianteBackend.year || '';
+
   const backendData = await obtenerEstadoGlobalBackend();
 
-  if (backendData && backendData.years) {
+  if (!estudianteBackend && backendData && backendData.years) {
     Object.entries(backendData.years).some(([year, yearData]) => {
       const encontrado = (yearData.students || []).find(student => {
         return coincideConEstudiante(student, datosEstudianteActual);
@@ -427,7 +455,9 @@ const renderizarReciboEstudiante = async () => {
   document.getElementById('reciboEstudiantePagosBody').innerHTML = pagosFiltrados.length
     ? pagosFiltrados.map((pago) => {
       const montoPagado = obtenerMontoPago(pago);
-      const montoAbono = pago.status === 'abono' ? `$${montoPagado.toFixed(2)}` : '-';
+      const montoAbono = pago.status === 'abono'
+        ? `$${montoPagado.toFixed(2)} (Abono)`
+        : '- (Pago completo)';
       return `<tr><td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #000000;">${nombrePeriodo(pago.periodo)}</td><td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #000000;">${pago.date || 'Sin fecha'}</td><td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #000000;">${montoAbono}</td><td class="recibo-amount">$${montoPagado.toFixed(2)}</td></tr>`;
     }).join('')
     : '<tr><td colspan="4" style="padding: 15px; text-align: center;">No hay pagos registrados.</td></tr>';
