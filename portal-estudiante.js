@@ -370,9 +370,9 @@ const mostrarDocumento = (documento) => {
 const renderizarReciboEstudiante = async () => {
   let estudianteBackend = null;
   let anoEstudiante = '';
-  
+
   const backendData = await obtenerEstadoGlobalBackend();
-  
+
   if (backendData && backendData.years) {
     Object.entries(backendData.years).some(([year, yearData]) => {
       const encontrado = (yearData.students || []).find(student => {
@@ -390,29 +390,46 @@ const renderizarReciboEstudiante = async () => {
   const pagosRegistrados = estudianteBackend?.payments && typeof estudianteBackend.payments === 'object'
     ? estudianteBackend.payments
     : {};
-  const estadoPago = estudianteBackend?.paymentStatus || estudianteBackend?.payment_status;
-  const montoPago = estudianteBackend?.paidAmount ?? estudianteBackend?.paid_amount;
-  const pagos = Object.keys(pagosRegistrados).length
-    ? Object.entries(pagosRegistrados)
-    : (estadoPago === 'pago' || estadoPago === 'abono')
-      ? [['actual', { status: estadoPago, amount: montoPago, date: '' }]]
-      : [];
+
+  const estadoPago = String(estudianteBackend?.paymentStatus ?? estudianteBackend?.payment_status ?? '').toLowerCase();
+  const montoPago = normalizarMontoPago(estudianteBackend?.paidAmount ?? estudianteBackend?.paid_amount ?? 0);
+
+  const pagos = Object.entries(pagosRegistrados)
+    .filter(([, pago]) => pago && typeof pago === 'object')
+    .map(([periodo, pago]) => ({
+      periodo,
+      status: String(pago.status || 'no_pago').toLowerCase(),
+      amount: normalizarMontoPago(pago.amount ?? pago.monto ?? 0),
+      date: pago.date || '',
+    }));
+
+  if (!pagos.length && (estadoPago === 'pago' || estadoPago === 'abono')) {
+    pagos.push({
+      periodo: 'actual',
+      status: estadoPago,
+      amount: montoPago,
+      date: '',
+    });
+  }
+
   const pagosFiltrados = pagos
-    .filter(([, pago]) => pago.status === 'pago' || pago.status === 'abono')
-    .sort(([, first], [, second]) => String(first.date || '').localeCompare(String(second.date || '')));
-  
+    .filter((pago) => pago.status === 'pago' || pago.status === 'abono')
+    .sort((first, second) => String(first.date || '').localeCompare(String(second.date || '')));
+
   const cedulaKey = obtenerClaveEstudiante(datosEstudianteActual, 'cedula');
-  const costoPeriodo = periodo => periodo === 'inscripcion' ? 300 : 30;
-  const obtenerMontoPago = (periodo, pago) => normalizarMontoPago(pago.amount) || (pago.status === 'pago' ? costoPeriodo(periodo) : 0);
+  const obtenerMontoPago = (pago) => normalizarMontoPago(pago.amount) || (pago.status === 'pago' ? 30 : 0);
   const nombrePeriodo = periodo => PERIODOS_PAGO.find(item => item.id === periodo)?.label || periodo;
-  
+
   document.getElementById('reciboEstudianteNombre').textContent = datosEstudianteActual.Nombre;
   document.getElementById('reciboEstudianteCedula').textContent = datosEstudianteActual[cedulaKey] || estudianteBackend?.cedula || 'No registrada';
   document.getElementById('reciboEstudianteAno').textContent = datosEstudianteActual[obtenerClaveEstudiante(datosEstudianteActual, 'ano')] || `${anoEstudiante}° Año`;
+
   document.getElementById('reciboEstudiantePagosBody').innerHTML = pagosFiltrados.length
-    ? pagosFiltrados.map(([periodo, pago]) => `<tr><td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #000000;">${nombrePeriodo(periodo)}${pago.status === 'abono' ? ' (Abono)' : ''}</td><td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #000000;">${pago.date || 'Sin fecha'}</td><td class="recibo-amount">$${obtenerMontoPago(periodo, pago).toFixed(2)}</td></tr>`).join('')
+    ? pagosFiltrados.map((pago) => `<tr><td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #000000;">${nombrePeriodo(pago.periodo)}${pago.status === 'abono' ? ' (Abono)' : ''}</td><td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #000000;">${pago.date || 'Sin fecha'}</td><td class="recibo-amount">$${obtenerMontoPago(pago).toFixed(2)}</td></tr>`).join('')
     : '<tr><td colspan="3" style="padding: 15px; text-align: center;">No hay pagos registrados.</td></tr>';
-  document.getElementById('reciboEstudianteTotal').textContent = pagosFiltrados.reduce((total, [periodo, pago]) => total + obtenerMontoPago(periodo, pago), 0).toFixed(2);
+
+  const totalPagado = pagosFiltrados.reduce((total, pago) => total + obtenerMontoPago(pago), 0);
+  document.getElementById('reciboEstudianteTotal').textContent = totalPagado.toFixed(2);
 };
 
 window.cerrarSesion = () => {
