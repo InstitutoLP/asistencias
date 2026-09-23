@@ -531,15 +531,22 @@ app.delete('/api/students', async (req, res) => {
   }
 });
 
-app.get('/api/sync-state', (req, res) => {
-  const data = loadAttendanceData();
-  const years = {};
-  Object.values(data.students).forEach((student) => {
-    const year = Number(student.year || 1);
-    if (!years[year]) years[year] = { students: [] };
-    years[year].students.push(student);
-  });
-  res.json({ years, boletaVisibleState: 'NO' });
+app.get('/api/sync-state', async (req, res) => {
+  try {
+    const students = IS_SUPABASE_CONFIGURED
+      ? await getStudentsFromSupabase()
+      : Object.values(loadAttendanceData().students);
+    const years = {};
+    students.forEach((student) => {
+      const year = Number(student.year || 1);
+      if (!years[year]) years[year] = { students: [] };
+      years[year].students.push(student);
+    });
+    res.json({ years, boletaVisibleState: 'NO' });
+  } catch (error) {
+    console.error('Error cargando estado de sincronización:', error);
+    res.status(500).json({ error: error.message || 'No se pudo consultar el estado.' });
+  }
 });
 
 app.post('/api/attendance', async (req, res) => {
