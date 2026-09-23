@@ -1172,9 +1172,10 @@ const cambiarEstadoPago = async (studentId, year, estado) => {
   const student = findStudentByYear(year, studentId) || findStudentById(studentId);
   if (!student) return;
 
-  guardarPagoPeriodo(student, estado, 0);
+  const monto = estado === 'pago' ? costoPeriodo() : 0;
+  guardarPagoPeriodo(student, estado, monto);
   student.paymentStatus = estado;
-  student.paidAmount = estado === 'pago' ? 'Completo' : 0;
+  student.paidAmount = monto;
 
   saveData();
   await sincronizarEstudiante(student, 'PATCH');
@@ -1212,7 +1213,7 @@ const guardarAbono = async () => {
   if (student) {
     guardarPagoPeriodo(student, 'abono', monto);
     student.paymentStatus = 'abono';
-    student.paidAmount = monto;
+    student.paidAmount = normalizarMontoPago(monto);
     saveData();
     await sincronizarEstudiante(student, 'PATCH');
     actualizarVistaAdminNestor();
@@ -1302,11 +1303,22 @@ let filtroFechaPago = null;
 const obtenerTodosLosEstudiantes = () => Object.values(attendanceData.years || {})
   .flatMap((yearData, index) => (yearData.students || []).map(student => ({ ...student, calculatedYear: index + 1 })));
 
+const normalizarMontoPago = (valor) => {
+  const numero = Number(valor);
+  return Number.isFinite(numero) ? numero : 0;
+};
+
 const obtenerPagoPeriodo = (student, periodo = periodoPagoActual) => {
   const pagoGuardado = student.payments?.[periodo];
-  if (pagoGuardado) return pagoGuardado;
+  if (pagoGuardado) {
+    return {
+      status: pagoGuardado.status || 'no_pago',
+      amount: normalizarMontoPago(pagoGuardado.amount),
+      date: pagoGuardado.date || '',
+    };
+  }
   if (periodo === periodoPagoActual && student.paymentStatus) {
-    return { status: student.paymentStatus, amount: student.paidAmount, date: '' };
+    return { status: student.paymentStatus, amount: normalizarMontoPago(student.paidAmount), date: '' };
   }
   return { status: 'no_pago', amount: 0, date: '' };
 };
@@ -1325,7 +1337,7 @@ const guardarPagoPeriodo = (student, status, amount = 0) => {
   student.payments = student.payments || {};
   student.payments[periodoPagoActual] = {
     status,
-    amount: status === 'pago' ? costoPeriodo() : amount,
+    amount: status === 'pago' ? costoPeriodo() : normalizarMontoPago(amount),
     date: fechaPagoActual,
   };
 };
