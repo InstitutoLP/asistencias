@@ -236,7 +236,7 @@ window.descargarBoletaPDF = async () => {
 // Modificación importante: Fetch a la API en lugar de LocalStorage
 const obtenerEstadoGlobalBackend = async () => {
   try {
-    const response = await fetch(API_SYNC_STATE);
+    const response = await fetch(`${API_SYNC_STATE}?t=${Date.now()}`, { cache: 'no-store' });
     if (response.ok) return await response.json();
   } catch (error) {
     console.error("Error al consultar la autorización desde el backend:", error);
@@ -374,7 +374,16 @@ const renderizarReciboEstudiante = async () => {
     });
   }
 
-  const pagos = Object.entries(estudianteBackend?.payments || {})
+  let pagosGuardados = estudianteBackend?.payments || {};
+  if (typeof pagosGuardados === 'string') {
+    try {
+      pagosGuardados = JSON.parse(pagosGuardados || '{}');
+    } catch (error) {
+      console.warn('No se pudieron leer los pagos del estudiante:', error);
+      pagosGuardados = {};
+    }
+  }
+  const pagos = Object.entries(pagosGuardados)
     .filter(([, pago]) => pago.status === 'pago' || pago.status === 'abono')
     .sort(([, first], [, second]) => String(first.date || '').localeCompare(String(second.date || '')));
   
