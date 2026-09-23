@@ -257,15 +257,16 @@ const verificarAutorizacionBoleta = async (estudiante) => {
       if (estudianteEncontrado) {
         if (estudianteEncontrado.BoletaVisible !== undefined) estadoEstudianteBackend = estudianteEncontrado.BoletaVisible;
         else if (estudianteEncontrado.boleta_visible !== undefined) estadoEstudianteBackend = estudianteEncontrado.boleta_visible;
-        else if (estudianteEncontrado.boletaAutorizada !== undefined) estadoEstudianteBackend = estudianteEncontrado.boletaAutorizada ? 'SI' : 'NO';
+        else if (estudianteEncontrado.boletaVisible !== undefined) estadoEstudianteBackend = estudianteEncontrado.boletaVisible;
+        else if (estudianteEncontrado.boletaAutorizada !== undefined) estadoEstudianteBackend = estudianteEncontrado.boletaAutorizada;
         break;
       }
     }
 
     if (estadoEstudianteBackend !== null && estadoEstudianteBackend !== '') {
       const valNorm = String(estadoEstudianteBackend).toUpperCase().trim();
-      if (valNorm === 'SI' || valNorm === 'TRUE') return true;
-      if (valNorm === 'NO' || valNorm === 'FALSE' || valNorm === 'DESAUTORIZADO') return false;
+      if (estadoEstudianteBackend === true || ['SI', 'TRUE', '1', 'AUTORIZADO'].includes(valNorm)) return true;
+      if (estadoEstudianteBackend === false || ['NO', 'FALSE', '0', 'DESAUTORIZADO'].includes(valNorm)) return false;
     }
 
     if (backendData.boletaVisibleState !== undefined) {
@@ -350,6 +351,7 @@ const mostrarDocumento = (documento) => {
     tabRecibo.classList.toggle('active', !mostrarBoleta);
     tabRecibo.setAttribute('aria-selected', String(!mostrarBoleta));
   }
+  if (!boletaAutorizadaActual && reciboPanel) reciboPanel.classList.remove('hidden');
   if (boletaBloqueada) boletaBloqueada.style.display = boletaAutorizadaActual ? 'none' : 'block';
 };
 
