@@ -264,7 +264,6 @@
   </div>
 
   <script>
-    const STORAGE_KEY = 'asistencia-colegio-data';
     let chartGeneral = null;
     let chartTopFaltas = null;
     let listaEstudiantesActual = [];
@@ -278,7 +277,7 @@
     };
 
     const sessionUser = JSON.parse(sessionStorage.getItem('activeUser') || '{}');
-    const deletedStudentIds = new Set(JSON.parse(localStorage.getItem('asistencia-colegio-deleted-students') || '[]').map(String));
+    const deletedStudentIds = new Set();
     const estudianteEliminado = (student) => deletedStudentIds.has(String(student.id));
 
     const puedeVerReportes = sessionUser.name === 'Prof: Andy'
@@ -355,119 +354,123 @@
       const selectedSubject = document.getElementById('subjectFilter').value;
       const startDate = document.getElementById('startDateFilter').value;
       const endDate = document.getElementById('endDateFilter').value;
-      
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (!stored) return;
-      const data = JSON.parse(stored);
-      
-      let estudiantes = [];
-      if (selectedYear === 'general') {
-        for (let i = 1; i <= 5; i++) {
-          if (data.years && data.years[i] && data.years[i].students) {
-            const alumnosDelAno = data.years[i].students
+
+      fetch('/api/students')
+        .then(response => response.ok ? response.json() : [])
+        .then(data => {
+          const rows = Array.isArray(data) ? data : [];
+          let estudiantes = [];
+
+          if (selectedYear === 'general') {
+            for (let i = 1; i <= 5; i++) {
+              const alumnosDelAno = rows
+                .filter(e => Number(e.year) === i)
+                .filter(e => !estudianteEliminado(e))
+                .map(e => ({ ...e, calculatedYear: i }));
+              estudiantes = estudiantes.concat(alumnosDelAno);
+            }
+          } else {
+            estudiantes = rows
+              .filter(e => Number(e.year) === Number(selectedYear))
               .filter(e => !estudianteEliminado(e))
-              .map(e => ({...e, calculatedYear: i}));
-            estudiantes = estudiantes.concat(alumnosDelAno);
+              .map(e => ({ ...e, calculatedYear: selectedYear }));
           }
-        }
-      } else {
-        if (data.years && data.years[selectedYear] && data.years[selectedYear].students) {
-          estudiantes = data.years[selectedYear].students
-            .filter(e => !estudianteEliminado(e))
-            .map(e => ({...e, calculatedYear: selectedYear}));
-        }
-      }
 
-      let totalAsistencias = 0;
-      let totalInasistencias = 0;
-      const rankingFaltas = [];
+          let totalAsistencias = 0;
+          let totalInasistencias = 0;
+          const rankingFaltas = [];
 
-      estudiantes.forEach(est => {
-        let asistenciasEstudiante = 0;
-        let inasistenciasEstudiante = 0;
+          estudiantes.forEach(est => {
+            let asistenciasEstudiante = 0;
+            let inasistenciasEstudiante = 0;
 
-        const registrosPorFecha = est.attendanceByDate || {};
-        Object.entries(registrosPorFecha).forEach(([fecha, materias]) => {
-          const fechaValida = (!startDate || fecha >= startDate) && (!endDate || fecha <= endDate);
-          if (!fechaValida) return;
+            const registrosPorFecha = est.attendanceByDate || {};
+            Object.entries(registrosPorFecha).forEach(([fecha, materias]) => {
+              const fechaValida = (!startDate || fecha >= startDate) && (!endDate || fecha <= endDate);
+              if (!fechaValida) return;
 
-          Object.entries(materias || {}).forEach(([materia, estado]) => {
-            if (selectedSubject !== 'general' && materia !== selectedSubject) return;
-            if (estado === 'asistente') { totalAsistencias++; asistenciasEstudiante++; }
-            if (estado === 'inasistente') { totalInasistencias++; inasistenciasEstudiante++; }
-          });
-        });
+              Object.entries(materias || {}).forEach(([materia, estado]) => {
+                if (selectedSubject !== 'general' && materia !== selectedSubject) return;
+                if (estado === 'asistente') { totalAsistencias++; asistenciasEstudiante++; }
+                if (estado === 'inasistente') { totalInasistencias++; inasistenciasEstudiante++; }
+              });
+            });
 
-        // Evalúa registros históricos para conservar compatibilidad con datos anteriores.
-        const logs = est.attendanceHistory || est.attendanceLogs || [];
+            const logs = est.attendanceHistory || est.attendanceLogs || [];
 
-        if (!Object.keys(registrosPorFecha).length && logs.length > 0) {
-          // Si el estudiante maneja historial con fechas
-          logs.forEach(log => {
-            const fechaValida = (!startDate || log.date >= startDate) && (!endDate || log.date <= endDate);
-            const materiaValida = (selectedSubject === 'general' || log.subject === selectedSubject);
+            if (!Object.keys(registrosPorFecha).length && logs.length > 0) {
+              logs.forEach(log => {
+                const fechaValida = (!startDate || log.date >= startDate) && (!endDate || log.date <= endDate);
+                const materiaValida = (selectedSubject === 'general' || log.subject === selectedSubject);
 
-            if (fechaValida && materiaValida) {
-              if (log.status === 'asistente') { totalAsistencias++; asistenciasEstudiante++; }
-              if (log.status === 'inasistente') { totalInasistencias++; inasistenciasEstudiante++; }
+                if (fechaValida && materiaValida) {
+                  if (log.status === 'asistente') { totalAsistencias++; asistenciasEstudiante++; }
+                  if (log.status === 'inasistente') { totalInasistencias++; inasistenciasEstudiante++; }
+                }
+              });
+            } else if (!Object.keys(registrosPorFecha).length) {
+              const recordAsistencia = est.attendance || {};
+              const materiasARevisar = selectedSubject === 'general' ? Object.keys(recordAsistencia) : [selectedSubject];
+
+              materiasARevisar.forEach(materia => {
+                const registro = recordAsistencia[materia];
+                const estado = typeof registro === 'object' ? registro.status : registro;
+                const fechaReg = typeof registro === 'object' ? registro.date : null;
+
+                const fechaEnRango = (!fechaReg) || ((!startDate || fechaReg >= startDate) && (!endDate || fechaReg <= endDate));
+
+                if (fechaEnRango) {
+                  if (estado === 'asistente') { totalAsistencias++; asistenciasEstudiante++; }
+                  if (estado === 'inasistente') { totalInasistencias++; inasistenciasEstudiante++; }
+                }
+              });
+            }
+
+            const nombreMostrar = selectedYear === 'general'
+              ? `${est.name} (${est.calculatedYear}° Año)`
+              : est.name;
+
+            const totalRegistros = asistenciasEstudiante + inasistenciasEstudiante;
+
+            if (totalRegistros > 0) {
+              rankingFaltas.push({
+                nombre: nombreMostrar,
+                telefono: est.phone || 'No registrado',
+                asistencias: asistenciasEstudiante,
+                inasistencias: inasistenciasEstudiante,
+                totalRegistros,
+              });
             }
           });
-        } else if (!Object.keys(registrosPorFecha).length) {
-          // Evalúa objeto directo de asistencia (retrocompatibilidad)
-          const recordAsistencia = est.attendance || {};
-          const materiasARevisar = selectedSubject === 'general' ? Object.keys(recordAsistencia) : [selectedSubject];
 
-          materiasARevisar.forEach(materia => {
-            const registro = recordAsistencia[materia];
-            const estado = typeof registro === 'object' ? registro.status : registro;
-            const fechaReg = typeof registro === 'object' ? registro.date : null;
+          const totalRegistrosGlobales = totalAsistencias + totalInasistencias;
+          const tasaAsistencia = totalRegistrosGlobales === 0 ? 0 : Math.round((totalAsistencias / totalRegistrosGlobales) * 100);
+          const tasaInasistencia = totalRegistrosGlobales === 0 ? 0 : Math.round((totalInasistencias / totalRegistrosGlobales) * 100);
 
-            const fechaEnRango = (!fechaReg) || ((!startDate || fechaReg >= startDate) && (!endDate || fechaReg <= endDate));
+          document.getElementById('kpiTotalEstudiantes').textContent = estudiantes.length;
+          document.getElementById('kpiTasaAsistencia').textContent = `${tasaAsistencia}%`;
+          document.getElementById('kpiTotalFaltas').textContent = `${tasaInasistencia}%`;
+          document.getElementById('numAsistencias').textContent = totalAsistencias;
+          document.getElementById('numInasistencias').textContent = totalInasistencias;
 
-            if (fechaEnRango) {
-              if (estado === 'asistente') { totalAsistencias++; asistenciasEstudiante++; }
-              if (estado === 'inasistente') { totalInasistencias++; inasistenciasEstudiante++; }
-            }
-          });
-        }
+          const soloConFaltas = rankingFaltas.filter(est => est.inasistencias > 0);
+          const dataParaGrafico = soloConFaltas.sort((a, b) => b.inasistencias - a.inasistencias);
+          const top5 = dataParaGrafico.slice(0, 5);
 
-        const nombreMostrar = selectedYear === 'general'
-                              ? `${est.name} (${est.calculatedYear}° Año)`
-                              : est.name;
+          renderizarGraficoGeneral(totalAsistencias, totalInasistencias);
+          renderizarGraficoTopFaltas(top5);
 
-        const totalRegistros = asistenciasEstudiante + inasistenciasEstudiante;
-
-        rankingFaltas.push({
-          nombre: nombreMostrar,
-          telefono: est.phone || 'No registrado',
-          asistencias: asistenciasEstudiante,
-          inasistencias: inasistenciasEstudiante,
-          totalRegistros: totalRegistros
+          listaEstudiantesActual = rankingFaltas.sort((a, b) => b.inasistencias - a.inasistencias);
+          document.getElementById('studentSearchInput').value = '';
+          renderizarTabla(listaEstudiantesActual);
+        })
+        .catch(() => {
+          document.getElementById('kpiTotalEstudiantes').textContent = '0';
+          document.getElementById('kpiTasaAsistencia').textContent = '0%';
+          document.getElementById('kpiTotalFaltas').textContent = '0%';
+          document.getElementById('numAsistencias').textContent = '0';
+          document.getElementById('numInasistencias').textContent = '0';
         });
-      });
-
-      const totalRegistrosGlobales = totalAsistencias + totalInasistencias;
-      const tasaAsistencia = totalRegistrosGlobales === 0 ? 0 : Math.round((totalAsistencias / totalRegistrosGlobales) * 100);
-      const tasaInasistencia = totalRegistrosGlobales === 0 ? 0 : Math.round((totalInasistencias / totalRegistrosGlobales) * 100);
-
-      document.getElementById('kpiTotalEstudiantes').textContent = estudiantes.length;
-      document.getElementById('kpiTasaAsistencia').textContent = `${tasaAsistencia}%`;
-      document.getElementById('kpiTotalFaltas').textContent = `${tasaInasistencia}%`;
-
-      document.getElementById('numAsistencias').textContent = totalAsistencias;
-      document.getElementById('numInasistencias').textContent = totalInasistencias;
-
-      const soloConFaltas = rankingFaltas.filter(est => est.inasistencias > 0);
-      const dataParaGrafico = soloConFaltas.sort((a, b) => b.inasistencias - a.inasistencias);
-      const top5 = dataParaGrafico.slice(0, 5);
-
-      renderizarGraficoGeneral(totalAsistencias, totalInasistencias);
-      renderizarGraficoTopFaltas(top5);
-
-      listaEstudiantesActual = rankingFaltas.sort((a, b) => b.inasistencias - a.inasistencias);
-      document.getElementById('studentSearchInput').value = '';
-
-      renderizarTabla(listaEstudiantesActual);
     }
 
     function renderizarTabla(estudiantes) {
