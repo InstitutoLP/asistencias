@@ -129,7 +129,6 @@ const renderizarBoletaEstudiante = (estudiante) => {
     cuerpo.innerHTML = materias.map(([materia, codigo]) => `
       <tr>
         <td class="col-area">${materia.toUpperCase()}</td>
-        <td>${codigo}</td>
         <td>${extraerValorColumna(estudiante, materia, '1er')}</td>
         <td>${extraerValorColumna(estudiante, materia, '2do')}</td>
         <td>${extraerValorColumna(estudiante, materia, '3er')}</td>
