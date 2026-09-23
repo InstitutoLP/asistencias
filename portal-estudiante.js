@@ -2,6 +2,21 @@
 const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/e/2PACX-1vSDsgr1HsQGzCill3gzGk3mdFuWQad7AvbmHE1qKkUGMXR4sH9gVegK97UFCTscSg/pub?output=csv`;
 const API_BASE_URL = window.location.protocol === 'file:' ? 'http://localhost:3000' : window.location.origin;
 const API_SYNC_STATE = `${API_BASE_URL}/api/sync-state`; // Endpoint hacia la base de datos
+const PERIODOS_PAGO = [
+  { id: 'inscripcion', label: 'Inscripción' },
+  { id: 'enero', label: 'Enero' },
+  { id: 'febrero', label: 'Febrero' },
+  { id: 'marzo', label: 'Marzo' },
+  { id: 'abril', label: 'Abril' },
+  { id: 'mayo', label: 'Mayo' },
+  { id: 'junio', label: 'Junio' },
+  { id: 'julio', label: 'Julio' },
+  { id: 'agosto', label: 'Agosto' },
+  { id: 'septiembre', label: 'Septiembre' },
+  { id: 'octubre', label: 'Octubre' },
+  { id: 'noviembre', label: 'Noviembre' },
+  { id: 'diciembre', label: 'Diciembre' },
+];
 
 let datosEstudianteActual = null;
 let chartsInstancias = {};
@@ -13,6 +28,10 @@ const nombresLargoMaterias = { "Castellano": "CASTELLANO", "Ingles": "INGLÉS Y 
 
 const normalizarTexto = (texto) => texto ? String(texto).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : "";
 const normalizarCedula = (cedula) => String(cedula || '').trim().toUpperCase().replace(/\D/g, '') || String(cedula || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+const normalizarMontoPago = (valor) => {
+  const numero = Number(valor);
+  return Number.isFinite(numero) ? numero : 0;
+};
 
 const coincideConEstudiante = (registro, estudiante) => {
   const cedulaKey = obtenerClaveEstudiante(estudiante, 'cedula');
@@ -245,7 +264,6 @@ const obtenerEstadoGlobalBackend = async () => {
 };
 
 const verificarAutorizacionBoleta = async (estudiante) => {
-  // Consulta al backend en lugar del LocalStorage
   const backendData = await obtenerEstadoGlobalBackend();
   
   if (backendData && backendData.years) {
@@ -258,21 +276,15 @@ const verificarAutorizacionBoleta = async (estudiante) => {
         if (estudianteEncontrado.BoletaVisible !== undefined) estadoEstudianteBackend = estudianteEncontrado.BoletaVisible;
         else if (estudianteEncontrado.boleta_visible !== undefined) estadoEstudianteBackend = estudianteEncontrado.boleta_visible;
         else if (estudianteEncontrado.boletaVisible !== undefined) estadoEstudianteBackend = estudianteEncontrado.boletaVisible;
-        else if (estudianteEncontrado.boletaAutorizada !== undefined) estadoEstudianteBackend = estudianteEncontrado.boletaAutorizada;
+        else if (estudianteEncontrado.boletaAutorizada !== undefined) estadoEstudianteBackend = estudianteEncontrado.boletaAutorizada ? 'SI' : 'NO';
         break;
       }
     }
 
     if (estadoEstudianteBackend !== null && estadoEstudianteBackend !== '') {
       const valNorm = String(estadoEstudianteBackend).toUpperCase().trim();
-      if (estadoEstudianteBackend === true || ['SI', 'TRUE', '1', 'AUTORIZADO'].includes(valNorm)) return true;
-      if (estadoEstudianteBackend === false || ['NO', 'FALSE', '0', 'DESAUTORIZADO'].includes(valNorm)) return false;
-    }
-
-    if (backendData.boletaVisibleState !== undefined) {
-      const globalNorm = String(backendData.boletaVisibleState).toUpperCase().trim();
-      if (globalNorm === 'NO' || globalNorm === 'FALSE') return false;
-      if (globalNorm === 'SI' || globalNorm === 'TRUE') return true;
+      if (valNorm === 'SI' || valNorm === 'TRUE') return true;
+      if (valNorm === 'NO' || valNorm === 'FALSE' || valNorm === 'DESAUTORIZADO') return false;
     }
   }
 
@@ -351,7 +363,6 @@ const mostrarDocumento = (documento) => {
     tabRecibo.classList.toggle('active', !mostrarBoleta);
     tabRecibo.setAttribute('aria-selected', String(!mostrarBoleta));
   }
-  if (!boletaAutorizadaActual && reciboPanel) reciboPanel.classList.remove('hidden');
   if (boletaBloqueada) boletaBloqueada.style.display = boletaAutorizadaActual ? 'none' : 'block';
 };
 
@@ -390,17 +401,17 @@ const renderizarReciboEstudiante = async () => {
     .filter(([, pago]) => pago.status === 'pago' || pago.status === 'abono')
     .sort(([, first], [, second]) => String(first.date || '').localeCompare(String(second.date || '')));
   
-  const periodos = { inscripcion: 'Inscripción', enero: 'Enero', febrero: 'Febrero', marzo: 'Marzo', abril: 'Abril', mayo: 'Mayo', junio: 'Junio', julio: 'Julio', agosto: 'Agosto', septiembre: 'Septiembre', octubre: 'Octubre', noviembre: 'Noviembre', diciembre: 'Diciembre' };
   const cedulaKey = obtenerClaveEstudiante(datosEstudianteActual, 'cedula');
   const costoPeriodo = periodo => periodo === 'inscripcion' ? 300 : 30;
-  const obtenerMontoPago = (periodo, pago) => parseFloat(pago.amount) || (pago.status === 'pago' ? costoPeriodo(periodo) : 0);
+  const obtenerMontoPago = (periodo, pago) => normalizarMontoPago(pago.amount) || (pago.status === 'pago' ? costoPeriodo(periodo) : 0);
+  const nombrePeriodo = periodo => PERIODOS_PAGO.find(item => item.id === periodo)?.label || periodo;
   
   document.getElementById('reciboEstudianteNombre').textContent = datosEstudianteActual.Nombre;
   document.getElementById('reciboEstudianteCedula').textContent = datosEstudianteActual[cedulaKey] || estudianteBackend?.cedula || 'No registrada';
   document.getElementById('reciboEstudianteAno').textContent = datosEstudianteActual[obtenerClaveEstudiante(datosEstudianteActual, 'ano')] || `${anoEstudiante}° Año`;
   document.getElementById('reciboEstudiantePagosBody').innerHTML = pagosFiltrados.length
-    ? pagosFiltrados.map(([periodo, pago]) => `<tr><td>${periodos[periodo] || 'Período actual'}${pago.status === 'abono' ? ' (Abono)' : ''}</td><td>${pago.date || 'Sin fecha'}</td><td class="recibo-amount">$${obtenerMontoPago(periodo, pago).toFixed(2)}</td></tr>`).join('')
-    : '<tr><td colspan="3" style="text-align: center;">No hay pagos registrados.</td></tr>';
+    ? pagosFiltrados.map(([periodo, pago]) => `<tr><td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #000000;">${nombrePeriodo(periodo)}${pago.status === 'abono' ? ' (Abono)' : ''}</td><td style="padding: 8px; border-bottom: 1px solid #e2e8f0; color: #000000;">${pago.date || 'Sin fecha'}</td><td class="recibo-amount">$${obtenerMontoPago(periodo, pago).toFixed(2)}</td></tr>`).join('')
+    : '<tr><td colspan="3" style="padding: 15px; text-align: center;">No hay pagos registrados.</td></tr>';
   document.getElementById('reciboEstudianteTotal').textContent = pagosFiltrados.reduce((total, [periodo, pago]) => total + obtenerMontoPago(periodo, pago), 0).toFixed(2);
 };
 
