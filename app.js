@@ -1,4 +1,3 @@
-const STORAGE_KEY = 'asistencia-colegio-data';
 const SENDER_WHATSAPP_NUMBER = '04142475155';
 const DEFAULT_PHONE = '04125486575';
 const DEFAULT_MESSAGE = 'La estudiante Arianny Suarez está asistente';
@@ -7,8 +6,7 @@ const API_SEND_WHATSAPP = `${API_BASE_URL}/api/send-whatsapp`;
 const API_SEND_EMAIL = `${API_BASE_URL}/api/send-email`;
 const API_STUDENTS = `${API_BASE_URL}/api/students`;
 const API_ATTENDANCE = `${API_BASE_URL}/api/attendance`;
-const DELETED_STUDENTS_KEY = 'asistencia-colegio-deleted-students';
-const deletedStudentIds = new Set(JSON.parse(localStorage.getItem(DELETED_STUDENTS_KEY) || '[]').map(String));
+const deletedStudentIds = new Set();
 
 const isRemovedStudent = (student) => deletedStudentIds.has(String(student?.id));
 
@@ -593,29 +591,54 @@ const normalizeStudentYearData = (data) => {
   return normalized;
 };
 
-const loadData = () => {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored) {
-    try {
-      const parsed = JSON.parse(stored);
-      if (parsed && (parsed.years || parsed.students)) {
-        attendanceData = normalizeStudentYearData(parsed);
-        selectedDate = parsed.selectedDate || selectedDate;
-        attendanceData.lastDailyEmailSentDate = parsed.lastDailyEmailSentDate || '';
-        attendanceData.boletaVisibleState = parsed.boletaVisibleState || 'NO';
-        return;
-      }
-    } catch (error) {
-      console.warn('Error leyendo storage, se recreará datos:', error);
-    }
+const loadData = async () => {
+  const emptyYears = {};
+  for (let year = 1; year <= 5; year += 1) {
+    emptyYears[year] = { students: [] };
   }
-  attendanceData = normalizeStudentYearData(getInitialData());
-  saveData();
+
+  attendanceData = normalizeStudentYearData({ years: emptyYears, selectedDate });
+  attendanceData.selectedDate = selectedDate;
+
+  try {
+    const response = await fetch(`${API_STUDENTS}?year=${encodeURIComponent(selectedYear || 1)}`, {
+      headers: { 'Cache-Control': 'no-cache' }
+    });
+    if (!response.ok) {
+      console.warn('No se pudo cargar estudiantes desde Supabase; se muestra estado vacío en memoria.');
+      return;
+    }
+    const data = await response.json().catch(() => []);
+    if (Array.isArray(data)) {
+      data.forEach((row) => {
+        const year = Number(row.year || selectedYear || 1);
+        attendanceData.years[year] = attendanceData.years[year] || { students: [] };
+        attendanceData.years[year].students.push({
+          id: row.id,
+          name: row.name,
+          cedula: row.cedula || '',
+          email: row.email || '',
+          phone: row.phone || '',
+          status: row.status || '',
+          paymentStatus: row.paymentStatus || row.payment_status || 'no_pago',
+          paidAmount: row.paidAmount ?? row.paid_amount ?? 0,
+          payments: row.payments || {},
+          BoletaVisible: row.BoletaVisible || row.boleta_visible || 'NO',
+          attendance: row.attendance || {},
+          attendanceByDate: row.attendanceByDate || {
+            [selectedDate]: Object.fromEntries(Object.entries(row.attendance || {}).map(([subject, entry]) => [subject, entry?.status || entry])),
+          },
+          year,
+        });
+      });
+    }
+  } catch (error) {
+    console.warn('No se pudo conectar con Supabase para cargar estudiantes:', error);
+  }
 };
 
 const saveData = () => {
   attendanceData.selectedDate = selectedDate;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(attendanceData));
 };
 
 const sincronizarEstudiante = async (student, method = 'POST') => {
@@ -750,10 +773,10 @@ const renderStudentList = () => {
       const r = await fetch(`${API_STUDENTS}?year=${encodeURIComponent(selectedYear)}`, {
         headers: { 'Cache-Control': 'no-cache' }
       });
-      
+
       if (r.ok && r.status !== 304) {
         const data = await r.json().catch(() => ([]));
-        if (Array.isArray(data) && data.length) {
+        if (Array.isArray(data)) {
           attendanceData.years[selectedYear] = attendanceData.years[selectedYear] || {};
           attendanceData.years[selectedYear].students = data.map((row) => ({
             id: row.id,
@@ -776,7 +799,7 @@ const renderStudentList = () => {
         }
       }
     } catch (e) {
-      console.warn('No se pudo cargar estudiantes desde la API, usando localStorage', e);
+      console.warn('No se pudo cargar estudiantes desde Supabase:', e);
     }
 
     if (!students || !students.length) {
@@ -924,7 +947,6 @@ const deleteStudent = (id) => {
   }
   attendanceData.years[selectedYear].students = getCurrentStudents().filter((student) => String(student.id) !== String(id));
   deletedStudentIds.add(String(id));
-  localStorage.setItem(DELETED_STUDENTS_KEY, JSON.stringify([...deletedStudentIds]));
   saveData();
   sincronizarEstudiante({ id }, 'DELETE');
   renderStudentList();
@@ -988,6 +1010,17 @@ const handleStudentFormSubmit = async (event) => {
     return;
   }
 
+  const resolvedYear = Number(selectedYear || document.getElementById('yearSelect')?.value || 1);
+  const targetYearKey = String(resolvedYear);
+
+  console.log('payload estudiante antes de guardar:', {
+    name,
+    email,
+    year: resolvedYear,
+    selectedYear,
+    yearSelect: document.getElementById('yearSelect')?.value,
+  });
+
   const newStudent = {
     id: window.crypto?.randomUUID?.() || `student-${Date.now()}`,
     name,
@@ -999,10 +1032,10 @@ const handleStudentFormSubmit = async (event) => {
     paidAmount: 0,
     attendance: {},
     BoletaVisible: 'NO',
-    year: Number(selectedYear),
+    year: resolvedYear,
   };
-  attendanceData.years[selectedYear] = attendanceData.years[selectedYear] || { students: [] };
-  attendanceData.years[selectedYear].students.push(newStudent);
+  attendanceData.years[targetYearKey] = attendanceData.years[targetYearKey] || { students: [] };
+  attendanceData.years[targetYearKey].students.push(newStudent);
   saveData();
   const savedStudent = await sincronizarEstudiante(newStudent);
   if (savedStudent?.id !== undefined) newStudent.id = savedStudent.id;
@@ -1597,3 +1630,4 @@ const init = () => {
 document.addEventListener('DOMContentLoaded', () => {
   init();
 });
+
