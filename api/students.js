@@ -59,10 +59,12 @@ module.exports = async function handler(req, res) {
 
     if (req.method === 'POST') {
       const body = await parseBody(req);
-      const { id, name, cedula, email, phone, year, BoletaVisible, paymentStatus, paidAmount, payments, attendance, attendanceByDate } = body || {};
+      const rawYear = body?.year ?? body?.selectedYear ?? body?.anio ?? body?.anio ?? 1;
+      const { id, name, cedula, email, phone, BoletaVisible, paymentStatus, paidAmount, payments, attendance, attendanceByDate } = body || {};
+      const year = Number(rawYear);
 
-      if (!name || !year) {
-        return res.status(400).json({ error: 'Falta nombre o año.' });
+      if (!name || Number.isNaN(year)) {
+        return res.status(400).json({ error: 'Falta nombre o el año es inválido.' });
       }
 
       const payload = {
@@ -71,7 +73,7 @@ module.exports = async function handler(req, res) {
         cedula: cedula || null,
         email: email || null,
         phone: phone || null,
-        year: Number(year),
+        year,
         status: body?.status || '',
         BoletaVisible: BoletaVisible === 'SI' ? 'SI' : 'NO',
         payment_status: paymentStatus || 'no_pago',

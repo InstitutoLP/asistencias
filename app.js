@@ -988,6 +988,9 @@ const handleStudentFormSubmit = async (event) => {
     return;
   }
 
+  const resolvedYear = Number(selectedYear || document.getElementById('yearSelect')?.value || 1);
+  const targetYearKey = String(resolvedYear);
+
   const newStudent = {
     id: window.crypto?.randomUUID?.() || `student-${Date.now()}`,
     name,
@@ -999,10 +1002,10 @@ const handleStudentFormSubmit = async (event) => {
     paidAmount: 0,
     attendance: {},
     BoletaVisible: 'NO',
-    year: Number(selectedYear),
+    year: resolvedYear,
   };
-  attendanceData.years[selectedYear] = attendanceData.years[selectedYear] || { students: [] };
-  attendanceData.years[selectedYear].students.push(newStudent);
+  attendanceData.years[targetYearKey] = attendanceData.years[targetYearKey] || { students: [] };
+  attendanceData.years[targetYearKey].students.push(newStudent);
   saveData();
   const savedStudent = await sincronizarEstudiante(newStudent);
   if (savedStudent?.id !== undefined) newStudent.id = savedStudent.id;
