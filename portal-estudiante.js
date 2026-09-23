@@ -380,14 +380,16 @@ const renderizarReciboEstudiante = async () => {
   
   const periodos = { inscripcion: 'Inscripción', enero: 'Enero', febrero: 'Febrero', marzo: 'Marzo', abril: 'Abril', mayo: 'Mayo', junio: 'Junio', julio: 'Julio', agosto: 'Agosto', septiembre: 'Septiembre', octubre: 'Octubre', noviembre: 'Noviembre', diciembre: 'Diciembre' };
   const cedulaKey = obtenerClaveEstudiante(datosEstudianteActual, 'cedula');
+  const costoPeriodo = periodo => periodo === 'inscripcion' ? 300 : 30;
+  const obtenerMontoPago = (periodo, pago) => parseFloat(pago.amount) || (pago.status === 'pago' ? costoPeriodo(periodo) : 0);
   
   document.getElementById('reciboEstudianteNombre').textContent = datosEstudianteActual.Nombre;
   document.getElementById('reciboEstudianteCedula').textContent = datosEstudianteActual[cedulaKey] || estudianteBackend?.cedula || 'No registrada';
   document.getElementById('reciboEstudianteAno').textContent = datosEstudianteActual[obtenerClaveEstudiante(datosEstudianteActual, 'ano')] || `${anoEstudiante}° Año`;
   document.getElementById('reciboEstudiantePagosBody').innerHTML = pagos.length
-    ? pagos.map(([periodo, pago]) => `<tr><td>${periodos[periodo] || periodo}${pago.status === 'abono' ? ' (Abono)' : ''}</td><td>${pago.date || 'Sin fecha'}</td><td class="recibo-amount">$${pago.amount || 0}</td></tr>`).join('')
+    ? pagos.map(([periodo, pago]) => `<tr><td>${periodos[periodo] || periodo}${pago.status === 'abono' ? ' (Abono)' : ''}</td><td>${pago.date || 'Sin fecha'}</td><td class="recibo-amount">$${obtenerMontoPago(periodo, pago).toFixed(2)}</td></tr>`).join('')
     : '<tr><td colspan="3" style="text-align: center;">No hay pagos registrados.</td></tr>';
-  document.getElementById('reciboEstudianteTotal').textContent = pagos.reduce((total, [, pago]) => total + (parseFloat(pago.amount) || 0), 0).toFixed(2);
+  document.getElementById('reciboEstudianteTotal').textContent = pagos.reduce((total, [periodo, pago]) => total + obtenerMontoPago(periodo, pago), 0).toFixed(2);
 };
 
 window.cerrarSesion = () => {
