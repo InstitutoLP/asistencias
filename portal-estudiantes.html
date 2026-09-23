@@ -299,6 +299,7 @@
     /* TABLA PRINCIPAL DE NOTAS */
     .tabla-notas {
       width: 100%;
+      table-layout: fixed;
       border-collapse: collapse;
       border: 1.5px solid #000000;
       font-size: 11pt;
@@ -692,6 +693,14 @@
 
       <!-- TABLA PRINCIPAL DE CALIFICACIONES -->
       <table class="tabla-notas">
+        <colgroup>
+          <col style="width: 36%;">
+          <col style="width: 6%;"><col style="width: 6%;"><col style="width: 6%;">
+          <col style="width: 7%;">
+          <col style="width: 5%;"><col style="width: 5%;"><col style="width: 5%;">
+          <col style="width: 6%;">
+          <col style="width: 6%;"><col style="width: 6%;"><col style="width: 6%;">
+        </colgroup>
         <thead>
           <tr>
             <th rowspan="2" class="col-area" style="text-align: center !important;">Áreas de Formación</th>
