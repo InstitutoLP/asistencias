@@ -950,8 +950,9 @@ const sendDailyEmailsNow = async () => {
 
     const sentCount = Array.isArray(result.sent) ? result.sent.length : 0;
     const failedCount = Number(result.failedEmailCount || 0);
-    const skippedCount = (result.missingStudents?.length || 0) + (result.missingEmails?.length || 0);
-    showToast(`Prueba finalizada: ${sentCount} enviado(s), ${failedCount} fallido(s), ${skippedCount} omitido(s).`);
+    const missingStudentCount = result.missingStudents?.length || 0;
+    const missingEmailCount = result.missingEmails?.length || 0;
+    showToast(`Prueba: ${sentCount} enviado(s), ${failedCount} fallido(s), ${missingStudentCount} estudiante(s) no encontrado(s), ${missingEmailCount} sin correo.`);
   } catch (error) {
     showToast(error.message || 'No se pudieron enviar los correos.');
   } finally {
