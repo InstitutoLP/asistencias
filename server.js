@@ -249,9 +249,9 @@ const writeAttendanceToSupabase = async ({ id, name, cedula, email, phone, year,
   return Array.isArray(insertResult) && insertResult.length ? insertResult[0] : insertResult;
 };
 
-// Hora de envío diaria en Venezuela (por defecto 16:50)
-const DAILY_SEND_HOUR = Number(process.env.DAILY_SEND_HOUR || 16);
-const DAILY_SEND_MINUTE = Number(process.env.DAILY_SEND_MINUTE || 50);
+// Hora de envío diaria en Venezuela (por defecto 17:05)
+const DAILY_SEND_HOUR = Number(process.env.DAILY_SEND_HOUR || 17);
+const DAILY_SEND_MINUTE = Number(process.env.DAILY_SEND_MINUTE || 5);
 const getNextNoonDelay = () => {
   const now = new Date();
   const nextSend = new Date(now);
