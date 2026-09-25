@@ -316,6 +316,40 @@ const handleLogin = (e) => {
   }
 };
 
+const setupPasswordReveal = () => {
+  const passwordInput = document.getElementById('loginPassword');
+  const revealButton = document.getElementById('revealLoginPassword');
+  if (!passwordInput || !revealButton) return;
+
+  const setPasswordVisible = (visible) => {
+    passwordInput.type = visible ? 'text' : 'password';
+    revealButton.setAttribute('aria-pressed', String(visible));
+    revealButton.setAttribute('aria-label', visible ? 'Suelta para ocultar la contraseña' : 'Mantén presionado para ver la contraseña');
+  };
+
+  revealButton.addEventListener('pointerdown', (event) => {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    event.preventDefault();
+    if (revealButton.setPointerCapture) revealButton.setPointerCapture(event.pointerId);
+    setPasswordVisible(true);
+  });
+  revealButton.addEventListener('pointerup', () => setPasswordVisible(false));
+  revealButton.addEventListener('pointercancel', () => setPasswordVisible(false));
+  revealButton.addEventListener('lostpointercapture', () => setPasswordVisible(false));
+  revealButton.addEventListener('blur', () => setPasswordVisible(false));
+  revealButton.addEventListener('keydown', (event) => {
+    if (event.key !== ' ' && event.key !== 'Enter') return;
+    event.preventDefault();
+    setPasswordVisible(true);
+  });
+  revealButton.addEventListener('keyup', (event) => {
+    if (event.key === ' ' || event.key === 'Enter') setPasswordVisible(false);
+  });
+  document.addEventListener('pointerup', () => setPasswordVisible(false));
+  document.addEventListener('pointercancel', () => setPasswordVisible(false));
+  window.addEventListener('blur', () => setPasswordVisible(false));
+};
+
 const miFormulario = document.getElementById('loginForm');
 if (miFormulario) {
   miFormulario.addEventListener('submit', handleLogin);
@@ -1688,6 +1722,7 @@ const init = () => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+  setupPasswordReveal();
   init();
 });
 

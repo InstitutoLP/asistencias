@@ -315,7 +315,16 @@
 
           <div class="form-row login-field">
             <label for="loginPassword">Contraseña</label>
-            <input type="password" id="loginPassword" placeholder="Escribe tu contraseña" required />
+            <div class="login-password-control">
+              <input type="password" id="loginPassword" placeholder="Escribe tu contraseña" required />
+              <button id="revealLoginPassword" class="login-password-reveal" type="button" aria-label="Mantén presionado para ver la contraseña" aria-pressed="false" title="Mantén presionado para ver la contraseña">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
+                  <circle cx="12" cy="12" r="3" />
+                  <path class="password-eye-slash" d="m3 3 18 18" />
+                </svg>
+              </button>
+            </div>
           </div>
 
           <div class="form-actions">
