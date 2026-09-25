@@ -69,16 +69,8 @@ module.exports = async function handler(req, res) {
       const students = Array.isArray(data) ? data : [];
       const attendanceDate = req.query?.date;
       if (attendanceDate && students.length) {
-        const formattedIds = students
-          .map((student) => {
-            const id = student.id;
-            if (id === null || id === undefined) return '';
-            return isNaN(Number(id)) ? `'${String(id).replace(/'/g, "''")}'` : String(id);
-          })
-          .filter(Boolean)
-          .join(',');
         const attendanceResponse = await supabaseFetch(
-          `/attendances?date=eq.${encodeURIComponent(String(attendanceDate))}&student_id=in.(${formattedIds})&select=student_id,subject,status`
+          `/attendances?date=eq.${encodeURIComponent(String(attendanceDate))}&select=student_id,subject,status,email_sent_at`
         );
         const attendanceRows = await attendanceResponse.json().catch(() => []);
         if (!attendanceResponse.ok) {
@@ -88,13 +80,16 @@ module.exports = async function handler(req, res) {
         }
 
         const studentsById = new Map(students.map((student) => [String(student.id), student]));
+        students.forEach((student) => {
+          const attendanceByDate = student.attendance_by_date || student.attendanceByDate || {};
+          attendanceByDate[attendanceDate] = {};
+          student.attendance_by_date = attendanceByDate;
+        });
         attendanceRows.forEach((row) => {
           const student = studentsById.get(String(row.student_id));
-          if (!student) return;
-          const attendanceByDate = student.attendance_by_date || student.attendanceByDate || {};
-          attendanceByDate[attendanceDate] = attendanceByDate[attendanceDate] || {};
+          if (!student || row.email_sent_at) return;
+          const attendanceByDate = student.attendance_by_date;
           attendanceByDate[attendanceDate][row.subject] = row.status;
-          student.attendance_by_date = attendanceByDate;
         });
       }
 

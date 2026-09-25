@@ -942,6 +942,7 @@ const sendDailyEmailsNow = async () => {
     });
     const result = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(result.error || `Error ${response.status} al enviar los correos`);
+    if (Array.isArray(result.sent) && result.sent.length) renderStudentList();
 
     if (result.message) {
       showToast(result.message);

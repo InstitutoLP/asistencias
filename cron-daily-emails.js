@@ -77,6 +77,23 @@ const sendEmail = async (student, attendances) => {
   return info;
 };
 
+const markAttendancesAsSent = async (attendances) => {
+  const ids = attendances.map((item) => item.id).filter((id) => id !== null && id !== undefined);
+  if (!ids.length || ids.length !== attendances.length) {
+    throw new Error('No se pudieron identificar las asistencias incluidas en el correo.');
+  }
+
+  const response = await supabaseFetch(`/attendances?id=in.(${ids.join(',')})&email_sent_at=is.null`, {
+    method: 'PATCH',
+    headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify({ email_sent_at: new Date().toISOString() }),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.message || error.error || 'No se pudo registrar el envío de asistencia.');
+  }
+};
+
 const getToday = () => new Date().toISOString().slice(0, 10);
 
 module.exports = async (req, res) => {
@@ -89,7 +106,7 @@ module.exports = async (req, res) => {
   try {
     const today = getToday();
     // obtener asistencias del día
-    const attendancesResponse = await supabaseFetch(`/attendances?date=eq.${encodeURIComponent(today)}`);
+    const attendancesResponse = await supabaseFetch(`/attendances?date=eq.${encodeURIComponent(today)}&email_sent_at=is.null`);
     const attendances = await attendancesResponse.json();
     if (!attendancesResponse.ok) {
       throw new Error(attendances.message || attendances.error || 'No se pudieron consultar las asistencias de hoy.');
@@ -140,6 +157,7 @@ module.exports = async (req, res) => {
       }
       try {
         await sendEmail(student, entries);
+        await markAttendancesAsSent(entries);
         sent.push(student.email);
       } catch (e) {
         console.error('cron: error sending to', student.email, e);

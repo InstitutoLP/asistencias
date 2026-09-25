@@ -118,6 +118,7 @@ module.exports = async function handler(req, res) {
       subject,
       subject_label: subjectLabel || subject,
       status,
+      email_sent_at: null,
     };
 
     const attendanceInsert = await supabaseFetch(`/attendances?on_conflict=student_id,date,subject`, {
