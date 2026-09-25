@@ -102,20 +102,14 @@ module.exports = async (req, res) => {
 
     const studentIds = [...new Set(attendances.map((item) => item.student_id))];
     console.log('cron: studentIds raw=', studentIds);
-    // Formatea los IDs para la consulta REST de Supabase.
-    // Si los IDs no son numéricos, deben ir entre comillas simples: in.('id1','id2')
-    const formattedIds = studentIds
-      .map((id) => {
-        if (id === null || id === undefined) return '';
-        return isNaN(Number(id)) ? `'${String(id).replace(/'/g, "''")}'` : String(id);
-      })
-      .filter(Boolean)
-      .join(',');
-    const studentsResponse = await supabaseFetch(`/students?id=in.(${formattedIds})`);
+    const studentsResponse = await supabaseFetch('/students?select=id,name,email,year');
     const students = await studentsResponse.json();
     console.log('cron: students fetched count=', Array.isArray(students) ? students.length : 0);
     if (!studentsResponse.ok) {
-      console.error('cron: studentsResponse not ok', studentsResponse.status);
+      throw new Error(students.message || students.error || 'No se pudieron consultar los estudiantes.');
+    }
+    if (!Array.isArray(students)) {
+      throw new Error('Supabase devolvió un formato inválido al consultar los estudiantes.');
     }
     const studentMap = parseStudentRecords(students);
 
@@ -156,7 +150,7 @@ module.exports = async (req, res) => {
     const result = { success: true, sent, failedEmailCount: emailFailures.length, missingStudents, missingEmails };
     if (req.query && (req.query.debug === '1' || req.query.debug === 'true')) {
       // include intermediate data for debugging
-      result.debug = { attendancesCount: attendances.length, studentIds, formattedIds, studentsCount: students.length };
+      result.debug = { attendancesCount: attendances.length, studentIds, studentsCount: students.length };
     }
 
     return res.json(result);
