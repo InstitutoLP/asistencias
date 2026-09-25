@@ -564,7 +564,7 @@ const normalizeStudentYearData = (data) => {
           paidAmount: student.paidAmount || 0,
           BoletaVisible: String(student.BoletaVisible || student.boleta_visible || 'NO').toUpperCase() === 'SI' ? 'SI' : 'NO',
           attendance: student.attendance || {},
-          attendanceByDate: student.attendanceByDate || {
+          attendanceByDate: student.attendanceByDate || student.attendance_by_date || {
             [selectedDate]: Object.fromEntries(Object.entries(student.attendance || {}).map(([subject, entry]) => [subject, entry?.status || entry])),
           },
         });
@@ -580,7 +580,7 @@ const normalizeStudentYearData = (data) => {
       paidAmount: student.paidAmount || 0,
       BoletaVisible: String(student.BoletaVisible || student.boleta_visible || 'NO').toUpperCase() === 'SI' ? 'SI' : 'NO',
       attendance: student.attendance || {},
-      attendanceByDate: student.attendanceByDate || {
+      attendanceByDate: student.attendanceByDate || student.attendance_by_date || {
         [selectedDate]: Object.fromEntries(Object.entries(student.attendance || {}).map(([subject, entry]) => [subject, entry?.status || entry])),
       },
       year: Number(student.year || year),
@@ -631,7 +631,7 @@ const cargarTodosLosEstudiantesDesdeSupabase = async () => {
         payments: row.payments || {},
         BoletaVisible: row.BoletaVisible || row.boleta_visible || 'NO',
         attendance: row.attendance || {},
-        attendanceByDate: row.attendanceByDate || {
+        attendanceByDate: row.attendance_by_date || row.attendanceByDate || {
           [selectedDate]: Object.fromEntries(Object.entries(row.attendance || {}).map(([subject, entry]) => [subject, entry?.status || entry])),
         },
         year,
@@ -696,7 +696,7 @@ const sincronizarAsistencia = async (student, status) => {
   } catch (error) {
     console.warn('No se pudo sincronizar la asistencia con el servidor:', error);
     showToast('No se pudo guardar la asistencia en la nube');
-    return { emailSent: false, emailError: error.message || 'no se pudo conectar con el servidor' };
+    return { success: false, error: error.message || 'no se pudo conectar con el servidor' };
   }
 };
 
@@ -779,7 +779,7 @@ const renderStudentList = () => {
   let students = getCurrentStudents().filter((student) => !isRemovedStudent(student));
   (async () => {
     try {
-      const r = await fetch(`${API_STUDENTS}?year=${encodeURIComponent(selectedYear)}`, {
+      const r = await fetch(`${API_STUDENTS}?year=${encodeURIComponent(selectedYear)}&date=${encodeURIComponent(selectedDate)}`, {
         headers: { 'Cache-Control': 'no-cache' }
       });
 
@@ -799,7 +799,7 @@ const renderStudentList = () => {
             payments: row.payments || {},
             BoletaVisible: row.BoletaVisible || row.boleta_visible || 'NO',
             attendance: row.attendance || {},
-            attendanceByDate: row.attendanceByDate || {
+            attendanceByDate: row.attendance_by_date || row.attendanceByDate || {
               [selectedDate]: Object.fromEntries(Object.entries(row.attendance || {}).map(([subject, entry]) => [subject, entry?.status || entry])),
             },
             year: Number(selectedYear),
@@ -977,11 +977,10 @@ const setStudentStatus = async (id, status) => {
   const result = await sincronizarAsistencia(student, status);
   renderStudentList();
  
-  if (status === 'asistente') {
-    showAttendanceModal(result?.emailSent ? 'Se marcó asistente y se envió el correo' : `Se marcó asistente; ${result?.emailError || 'correo no enviado'}`);
-  } else if (status === 'inasistente') {
-    showAttendanceModal(result?.emailSent ? 'Se marcó inasistente y se envió el correo' : `Se marcó inasistente; ${result?.emailError || 'correo no enviado'}`);
-  }
+  const statusLabel = status === 'asistente' ? 'asistente' : 'inasistente';
+  showAttendanceModal(result?.success
+    ? `Se marcó ${statusLabel}. Se incluirá en el resumen diario por materias.`
+    : `Se marcó ${statusLabel}, pero no se pudo guardar en la nube: ${result?.error || 'error de conexión'}`);
 };
 
 const deleteStudent = (id) => {

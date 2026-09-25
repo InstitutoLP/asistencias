@@ -65,7 +65,40 @@ module.exports = async function handler(req, res) {
       if (!response.ok) {
         return res.status(response.status).json({ error: data.message || data.error || 'No se pudo consultar estudiantes.' });
       }
-      return res.status(200).json(Array.isArray(data) ? data : []);
+
+      const students = Array.isArray(data) ? data : [];
+      const attendanceDate = req.query?.date;
+      if (attendanceDate && students.length) {
+        const formattedIds = students
+          .map((student) => {
+            const id = student.id;
+            if (id === null || id === undefined) return '';
+            return isNaN(Number(id)) ? `'${String(id).replace(/'/g, "''")}'` : String(id);
+          })
+          .filter(Boolean)
+          .join(',');
+        const attendanceResponse = await supabaseFetch(
+          `/attendances?date=eq.${encodeURIComponent(String(attendanceDate))}&student_id=in.(${formattedIds})&select=student_id,subject,status`
+        );
+        const attendanceRows = await attendanceResponse.json().catch(() => []);
+        if (!attendanceResponse.ok) {
+          return res.status(attendanceResponse.status).json({
+            error: attendanceRows.message || attendanceRows.error || 'No se pudo consultar la asistencia por fecha.',
+          });
+        }
+
+        const studentsById = new Map(students.map((student) => [String(student.id), student]));
+        attendanceRows.forEach((row) => {
+          const student = studentsById.get(String(row.student_id));
+          if (!student) return;
+          const attendanceByDate = student.attendance_by_date || student.attendanceByDate || {};
+          attendanceByDate[attendanceDate] = attendanceByDate[attendanceDate] || {};
+          attendanceByDate[attendanceDate][row.subject] = row.status;
+          student.attendance_by_date = attendanceByDate;
+        });
+      }
+
+      return res.status(200).json(students);
     }
 
     if (req.method === 'POST') {

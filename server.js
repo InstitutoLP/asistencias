@@ -315,30 +315,6 @@ const sendEmailToStudent = async (student) => {
   }
 };
 
-const sendAttendanceNotification = async ({ student, subjectLabel, status, date }) => {
-  if (!GMAIL_USER || !GMAIL_PASS) return { sent: false, error: 'Gmail no está configurado en el servidor.' };
-  if (!student.email) return { sent: false, error: 'El estudiante no tiene un correo registrado.' };
-
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user: GMAIL_USER, pass: GMAIL_PASS },
-  });
-  const attendanceText = status === 'asistente' ? 'ASISTENTE' : 'INASISTENTE';
-
-  try {
-    await transporter.sendMail({
-      from: `"Sistema Escolar" <${EMAIL_FROM}>`,
-      to: student.email,
-      subject: `Registro de asistencia: ${student.name} - ${subjectLabel}`,
-      text: `Estimado/a representante,\n\nSe informa que el/la estudiante ${student.name} fue marcado/a como ${attendanceText} en la materia ${subjectLabel} del Año ${student.year}, correspondiente a la fecha ${date}.\n\nSaludos cordiales,\nSistema de Gestión Escolar`,
-    });
-    return { sent: true };
-  } catch (error) {
-    console.error(`Error enviando notificación de asistencia a ${student.email}:`, error);
-    return { sent: false, error: 'Gmail rechazó el envío. Verifica la contraseña de aplicación.' };
-  }
-};
-
 const sendDailyAttendanceEmails = async () => {
   const data = loadAttendanceData();
   const today = new Date().toISOString().slice(0, 10);
@@ -586,8 +562,7 @@ app.post('/api/attendance', async (req, res) => {
       data.students[id] = currentStudent;
       saveAttendanceData(data);
 
-      const emailResult = await sendAttendanceNotification({ student: currentStudent, subjectLabel: subjectLabel || subject, status, date: attendanceDate });
-      return res.json({ ...currentStudent, emailSent: emailResult.sent, emailError: emailResult.error || '' });
+      return res.json({ ...currentStudent, success: true });
     }
 
     const data = loadAttendanceData();
@@ -605,8 +580,7 @@ app.post('/api/attendance', async (req, res) => {
     data.students[id] = currentStudent;
     saveAttendanceData(data);
 
-    const emailResult = await sendAttendanceNotification({ student: currentStudent, subjectLabel: subjectLabel || subject, status, date: attendanceDate });
-    return res.json({ ...currentStudent, emailSent: emailResult.sent, emailError: emailResult.error || '' });
+    return res.json({ ...currentStudent, success: true });
   } catch (error) {
     console.error('Error guardando asistencia:', error);
     return res.status(500).json({ error: error.message || 'No se pudo guardar la asistencia.' });

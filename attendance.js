@@ -4,8 +4,6 @@
 // - students: id (bigint, pk), name (text), cedula (text), email (text), phone (text), year (int)
 // - attendances: id (bigint, pk), student_id (bigint), date (date), subject (text), subject_label (text), status (text)
 
-const nodemailer = require('nodemailer');
-
 const SUPABASE_URL = (process.env.SUPABASE_URL || '')
   .replace(/\/rest\/v1\/?$/, '')
   .replace(/\/$/, '');
@@ -44,32 +42,6 @@ const parseJsonBody = async (req) => {
     });
     req.on('error', reject);
   });
-};
-
-const sendAttendanceNotification = async ({ name, email, year, subjectLabel, status, date }) => {
-  const gmailUser = process.env.GMAIL_USER;
-  const gmailPass = process.env.GMAIL_PASS;
-  if (!gmailUser || !gmailPass) return { sent: false, error: 'Gmail no está configurado en Vercel.' };
-  if (!email) return { sent: false, error: 'El estudiante no tiene un correo registrado.' };
-
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user: gmailUser, pass: gmailPass },
-  });
-  const attendanceText = status === 'asistente' ? 'ASISTENTE' : 'INASISTENTE';
-
-  try {
-    await transporter.sendMail({
-      from: `"Sistema Escolar" <${process.env.EMAIL_FROM || gmailUser}>`,
-      to: email,
-      subject: `Registro de asistencia: ${name} - ${subjectLabel}`,
-      text: `Estimado/a representante,\n\nSe informa que el/la estudiante ${name} fue marcado/a como ${attendanceText} en la materia ${subjectLabel} del Año ${year}, correspondiente a la fecha ${date}.\n\nSaludos cordiales,\nSistema de Gestión Escolar`,
-    });
-    return { sent: true };
-  } catch (error) {
-    console.error(`Error enviando notificación de asistencia a ${email}:`, error);
-    return { sent: false, error: 'Gmail rechazó el envío. Verifica la contraseña de aplicación.' };
-  }
 };
 
 module.exports = async (req, res) => {
@@ -151,16 +123,7 @@ module.exports = async (req, res) => {
       }
     }
 
-    const emailResult = await sendAttendanceNotification({
-      name,
-      email,
-      year: Number(year),
-      subjectLabel: subjectLabel || subject,
-      status,
-      date: attendanceDate,
-    });
-
-    res.json({ success: true, emailSent: emailResult.sent, emailError: emailResult.error || '' });
+    res.json({ success: true });
   } catch (error) {
     console.error('attendance API error:', error);
     res.status(500).json({ error: error.message || String(error) });

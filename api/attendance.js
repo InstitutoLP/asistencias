@@ -1,5 +1,3 @@
-const nodemailer = require('nodemailer');
-
 const SUPABASE_URL = (process.env.SUPABASE_URL || '').replace(/\/rest\/v1\/?$/, '').replace(/\/$/, '');
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
 
@@ -32,33 +30,6 @@ const supabaseFetch = async (path, options = {}) => {
   };
 
   return fetch(url, { ...options, headers });
-};
-
-const sendAttendanceNotification = async ({ name, email, year, subjectLabel, status, date }) => {
-  const gmailUser = process.env.GMAIL_USER;
-  const gmailPass = process.env.GMAIL_PASS;
-  if (!gmailUser || !gmailPass) {
-    return { sent: false, error: 'Faltan GMAIL_USER o GMAIL_PASS en las variables de Vercel.' };
-  }
-
-  const attendanceText = status === 'asistente' ? 'ASISTENTE' : 'INASISTENTE';
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user: gmailUser, pass: gmailPass },
-  });
-
-  try {
-    await transporter.sendMail({
-      from: `"Sistema Escolar" <${process.env.EMAIL_FROM || gmailUser}>`,
-      to: email,
-      subject: `Registro de asistencia: ${name} - ${subjectLabel}`,
-      text: `Estimado/a representante,\n\nSe informa que el/la estudiante ${name} fue marcado/a como ${attendanceText} en la materia ${subjectLabel} del Año ${year}, correspondiente a la fecha ${date}.\n\nSaludos cordiales,\nSistema de Gestión Escolar`,
-    });
-    return { sent: true };
-  } catch (error) {
-    console.error('Error enviando correo de asistencia:', error.message);
-    return { sent: false, error: 'Gmail rechazó el envío. Verifica GMAIL_USER y la contraseña de aplicación GMAIL_PASS.' };
-  }
 };
 
 module.exports = async function handler(req, res) {
@@ -95,13 +66,6 @@ module.exports = async function handler(req, res) {
       email,
       phone: phone || null,
       year: Number(year),
-      status: '',
-      BoletaVisible: 'NO',
-      payment_status: 'no_pago',
-      paid_amount: 0,
-      payments: {},
-      attendance: {},
-      attendance_by_date: {},
     };
 
     const studentUpsert = await supabaseFetch('/students?on_conflict=id', {
@@ -169,22 +133,11 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    const emailResult = await sendAttendanceNotification({
-      name,
-      email,
-      year: Number(year),
-      subjectLabel: subjectLabel || subject,
-      status,
-      date: attendanceDate,
-    });
-
     return res.status(200).json({
       success: true,
       student: Array.isArray(patchedStudent) ? patchedStudent[0] : patchedStudent,
       attendance: Array.isArray(attendanceResult) ? attendanceResult[0] : attendanceResult,
       date: attendanceDate,
-      emailSent: emailResult.sent,
-      emailError: emailResult.error || '',
     });
   } catch (error) {
     return res.status(500).json({
