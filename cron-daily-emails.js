@@ -126,6 +126,7 @@ module.exports = async (req, res) => {
     }, {});
 
     const sent = [];
+    const emailFailures = [];
     const missingStudents = [];
     const missingEmails = [];
     for (const [studentId, entries] of Object.entries(grouped)) {
@@ -148,10 +149,11 @@ module.exports = async (req, res) => {
         sent.push(student.email);
       } catch (e) {
         console.error('cron: error sending to', student.email, e);
+        emailFailures.push(student.id);
       }
     }
 
-    const result = { success: true, sent, missingStudents, missingEmails };
+    const result = { success: true, sent, failedEmailCount: emailFailures.length, missingStudents, missingEmails };
     if (req.query && (req.query.debug === '1' || req.query.debug === 'true')) {
       // include intermediate data for debugging
       result.debug = { attendancesCount: attendances.length, studentIds, formattedIds, studentsCount: students.length };

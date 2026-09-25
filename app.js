@@ -6,6 +6,7 @@ const API_SEND_WHATSAPP = `${API_BASE_URL}/api/send-whatsapp`;
 const API_SEND_EMAIL = `${API_BASE_URL}/api/send-email`;
 const API_STUDENTS = `${API_BASE_URL}/api/students`;
 const API_ATTENDANCE = `${API_BASE_URL}/api/attendance`;
+const API_SEND_DAILY_EMAILS = `${API_BASE_URL}/api/cron-daily-emails`;
 const deletedStudentIds = new Set();
 
 const isRemovedStudent = (student) => deletedStudentIds.has(String(student?.id));
@@ -216,11 +217,13 @@ const canMarkAttendance = () => !isProfessorNestor();
 
 const syncStudentManagementControls = () => {
   const mainBtn = document.getElementById('mainAddStudent');
+  const sendDailyEmailsBtn = document.getElementById('sendDailyEmailsNow');
   const landingBtn = document.getElementById('landingAddStudent');
   const btnAdminNestor = document.getElementById('btnModuloAdminNestor');
   const reportsBtn = document.getElementById('btnVerReportes');
 
   if (mainBtn) mainBtn.style.display = canManageStudents() ? 'inline-block' : 'none';
+  if (sendDailyEmailsBtn) sendDailyEmailsBtn.style.display = canManageStudents() ? 'inline-block' : 'none';
   if (landingBtn) landingBtn.style.display = canManageStudents() ? 'inline-block' : 'none';
   if (reportsBtn) reportsBtn.style.display = canViewReports() ? 'inline-block' : '';
   
@@ -921,6 +924,40 @@ const updateLastEmailStatus = () => {
     return;
   }
   lastEmailStatusEl.textContent = `Último resumen diario enviado: ${attendanceData.lastDailyEmailSentDate}`;
+};
+
+const sendDailyEmailsNow = async () => {
+  const button = document.getElementById('sendDailyEmailsNow');
+  if (!button || !confirm('Se enviará ahora el resumen de asistencia de hoy a todos los estudiantes con registros. El envío programado seguirá activo y podría enviar esos correos nuevamente. ¿Continuar?')) return;
+
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.textContent = 'Enviando...';
+
+  try {
+    const response = await fetch(API_SEND_DAILY_EMAILS, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || `Error ${response.status} al enviar los correos`);
+
+    if (result.message) {
+      showToast(result.message);
+      return;
+    }
+
+    const sentCount = Array.isArray(result.sent) ? result.sent.length : 0;
+    const failedCount = Number(result.failedEmailCount || 0);
+    const skippedCount = (result.missingStudents?.length || 0) + (result.missingEmails?.length || 0);
+    showToast(`Prueba finalizada: ${sentCount} enviado(s), ${failedCount} fallido(s), ${skippedCount} omitido(s).`);
+  } catch (error) {
+    showToast(error.message || 'No se pudieron enviar los correos.');
+  } finally {
+    button.disabled = false;
+    button.textContent = originalText;
+  }
 };
 
 const setStudentStatus = async (id, status) => {
@@ -1634,6 +1671,8 @@ const init = () => {
   if (exportWordBtn) exportWordBtn.addEventListener('click', exportCurrentToPdf);
   if (landingAddStudentBtn) landingAddStudentBtn.addEventListener('click', handleLandingAddStudent);
   if (mainAddStudentBtn) mainAddStudentBtn.addEventListener('click', () => openAddStudentView('main'));
+  const sendDailyEmailsBtn = document.getElementById('sendDailyEmailsNow');
+  if (sendDailyEmailsBtn) sendDailyEmailsBtn.addEventListener('click', sendDailyEmailsNow);
   if (cerrarSesionBtn) cerrarSesionBtn.addEventListener('click', cerrarSesion);
   if (closeAddStudentBtn) closeAddStudentBtn.addEventListener('click', closeAddStudentView);
   if (backToLandingBtn) {
