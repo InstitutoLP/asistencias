@@ -52,10 +52,10 @@ Aquí está el resumen diario de asistencia del/la estudiante ${student.name} pa
 Materias:
 ${lines.join('\n')}
 
-Este correo se envía automáticamente a la 1:20 PM con la asistencia registrada hasta ese momento.
+Este correo se envía automáticamente a las 4:45 PM, hora de Venezuela, con la asistencia registrada hasta ese momento.
 
 Saludos cordiales,
-Sistema de Gestión Escolar`;
+Sistema de Gestión del Libertad`;
 };
 
 const sendEmail = async (student, attendances) => {

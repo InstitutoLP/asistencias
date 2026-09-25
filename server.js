@@ -249,9 +249,9 @@ const writeAttendanceToSupabase = async ({ id, name, cedula, email, phone, year,
   return Array.isArray(insertResult) && insertResult.length ? insertResult[0] : insertResult;
 };
 
-// Configurar hora de envío diaria en el servidor (por defecto 13:15)
-const DAILY_SEND_HOUR = Number(process.env.DAILY_SEND_HOUR || 13);
-const DAILY_SEND_MINUTE = Number(process.env.DAILY_SEND_MINUTE || 20);
+// Hora de envío diaria en Venezuela (por defecto 16:45)
+const DAILY_SEND_HOUR = Number(process.env.DAILY_SEND_HOUR || 16);
+const DAILY_SEND_MINUTE = Number(process.env.DAILY_SEND_MINUTE || 45);
 const getNextNoonDelay = () => {
   const now = new Date();
   const nextSend = new Date(now);
@@ -278,10 +278,10 @@ Aquí está el resumen diario de asistencia del/la estudiante ${student.name} pa
 Materias:
 ${rows.join('\n')}
 
-Este correo se envía automáticamente a las ${DAILY_SEND_HOUR}:${String(DAILY_SEND_MINUTE).padStart(2,'0')} con la asistencia registrada hasta ese momento.
+Este correo se envía automáticamente a las ${DAILY_SEND_HOUR}:${String(DAILY_SEND_MINUTE).padStart(2,'0')} hora de Venezuela con la asistencia registrada hasta ese momento.
 
 Saludos cordiales,
-Sistema de Gestión Escolar`;
+Sistema de Gestión del Libertad`;
 };
 
 const sendEmailToStudent = async (student) => {
