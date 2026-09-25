@@ -251,7 +251,7 @@ const writeAttendanceToSupabase = async ({ id, name, cedula, email, phone, year,
 
 // Hora de envío diaria en Venezuela (por defecto 17:05)
 const DAILY_SEND_HOUR = Number(process.env.DAILY_SEND_HOUR || 17);
-const DAILY_SEND_MINUTE = Number(process.env.DAILY_SEND_MINUTE || 15);
+const DAILY_SEND_MINUTE = Number(process.env.DAILY_SEND_MINUTE || 23);
 const getNextNoonDelay = () => {
   const now = new Date();
   const nextSend = new Date(now);
