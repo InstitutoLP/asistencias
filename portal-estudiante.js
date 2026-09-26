@@ -1,5 +1,5 @@
 // CONFIGURACIÓN DE ENLACES
-const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/e/2PACX-1vR2dzgdf5bWl2KBYcGTWxjjiIk6qKQ5NWjde1eyiv0Gy0velu_8JTPdu8O8WicEJQ/pub?output=csv`;
+const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/e/2PACX-1vR2dzgdf5bWl2KBYcGTWxjjiIk6qKQ5NWjde1eyiv0Gy0velu_8JTPdu8O8WicEJQ/pub?gid=1225127430&single=true&output=csv`;
 const API_BASE_URL = window.location.protocol === 'file:' ? 'http://localhost:3000' : window.location.origin;
 const API_SYNC_STATE = `${API_BASE_URL}/api/sync-state`; // Endpoint hacia la base de datos
 const API_STUDENTS = `${API_BASE_URL}/api/students`;
