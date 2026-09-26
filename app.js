@@ -57,13 +57,6 @@ const TEACHERS = {
     allowedSubjects: ['matematicas'],
     puedeAgregarEstudiantes: false
   },
-  "Rubén Lyon": {
-    password: "16706376",
-    name: "Prof: Rubén",
-    allowedYears: [3, 4, 5], 
-    allowedSubjects: ['matematicas','quimica'],
-    puedeAgregarEstudiantes: false
-  },
 "Nancy Figueredo": {
     password: "11851547",
     name: "Prof: Nancy",
@@ -71,10 +64,10 @@ const TEACHERS = {
     allowedSubjects: ['biologia','ciencias-tierra'],
     puedeAgregarEstudiantes: false
   },
-  "Yubisay Hernandez": {
-    password: "15039005",
-    name: "Prof: Yubisay",
-    allowedYears: [1, 2,3, 4, 5], 
+  "Yudisay Hernández": {
+    password: "15093005",
+    name: "Prof: Yudisay",
+    allowedYears: [1, 2, 3, 4, 5], 
     allowedSubjects: ['castellano'],
     puedeAgregarEstudiantes: false
   },
@@ -90,13 +83,6 @@ const TEACHERS = {
     name: "Prof: Jhoanna",
     allowedYears: [1, 2, 3, 4, 5], 
     allowedSubjects: ['frances'],
-    puedeAgregarEstudiantes: false
-  },
-  "José Rengifo": {
-    password: "17348702",
-    name: "Prof: José",
-    allowedYears: [1, 2, 3, 4, 5], 
-    allowedSubjects: ['educacion-fisica', 'formacion-soberania'],
     puedeAgregarEstudiantes: false
   },
   "Lidis Hernández": {
@@ -120,11 +106,32 @@ const TEACHERS = {
     allowedSubjects: ['ghc'],
     puedeAgregarEstudiantes: false
   },
-  "María Rodríguez": {
-    password: "15551727",
-    name: "Prof: María",
+  "Oriana Blanco": {
+    password: "21133488",
+    name: "Prof: Oriana",
     allowedYears: [1, 2], 
     allowedSubjects: ['arte-patrimonio'],
+    puedeAgregarEstudiantes: false
+  },
+  "Leidy González": {
+    password: "20658551",
+    name: "Prof: Leidy",
+    allowedYears: [3, 4, 5], 
+    allowedSubjects: ['quimica'],
+    puedeAgregarEstudiantes: false
+  },
+  "Ricardo Salcedo": {
+    password: "17348702",
+    name: "Prof: Ricardo",
+    allowedYears: [1, 2, 3, 4, 5], 
+    allowedSubjects: ['educacion-fisica', 'formacion-soberania'],
+    puedeAgregarEstudiantes: false
+  },
+  "Leivis Veliz": {
+    password: "17537820",
+    name: "Prof: Leivis",
+    allowedYears: [3, 4, 5], 
+    allowedSubjects: ['matematicas'],
     puedeAgregarEstudiantes: false
   },
 };
