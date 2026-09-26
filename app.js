@@ -6,6 +6,7 @@ const API_SEND_WHATSAPP = `${API_BASE_URL}/api/send-whatsapp`;
 const API_SEND_EMAIL = `${API_BASE_URL}/api/send-email`;
 const API_STUDENTS = `${API_BASE_URL}/api/students`;
 const API_ATTENDANCE = `${API_BASE_URL}/api/attendance`;
+const API_SEND_DAILY_EMAILS = `${API_BASE_URL}/api/cron-daily-emails`;
 const deletedStudentIds = new Set();
 
 const isRemovedStudent = (student) => deletedStudentIds.has(String(student?.id));
@@ -223,11 +224,13 @@ const canMarkAttendance = () => !isProfessorNestor();
 
 const syncStudentManagementControls = () => {
   const mainBtn = document.getElementById('mainAddStudent');
+  const sendDailyEmailsBtn = document.getElementById('sendDailyEmailsNow');
   const landingBtn = document.getElementById('landingAddStudent');
   const btnAdminNestor = document.getElementById('btnModuloAdminNestor');
   const reportsBtn = document.getElementById('btnVerReportes');
 
   if (mainBtn) mainBtn.style.display = canManageStudents() ? 'inline-block' : 'none';
+  if (sendDailyEmailsBtn) sendDailyEmailsBtn.style.display = canManageStudents() ? 'inline-block' : 'none';
   if (landingBtn) landingBtn.style.display = canManageStudents() ? 'inline-block' : 'none';
   if (reportsBtn) reportsBtn.style.display = canViewReports() ? 'inline-block' : '';
   
@@ -318,6 +321,40 @@ const handleLogin = (e) => {
   } else {
     showToast('Usuario o contraseña incorrectos');
   }
+};
+
+const setupPasswordReveal = () => {
+  const passwordInput = document.getElementById('loginPassword');
+  const revealButton = document.getElementById('revealLoginPassword');
+  if (!passwordInput || !revealButton) return;
+
+  const setPasswordVisible = (visible) => {
+    passwordInput.type = visible ? 'text' : 'password';
+    revealButton.setAttribute('aria-pressed', String(visible));
+    revealButton.setAttribute('aria-label', visible ? 'Suelta para ocultar la contraseña' : 'Mantén presionado para ver la contraseña');
+  };
+
+  revealButton.addEventListener('pointerdown', (event) => {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    event.preventDefault();
+    if (revealButton.setPointerCapture) revealButton.setPointerCapture(event.pointerId);
+    setPasswordVisible(true);
+  });
+  revealButton.addEventListener('pointerup', () => setPasswordVisible(false));
+  revealButton.addEventListener('pointercancel', () => setPasswordVisible(false));
+  revealButton.addEventListener('lostpointercapture', () => setPasswordVisible(false));
+  revealButton.addEventListener('blur', () => setPasswordVisible(false));
+  revealButton.addEventListener('keydown', (event) => {
+    if (event.key !== ' ' && event.key !== 'Enter') return;
+    event.preventDefault();
+    setPasswordVisible(true);
+  });
+  revealButton.addEventListener('keyup', (event) => {
+    if (event.key === ' ' || event.key === 'Enter') setPasswordVisible(false);
+  });
+  document.addEventListener('pointerup', () => setPasswordVisible(false));
+  document.addEventListener('pointercancel', () => setPasswordVisible(false));
+  window.addEventListener('blur', () => setPasswordVisible(false));
 };
 
 const miFormulario = document.getElementById('loginForm');
@@ -568,7 +605,7 @@ const normalizeStudentYearData = (data) => {
           paidAmount: student.paidAmount || 0,
           BoletaVisible: String(student.BoletaVisible || student.boleta_visible || 'NO').toUpperCase() === 'SI' ? 'SI' : 'NO',
           attendance: student.attendance || {},
-          attendanceByDate: student.attendanceByDate || {
+          attendanceByDate: student.attendanceByDate || student.attendance_by_date || {
             [selectedDate]: Object.fromEntries(Object.entries(student.attendance || {}).map(([subject, entry]) => [subject, entry?.status || entry])),
           },
         });
@@ -584,7 +621,7 @@ const normalizeStudentYearData = (data) => {
       paidAmount: student.paidAmount || 0,
       BoletaVisible: String(student.BoletaVisible || student.boleta_visible || 'NO').toUpperCase() === 'SI' ? 'SI' : 'NO',
       attendance: student.attendance || {},
-      attendanceByDate: student.attendanceByDate || {
+      attendanceByDate: student.attendanceByDate || student.attendance_by_date || {
         [selectedDate]: Object.fromEntries(Object.entries(student.attendance || {}).map(([subject, entry]) => [subject, entry?.status || entry])),
       },
       year: Number(student.year || year),
@@ -635,7 +672,7 @@ const cargarTodosLosEstudiantesDesdeSupabase = async () => {
         payments: row.payments || {},
         BoletaVisible: row.BoletaVisible || row.boleta_visible || 'NO',
         attendance: row.attendance || {},
-        attendanceByDate: row.attendanceByDate || {
+        attendanceByDate: row.attendance_by_date || row.attendanceByDate || {
           [selectedDate]: Object.fromEntries(Object.entries(row.attendance || {}).map(([subject, entry]) => [subject, entry?.status || entry])),
         },
         year,
@@ -700,7 +737,7 @@ const sincronizarAsistencia = async (student, status) => {
   } catch (error) {
     console.warn('No se pudo sincronizar la asistencia con el servidor:', error);
     showToast('No se pudo guardar la asistencia en la nube');
-    return { emailSent: false, emailError: error.message || 'no se pudo conectar con el servidor' };
+    return { success: false, error: error.message || 'no se pudo conectar con el servidor' };
   }
 };
 
@@ -783,7 +820,7 @@ const renderStudentList = () => {
   let students = getCurrentStudents().filter((student) => !isRemovedStudent(student));
   (async () => {
     try {
-      const r = await fetch(`${API_STUDENTS}?year=${encodeURIComponent(selectedYear)}`, {
+      const r = await fetch(`${API_STUDENTS}?year=${encodeURIComponent(selectedYear)}&date=${encodeURIComponent(selectedDate)}`, {
         headers: { 'Cache-Control': 'no-cache' }
       });
 
@@ -803,7 +840,7 @@ const renderStudentList = () => {
             payments: row.payments || {},
             BoletaVisible: row.BoletaVisible || row.boleta_visible || 'NO',
             attendance: row.attendance || {},
-            attendanceByDate: row.attendanceByDate || {
+            attendanceByDate: row.attendance_by_date || row.attendanceByDate || {
               [selectedDate]: Object.fromEntries(Object.entries(row.attendance || {}).map(([subject, entry]) => [subject, entry?.status || entry])),
             },
             year: Number(selectedYear),
@@ -930,6 +967,42 @@ const updateLastEmailStatus = () => {
   lastEmailStatusEl.textContent = `Último resumen diario enviado: ${attendanceData.lastDailyEmailSentDate}`;
 };
 
+const sendDailyEmailsNow = async () => {
+  const button = document.getElementById('sendDailyEmailsNow');
+  if (!button || !confirm('Se enviará ahora el resumen de asistencia de hoy a todos los estudiantes con registros. El envío programado seguirá activo y podría enviar esos correos nuevamente. ¿Continuar?')) return;
+
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.textContent = 'Enviando...';
+
+  try {
+    const response = await fetch(API_SEND_DAILY_EMAILS, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || `Error ${response.status} al enviar los correos`);
+    if (Array.isArray(result.sent) && result.sent.length) renderStudentList();
+
+    if (result.message) {
+      showToast(result.message);
+      return;
+    }
+
+    const sentCount = Array.isArray(result.sent) ? result.sent.length : 0;
+    const failedCount = Number(result.failedEmailCount || 0);
+    const missingStudentCount = result.missingStudents?.length || 0;
+    const missingEmailCount = result.missingEmails?.length || 0;
+    showToast(`Prueba: ${sentCount} enviado(s), ${failedCount} fallido(s), ${missingStudentCount} estudiante(s) no encontrado(s), ${missingEmailCount} sin correo.`);
+  } catch (error) {
+    showToast(error.message || 'No se pudieron enviar los correos.');
+  } finally {
+    button.disabled = false;
+    button.textContent = originalText;
+  }
+};
+
 const setStudentStatus = async (id, status) => {
   const students = getCurrentStudents();
   const student = students.find((item) => String(item.id) === String(id));
@@ -946,11 +1019,10 @@ const setStudentStatus = async (id, status) => {
   const result = await sincronizarAsistencia(student, status);
   renderStudentList();
  
-  if (status === 'asistente') {
-    showAttendanceModal(result?.emailSent ? 'Se marcó asistente y se envió el correo' : `Se marcó asistente; ${result?.emailError || 'correo no enviado'}`);
-  } else if (status === 'inasistente') {
-    showAttendanceModal(result?.emailSent ? 'Se marcó inasistente y se envió el correo' : `Se marcó inasistente; ${result?.emailError || 'correo no enviado'}`);
-  }
+  const statusLabel = status === 'asistente' ? 'asistente' : 'inasistente';
+  showAttendanceModal(result?.success
+    ? `Se marcó ${statusLabel}. Se incluirá en el resumen diario por materias.`
+    : `Se marcó ${statusLabel}, pero no se pudo guardar en la nube: ${result?.error || 'error de conexión'}`);
 };
 
 const deleteStudent = (id) => {
@@ -1641,6 +1713,8 @@ const init = () => {
   if (exportWordBtn) exportWordBtn.addEventListener('click', exportCurrentToPdf);
   if (landingAddStudentBtn) landingAddStudentBtn.addEventListener('click', handleLandingAddStudent);
   if (mainAddStudentBtn) mainAddStudentBtn.addEventListener('click', () => openAddStudentView('main'));
+  const sendDailyEmailsBtn = document.getElementById('sendDailyEmailsNow');
+  if (sendDailyEmailsBtn) sendDailyEmailsBtn.addEventListener('click', sendDailyEmailsNow);
   if (cerrarSesionBtn) cerrarSesionBtn.addEventListener('click', cerrarSesion);
   if (closeAddStudentBtn) closeAddStudentBtn.addEventListener('click', closeAddStudentView);
   if (backToLandingBtn) {
@@ -1655,6 +1729,7 @@ const init = () => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+  setupPasswordReveal();
   init();
 });
 

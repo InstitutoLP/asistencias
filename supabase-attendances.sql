@@ -26,6 +26,9 @@ create table if not exists public.attendances (
   unique (student_id, date, subject)
 );
 
+alter table public.attendances
+add column if not exists email_sent_at timestamptz;
+
 alter table public.students enable row level security;
 alter table public.attendances enable row level security;
 

@@ -52,10 +52,10 @@ Aquí está el resumen diario de asistencia del/la estudiante ${student.name} pa
 Materias:
 ${lines.join('\n')}
 
-Este correo se envía automáticamente a la 1:20 PM con la asistencia registrada hasta ese momento.
+Este correo se envía automáticamente a las 12:00 PM, hora de Venezuela, con la asistencia registrada hasta ese momento.
 
 Saludos cordiales,
-Sistema de Gestión Escolar`;
+Sistema de Gestión del Libertad`;
 };
 
 const sendEmail = async (student, attendances) => {
@@ -77,6 +77,23 @@ const sendEmail = async (student, attendances) => {
   return info;
 };
 
+const markAttendancesAsSent = async (attendances) => {
+  const ids = attendances.map((item) => item.id).filter((id) => id !== null && id !== undefined);
+  if (!ids.length || ids.length !== attendances.length) {
+    throw new Error('No se pudieron identificar las asistencias incluidas en el correo.');
+  }
+
+  const response = await supabaseFetch(`/attendances?id=in.(${ids.join(',')})&email_sent_at=is.null`, {
+    method: 'PATCH',
+    headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify({ email_sent_at: new Date().toISOString() }),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.message || error.error || 'No se pudo registrar el envío de asistencia.');
+  }
+};
+
 const getToday = () => new Date().toISOString().slice(0, 10);
 
 module.exports = async (req, res) => {
@@ -89,7 +106,7 @@ module.exports = async (req, res) => {
   try {
     const today = getToday();
     // obtener asistencias del día
-    const attendancesResponse = await supabaseFetch(`/attendances?date=eq.${encodeURIComponent(today)}`);
+    const attendancesResponse = await supabaseFetch(`/attendances?date=eq.${encodeURIComponent(today)}&email_sent_at=is.null`);
     const attendances = await attendancesResponse.json();
     if (!attendancesResponse.ok) {
       throw new Error(attendances.message || attendances.error || 'No se pudieron consultar las asistencias de hoy.');
@@ -102,20 +119,14 @@ module.exports = async (req, res) => {
 
     const studentIds = [...new Set(attendances.map((item) => item.student_id))];
     console.log('cron: studentIds raw=', studentIds);
-    // Formatea los IDs para la consulta REST de Supabase.
-    // Si los IDs no son numéricos, deben ir entre comillas simples: in.('id1','id2')
-    const formattedIds = studentIds
-      .map((id) => {
-        if (id === null || id === undefined) return '';
-        return isNaN(Number(id)) ? `'${String(id).replace(/'/g, "''")}'` : String(id);
-      })
-      .filter(Boolean)
-      .join(',');
-    const studentsResponse = await supabaseFetch(`/students?id=in.(${formattedIds})`);
+    const studentsResponse = await supabaseFetch('/students?select=id,name,email,year');
     const students = await studentsResponse.json();
     console.log('cron: students fetched count=', Array.isArray(students) ? students.length : 0);
     if (!studentsResponse.ok) {
-      console.error('cron: studentsResponse not ok', studentsResponse.status);
+      throw new Error(students.message || students.error || 'No se pudieron consultar los estudiantes.');
+    }
+    if (!Array.isArray(students)) {
+      throw new Error('Supabase devolvió un formato inválido al consultar los estudiantes.');
     }
     const studentMap = parseStudentRecords(students);
 
@@ -126,6 +137,7 @@ module.exports = async (req, res) => {
     }, {});
 
     const sent = [];
+    const emailFailures = [];
     const missingStudents = [];
     const missingEmails = [];
     for (const [studentId, entries] of Object.entries(grouped)) {
@@ -145,16 +157,18 @@ module.exports = async (req, res) => {
       }
       try {
         await sendEmail(student, entries);
+        await markAttendancesAsSent(entries);
         sent.push(student.email);
       } catch (e) {
         console.error('cron: error sending to', student.email, e);
+        emailFailures.push(student.id);
       }
     }
 
-    const result = { success: true, sent, missingStudents, missingEmails };
+    const result = { success: true, sent, failedEmailCount: emailFailures.length, missingStudents, missingEmails };
     if (req.query && (req.query.debug === '1' || req.query.debug === 'true')) {
       // include intermediate data for debugging
-      result.debug = { attendancesCount: attendances.length, studentIds, formattedIds, studentsCount: students.length };
+      result.debug = { attendancesCount: attendances.length, studentIds, studentsCount: students.length };
     }
 
     return res.json(result);

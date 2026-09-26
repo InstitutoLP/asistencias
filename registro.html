@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Registro de Asistencia Escolar</title>
   <link rel="icon" type="image/png" href="sello.png" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer ></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer ></script>
   <link rel="stylesheet" href="styles.css" />
   <style>
     /* Reglas para forzar color blanco en encabezados, resúmenes e información de selección */
@@ -371,6 +371,7 @@
       <button id="btnVerReportes" class="secondary" onclick="abrirReportes()">📊 Ver Reportes</button>
       <button id="btnModuloAdminNestor" class="primary hidden" style="background: linear-gradient(135deg, #0ea5e9, #0284c7);" onclick="abrirAdminNestor()">⚙️ Módulo Administrativo</button>
       <button id="mainAddStudent" class="primary">Agregar estudiante</button>
+      <button id="sendDailyEmailsNow" class="secondary" type="button">Probar envío de correos</button>
     </div>
 
     <section id="addStudentView" class="add-student-card hidden">
@@ -406,7 +407,7 @@
       <div class="table-header">
         <div>
           <h2>Lista de estudiantes</h2>
-          <p class="table-help" style="color: #ffffff;">Revisa la asistencia por materia y envía la confirmación automática cuando marques asistente o inasistente.</p>
+          <p class="table-help" style="color: #ffffff;">Revisa la asistencia por materia. El resumen diario reúne todas las materias de cada estudiante en un solo correo.</p>
         </div>
         <div id="studentSummary" class="student-summary" style="color: #ffffff;"></div>
       </div>

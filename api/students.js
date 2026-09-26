@@ -65,7 +65,35 @@ module.exports = async function handler(req, res) {
       if (!response.ok) {
         return res.status(response.status).json({ error: data.message || data.error || 'No se pudo consultar estudiantes.' });
       }
-      return res.status(200).json(Array.isArray(data) ? data : []);
+
+      const students = Array.isArray(data) ? data : [];
+      const attendanceDate = req.query?.date;
+      if (attendanceDate && students.length) {
+        const attendanceResponse = await supabaseFetch(
+          `/attendances?date=eq.${encodeURIComponent(String(attendanceDate))}&select=student_id,subject,status,email_sent_at`
+        );
+        const attendanceRows = await attendanceResponse.json().catch(() => []);
+        if (!attendanceResponse.ok) {
+          return res.status(attendanceResponse.status).json({
+            error: attendanceRows.message || attendanceRows.error || 'No se pudo consultar la asistencia por fecha.',
+          });
+        }
+
+        const studentsById = new Map(students.map((student) => [String(student.id), student]));
+        students.forEach((student) => {
+          const attendanceByDate = student.attendance_by_date || student.attendanceByDate || {};
+          attendanceByDate[attendanceDate] = {};
+          student.attendance_by_date = attendanceByDate;
+        });
+        attendanceRows.forEach((row) => {
+          const student = studentsById.get(String(row.student_id));
+          if (!student || row.email_sent_at) return;
+          const attendanceByDate = student.attendance_by_date;
+          attendanceByDate[attendanceDate][row.subject] = row.status;
+        });
+      }
+
+      return res.status(200).json(students);
     }
 
     if (req.method === 'POST') {

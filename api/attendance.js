@@ -66,13 +66,6 @@ module.exports = async function handler(req, res) {
       email,
       phone: phone || null,
       year: Number(year),
-      status: '',
-      BoletaVisible: 'NO',
-      payment_status: 'no_pago',
-      paid_amount: 0,
-      payments: {},
-      attendance: {},
-      attendance_by_date: {},
     };
 
     const studentUpsert = await supabaseFetch('/students?on_conflict=id', {
@@ -125,6 +118,7 @@ module.exports = async function handler(req, res) {
       subject,
       subject_label: subjectLabel || subject,
       status,
+      email_sent_at: null,
     };
 
     const attendanceInsert = await supabaseFetch(`/attendances?on_conflict=student_id,date,subject`, {
@@ -145,8 +139,6 @@ module.exports = async function handler(req, res) {
       student: Array.isArray(patchedStudent) ? patchedStudent[0] : patchedStudent,
       attendance: Array.isArray(attendanceResult) ? attendanceResult[0] : attendanceResult,
       date: attendanceDate,
-      emailSent: false,
-      emailError: 'Email no configurado en Vercel',
     });
   } catch (error) {
     return res.status(500).json({

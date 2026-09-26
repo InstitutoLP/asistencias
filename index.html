@@ -6,8 +6,8 @@
   <title>Asistencia Escolar</title>
   <link rel="icon" type="image/png" href="sello.png" />
   <!-- Librerías externas -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <link rel="stylesheet" href="styles.css" />
   <style>
     /* Reglas para forzar color blanco en encabezados, resúmenes e información de selección */
@@ -315,7 +315,16 @@
 
           <div class="form-row login-field">
             <label for="loginPassword">Contraseña</label>
-            <input type="password" id="loginPassword" placeholder="Escribe tu contraseña" required />
+            <div class="login-password-control">
+              <input type="password" id="loginPassword" placeholder="Escribe tu contraseña" required />
+              <button id="revealLoginPassword" class="login-password-reveal" type="button" aria-label="Mantén presionado para ver la contraseña" aria-pressed="false" title="Mantén presionado para ver la contraseña">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
+                  <circle cx="12" cy="12" r="3" />
+                  <path class="password-eye-slash" d="m3 3 18 18" />
+                </svg>
+              </button>
+            </div>
           </div>
 
           <div class="form-actions">
@@ -417,6 +426,7 @@
       <button id="btnVerReportes" class="secondary" onclick="abrirReportes()">📊 Ver Reportes</button>
       <button id="btnModuloAdminNestor" class="primary hidden" style="background: linear-gradient(135deg, #0ea5e9, #0284c7);" onclick="abrirAdminNestor()">⚙️ Módulo Administrativo</button>
       <button id="mainAddStudent" class="primary">Agregar estudiante</button>
+      <button id="sendDailyEmailsNow" class="secondary" type="button">Probar envío de correos</button>
     </div>
 
     <section id="addStudentView" class="add-student-card hidden">
@@ -452,7 +462,7 @@
       <div class="table-header">
         <div>
           <h2>Lista de estudiantes</h2>
-          <p class="table-help" style="color: #ffffff;">Revisa la asistencia por materia y envía la confirmación automática cuando marques asistente o inasistente.</p>
+          <p class="table-help" style="color: #ffffff;">Revisa la asistencia por materia. El resumen diario reúne todas las materias de cada estudiante en un solo correo.</p>
         </div>
         <div id="studentSummary" class="student-summary" style="color: #ffffff;"></div>
       </div>
@@ -543,7 +553,7 @@
   </section>
 
   <!-- VENTANA EMERGENTE (MODAL) PARA REGISTRAR ABONO -->
-  <div id="abonoModal" class="modal hidden" style="position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.5);">
+  <div id="abonoModal" class="modal hidden" style="position: fixed; inset: 0; z-index: 9999; align-items: center; justify-content: center; background: rgba(0,0,0,0.5);">
     <div style="background: #ffffff; padding: 25px; border-radius: 12px; max-width: 380px; width: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.3); text-align: center; color: #000000;">
       <h3 style="margin-top: 0; color: #0f172a;">Registrar Abono</h3>
       <p id="abonoStudentName" style="font-weight: bold; color: #000000; margin: 10px 0;"></p>
