@@ -425,9 +425,21 @@ const renderizarReciboEstudiante = async () => {
     });
   }
 
-  const pagosRegistrados = estudianteBackend?.payments && typeof estudianteBackend.payments === 'object'
-    ? estudianteBackend.payments
-    : {};
+  const parsePayments = (val) => {
+    if (!val) return {};
+    if (typeof val === 'object' && !Array.isArray(val)) return { ...val };
+    if (typeof val === 'string') {
+      try {
+        const parsed = JSON.parse(val);
+        return (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) ? parsed : {};
+      } catch {
+        return {};
+      }
+    }
+    return {};
+  };
+
+  const pagosRegistrados = parsePayments(estudianteBackend?.payments);
 
   const estadoPago = String(estudianteBackend?.paymentStatus ?? estudianteBackend?.payment_status ?? '').toLowerCase();
   const montoPago = normalizarMontoPago(estudianteBackend?.paidAmount ?? estudianteBackend?.paid_amount ?? 0);

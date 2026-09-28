@@ -583,6 +583,39 @@ const getInitialData = () => {
   return data;
 };
 
+const parsePayments = (val) => {
+  if (!val) return {};
+  if (typeof val === 'object' && !Array.isArray(val)) return { ...val };
+  if (typeof val === 'string') {
+    try {
+      const parsed = JSON.parse(val);
+      return (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+  return {};
+};
+
+const getMesActualId = () => {
+  const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  return meses[new Date().getMonth()] || 'inscripcion';
+};
+
+const normalizarPagosEstudiante = (student) => {
+  if (!student) return {};
+  student.payments = parsePayments(student.payments);
+  if (Object.keys(student.payments).length === 0 && student.paymentStatus && student.paymentStatus !== 'no_pago') {
+    const mes = getMesActualId();
+    student.payments[mes] = {
+      status: student.paymentStatus,
+      amount: normalizarMontoPago(student.paidAmount),
+      date: student.paymentDate || new Date().toISOString().slice(0, 10),
+    };
+  }
+  return student.payments;
+};
+
 const normalizeStudentYearData = (data) => {
   const normalized = data && typeof data === 'object' ? data : { years: {} };
   normalized.years = normalized.years || {};
@@ -598,34 +631,42 @@ const normalizeStudentYearData = (data) => {
       const studentsByYear = ensureYearStudents.call({ years: normalized.years }, year);
       const exists = studentsByYear.some((item) => String(item.id) === String(student.id));
       if (!exists) {
-        studentsByYear.push({
+        const studentObj = {
           ...student,
           year,
           paymentStatus: student.paymentStatus || 'no_pago',
           paidAmount: student.paidAmount || 0,
+          payments: parsePayments(student.payments),
           BoletaVisible: String(student.BoletaVisible || student.boleta_visible || 'NO').toUpperCase() === 'SI' ? 'SI' : 'NO',
           attendance: student.attendance || {},
           attendanceByDate: student.attendanceByDate || student.attendance_by_date || {
             [selectedDate]: Object.fromEntries(Object.entries(student.attendance || {}).map(([subject, entry]) => [subject, entry?.status || entry])),
           },
-        });
+        };
+        normalizarPagosEstudiante(studentObj);
+        studentsByYear.push(studentObj);
       }
     });
     delete normalized.students;
   }
 
   Object.keys(normalized.years).forEach((year) => {
-    normalized.years[year].students = (normalized.years[year].students || []).map((student) => ({
-      ...student,
-      paymentStatus: student.paymentStatus || 'no_pago',
-      paidAmount: student.paidAmount || 0,
-      BoletaVisible: String(student.BoletaVisible || student.boleta_visible || 'NO').toUpperCase() === 'SI' ? 'SI' : 'NO',
-      attendance: student.attendance || {},
-      attendanceByDate: student.attendanceByDate || student.attendance_by_date || {
-        [selectedDate]: Object.fromEntries(Object.entries(student.attendance || {}).map(([subject, entry]) => [subject, entry?.status || entry])),
-      },
-      year: Number(student.year || year),
-    }));
+    normalized.years[year].students = (normalized.years[year].students || []).map((student) => {
+      const studentObj = {
+        ...student,
+        paymentStatus: student.paymentStatus || 'no_pago',
+        paidAmount: student.paidAmount || 0,
+        payments: parsePayments(student.payments),
+        BoletaVisible: String(student.BoletaVisible || student.boleta_visible || 'NO').toUpperCase() === 'SI' ? 'SI' : 'NO',
+        attendance: student.attendance || {},
+        attendanceByDate: student.attendanceByDate || student.attendance_by_date || {
+          [selectedDate]: Object.fromEntries(Object.entries(student.attendance || {}).map(([subject, entry]) => [subject, entry?.status || entry])),
+        },
+        year: Number(student.year || year),
+      };
+      normalizarPagosEstudiante(studentObj);
+      return studentObj;
+    });
   });
 
   for (let year = 1; year <= 5; year += 1) {
@@ -660,7 +701,7 @@ const cargarTodosLosEstudiantesDesdeSupabase = async () => {
     data.forEach((row) => {
       const year = Number(row.year || 1);
       attendanceData.years[year] = attendanceData.years[year] || { students: [] };
-      attendanceData.years[year].students.push({
+      const studentObj = {
         id: row.id,
         name: row.name,
         cedula: row.cedula || '',
@@ -669,14 +710,16 @@ const cargarTodosLosEstudiantesDesdeSupabase = async () => {
         status: row.status || '',
         paymentStatus: row.paymentStatus || row.payment_status || 'no_pago',
         paidAmount: row.paidAmount ?? row.paid_amount ?? 0,
-        payments: row.payments || {},
+        payments: parsePayments(row.payments),
         BoletaVisible: row.BoletaVisible || row.boleta_visible || 'NO',
         attendance: row.attendance || {},
         attendanceByDate: row.attendance_by_date || row.attendanceByDate || {
           [selectedDate]: Object.fromEntries(Object.entries(row.attendance || {}).map(([subject, entry]) => [subject, entry?.status || entry])),
         },
         year,
-      });
+      };
+      normalizarPagosEstudiante(studentObj);
+      attendanceData.years[year].students.push(studentObj);
     });
   } catch (error) {
     console.warn('No se pudo conectar con Supabase para cargar estudiantes:', error);
@@ -828,23 +871,27 @@ const renderStudentList = () => {
         const data = await r.json().catch(() => ([]));
         if (Array.isArray(data)) {
           attendanceData.years[selectedYear] = attendanceData.years[selectedYear] || {};
-          attendanceData.years[selectedYear].students = data.map((row) => ({
-            id: row.id,
-            name: row.name,
-            cedula: row.cedula || '',
-            email: row.email || '',
-            phone: row.phone || '',
-            status: row.status || '',
-            paymentStatus: row.paymentStatus || row.payment_status || 'no_pago',
-            paidAmount: row.paidAmount ?? row.paid_amount ?? 0,
-            payments: row.payments || {},
-            BoletaVisible: row.BoletaVisible || row.boleta_visible || 'NO',
-            attendance: row.attendance || {},
-            attendanceByDate: row.attendance_by_date || row.attendanceByDate || {
-              [selectedDate]: Object.fromEntries(Object.entries(row.attendance || {}).map(([subject, entry]) => [subject, entry?.status || entry])),
-            },
-            year: Number(selectedYear),
-          })).filter((student) => !isRemovedStudent(student));
+          attendanceData.years[selectedYear].students = data.map((row) => {
+            const studentObj = {
+              id: row.id,
+              name: row.name,
+              cedula: row.cedula || '',
+              email: row.email || '',
+              phone: row.phone || '',
+              status: row.status || '',
+              paymentStatus: row.paymentStatus || row.payment_status || 'no_pago',
+              paidAmount: row.paidAmount ?? row.paid_amount ?? 0,
+              payments: parsePayments(row.payments),
+              BoletaVisible: row.BoletaVisible || row.boleta_visible || 'NO',
+              attendance: row.attendance || {},
+              attendanceByDate: row.attendance_by_date || row.attendanceByDate || {
+                [selectedDate]: Object.fromEntries(Object.entries(row.attendance || {}).map(([subject, entry]) => [subject, entry?.status || entry])),
+              },
+              year: Number(selectedYear),
+            };
+            normalizarPagosEstudiante(studentObj);
+            return studentObj;
+          }).filter((student) => !isRemovedStudent(student));
           students = attendanceData.years[selectedYear].students;
         }
       }
@@ -1115,6 +1162,7 @@ const handleStudentFormSubmit = async (event) => {
     status: '',
     paymentStatus: 'no_pago',
     paidAmount: 0,
+    payments: {},
     attendance: {},
     BoletaVisible: 'NO',
     year: resolvedYear,
@@ -1207,6 +1255,7 @@ const abrirAdminNestor = async () => {
   }
 
   await cargarTodosLosEstudiantesDesdeSupabase();
+  configurarPeriodosPago();
   actualizarVistaAdminNestor();
   showView('adminNestor');
 };
@@ -1251,8 +1300,8 @@ const cambiarEstadoPago = async (studentId, year, estado) => {
   const student = findStudentByYear(year, studentId) || findStudentById(studentId);
   if (!student) return;
 
-  const monto = estado === 'pago' ? costoPeriodo() : 0;
-  guardarPagoPeriodo(student, estado, monto);
+  const monto = estado === 'pago' ? costoPeriodo(periodoPagoActual) : 0;
+  guardarPagoPeriodo(student, estado, monto, periodoPagoActual);
   student.paymentStatus = estado;
   student.paidAmount = monto;
 
@@ -1260,25 +1309,46 @@ const cambiarEstadoPago = async (studentId, year, estado) => {
   await sincronizarEstudiante(student, 'PATCH');
   actualizarVistaAdminNestor();
   renderizarGraficasAdmin();
-  mostrarReciboPago(student, Number(student.year || year));
-  showToast(`Estado de pago de ${student.name} actualizado: ${estado.toUpperCase()}`);
+  if (estado !== 'no_pago') {
+    mostrarReciboPago(student, Number(student.year || year));
+  }
+  const nombrePeriodo = PERIODOS_PAGO.find(p => p.id === periodoPagoActual)?.label || periodoPagoActual;
+  showToast(`Estado de ${student.name} para ${nombrePeriodo}: ${estado === 'no_pago' ? 'NO PAGO' : estado.toUpperCase()}`);
 };
 
 const abrirModalAbono = (studentId, year, name) => {
   estudianteAbonoSeleccionado = { studentId, year, name };
-  document.getElementById('abonoStudentName').textContent = `Estudiante: ${name}`;
-  document.getElementById('montoAbonoInput').value = '';
-  document.getElementById('abonoModal').classList.remove('hidden');
+  const student = findStudentByYear(year, studentId) || findStudentById(studentId);
+  const pagoMes = student ? obtenerPagoPeriodo(student, periodoPagoActual) : null;
+  const nombrePeriodo = PERIODOS_PAGO.find(p => p.id === periodoPagoActual)?.label || periodoPagoActual;
+
+  const studentNameEl = document.getElementById('abonoStudentName');
+  if (studentNameEl) {
+    if (pagoMes && pagoMes.status === 'abono' && pagoMes.amount > 0) {
+      studentNameEl.innerHTML = `Estudiante: <strong>${name}</strong><br><span style="font-size:0.9rem; color:#b45309; font-weight:normal;">Abono actual en ${nombrePeriodo}: <strong>$${pagoMes.amount}</strong></span>`;
+      const inputEl = document.getElementById('montoAbonoInput');
+      if (inputEl) inputEl.value = pagoMes.amount;
+    } else {
+      studentNameEl.innerHTML = `Estudiante: <strong>${name}</strong><br><span style="font-size:0.9rem; color:#64748b; font-weight:normal;">Período a abonar: <strong>${nombrePeriodo}</strong></span>`;
+      const inputEl = document.getElementById('montoAbonoInput');
+      if (inputEl) inputEl.value = '';
+    }
+  }
+  const modal = document.getElementById('abonoModal');
+  if (modal) modal.classList.remove('hidden');
+  setTimeout(() => document.getElementById('montoAbonoInput')?.focus(), 50);
 };
 
 const cerrarModalAbono = () => {
   estudianteAbonoSeleccionado = null;
-  document.getElementById('abonoModal').classList.add('hidden');
+  const modal = document.getElementById('abonoModal');
+  if (modal) modal.classList.add('hidden');
 };
 
 const guardarAbono = async () => {
   if (!estudianteAbonoSeleccionado) return;
-  const monto = parseFloat(document.getElementById('montoAbonoInput').value);
+  const inputEl = document.getElementById('montoAbonoInput');
+  const monto = parseFloat(inputEl?.value || '0');
 
   if (isNaN(monto) || monto < 0) {
     showToast('⚠️ Ingresa un monto válido');
@@ -1290,15 +1360,26 @@ const guardarAbono = async () => {
   const student = findStudentByYear(year, studentId) || findStudentById(studentId);
 
   if (student) {
-    guardarPagoPeriodo(student, 'abono', monto);
-    student.paymentStatus = 'abono';
+    const cuota = costoPeriodo(periodoPagoActual);
+    let estado = 'abono';
+    if (monto === 0) {
+      estado = 'no_pago';
+    } else if (monto >= cuota) {
+      estado = 'pago';
+    }
+
+    guardarPagoPeriodo(student, estado, monto, periodoPagoActual);
+    student.paymentStatus = estado;
     student.paidAmount = normalizarMontoPago(monto);
     saveData();
     await sincronizarEstudiante(student, 'PATCH');
     actualizarVistaAdminNestor();
     renderizarGraficasAdmin();
-    mostrarReciboPago(student, Number(student.year || year));
-    showToast(`Abono de $${monto} registrado para ${name}`);
+    if (estado !== 'no_pago') {
+      mostrarReciboPago(student, Number(student.year || year));
+    }
+    const nombrePeriodo = PERIODOS_PAGO.find(p => p.id === periodoPagoActual)?.label || periodoPagoActual;
+    showToast(`Abono de $${monto} guardado para ${name} (${nombrePeriodo})`);
   }
 };
 
@@ -1375,7 +1456,7 @@ let chartFinanzasAdmin = null;
 const CUOTA_MENSUAL_ESTUDIANTE = 30;
 const COSTO_INSCRIPCION = 300;
 const PERIODOS_PAGO = [  { id: 'inscripcion', label: 'Inscripción' },  { id: 'enero', label: 'Enero' },  { id: 'febrero', label: 'Febrero' },  { id: 'marzo', label: 'Marzo' },  { id: 'abril', label: 'Abril' },  { id: 'mayo', label: 'Mayo' },  { id: 'junio', label: 'Junio' },  { id: 'julio', label: 'Julio' },  { id: 'agosto', label: 'Agosto' },  { id: 'septiembre', label: 'Septiembre' },  { id: 'octubre', label: 'Octubre' },  { id: 'noviembre', label: 'Noviembre' },  { id: 'diciembre', label: 'Diciembre' },];
-let periodoPagoActual = new Date().toLocaleString('es', { month: 'long' }).toLowerCase();
+let periodoPagoActual = getMesActualId();
 let fechaPagoActual = new Date().toISOString().slice(0, 10);
 let filtroFechaPago = null;
 
@@ -1388,16 +1469,15 @@ const normalizarMontoPago = (valor) => {
 };
 
 const obtenerPagoPeriodo = (student, periodo = periodoPagoActual) => {
-  const pagoGuardado = student.payments?.[periodo];
-  if (pagoGuardado) {
+  if (!student) return { status: 'no_pago', amount: 0, date: '' };
+  const pagos = parsePayments(student.payments);
+  const pagoGuardado = pagos[periodo];
+  if (pagoGuardado && (pagoGuardado.status || pagoGuardado.amount !== undefined)) {
     return {
       status: pagoGuardado.status || 'no_pago',
       amount: normalizarMontoPago(pagoGuardado.amount),
       date: pagoGuardado.date || '',
     };
-  }
-  if (periodo === periodoPagoActual && student.paymentStatus) {
-    return { status: student.paymentStatus, amount: normalizarMontoPago(student.paidAmount), date: '' };
   }
   return { status: 'no_pago', amount: 0, date: '' };
 };
@@ -1412,12 +1492,14 @@ const coincideConFiltrosPago = (student, pago) => {
 
 const costoPeriodo = (periodo = periodoPagoActual) => periodo === 'inscripcion' ? COSTO_INSCRIPCION : CUOTA_MENSUAL_ESTUDIANTE;
 
-const guardarPagoPeriodo = (student, status, amount = 0) => {
-  student.payments = student.payments || {};
-  student.payments[periodoPagoActual] = {
+const guardarPagoPeriodo = (student, status, amount = 0, periodo = periodoPagoActual) => {
+  if (!student) return;
+  student.payments = parsePayments(student.payments);
+  const monto = status === 'pago' ? costoPeriodo(periodo) : normalizarMontoPago(amount);
+  student.payments[periodo] = {
     status,
-    amount: status === 'pago' ? costoPeriodo() : normalizarMontoPago(amount),
-    date: fechaPagoActual,
+    amount: monto,
+    date: fechaPagoActual || new Date().toISOString().slice(0, 10),
   };
 };
 
@@ -1448,9 +1530,10 @@ const configurarPeriodosPago = () => {
   const select = document.getElementById('periodoPagoSelect');
   if (!select) return;
   select.innerHTML = PERIODOS_PAGO.map(periodo => `<option value="${periodo.id}">${periodo.label}</option>`).join('');
-  if (!PERIODOS_PAGO.some(periodo => periodo.id === periodoPagoActual)) periodoPagoActual = 'inscripcion';
+  if (!PERIODOS_PAGO.some(periodo => periodo.id === periodoPagoActual)) periodoPagoActual = getMesActualId();
   select.value = periodoPagoActual;
-  document.getElementById('fechaPagoInput').value = fechaPagoActual;
+  const fechaInput = document.getElementById('fechaPagoInput');
+  if (fechaInput) fechaInput.value = fechaPagoActual;
   actualizarEtiquetaPeriodoPago();
 };
 
@@ -1487,11 +1570,24 @@ const aplicarFiltroFechaPago = (filtro) => {
   filtroFechaPago = filtro === 'todo' ? null : fecha.toISOString().slice(0, 10);
   if (filtroFechaPago) {
     fechaPagoActual = filtroFechaPago;
-    document.getElementById('fechaPagoInput').value = filtroFechaPago;
+    const inputFecha = document.getElementById('fechaPagoInput');
+    if (inputFecha) inputFecha.value = filtroFechaPago;
   }
   actualizarVistaAdminNestor();
   renderizarGraficasAdmin();
 };
+
+window.abrirAdminNestor = abrirAdminNestor;
+window.cerrarAdminNestor = cerrarAdminNestor;
+window.cambiarEstadoPago = cambiarEstadoPago;
+window.abrirModalAbono = abrirModalAbono;
+window.cerrarModalAbono = cerrarModalAbono;
+window.guardarAbono = guardarAbono;
+window.cambiarPeriodoPago = cambiarPeriodoPago;
+window.cambiarFechaPago = cambiarFechaPago;
+window.aplicarFiltroFechaPago = aplicarFiltroFechaPago;
+window.actualizarFiltrosPago = actualizarFiltrosPago;
+window.cerrarReciboPago = cerrarReciboPago;
 
 const alternarEstadisticasGlobales = () => {
   const panel = document.getElementById('estadisticasGlobalesAdmin');
@@ -1717,6 +1813,15 @@ const init = () => {
   if (sendDailyEmailsBtn) sendDailyEmailsBtn.addEventListener('click', sendDailyEmailsNow);
   if (cerrarSesionBtn) cerrarSesionBtn.addEventListener('click', cerrarSesion);
   if (closeAddStudentBtn) closeAddStudentBtn.addEventListener('click', closeAddStudentView);
+  const montoAbonoInput = document.getElementById('montoAbonoInput');
+  if (montoAbonoInput) {
+    montoAbonoInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        guardarAbono();
+      }
+    });
+  }
   if (backToLandingBtn) {
     backToLandingBtn.addEventListener('click', () => {
       if (!document.getElementById('landingView') || isRegistrationPage()) {
