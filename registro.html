@@ -273,6 +273,20 @@
     .admin-receipt-amount { display: table-cell !important; width: 28% !important; min-width: 0; padding-right: 8px !important; color: #8f0000 !important; font-size: 0.95rem; font-weight: 800 !important; text-align: right !important; white-space: nowrap; visibility: visible !important; }
     .admin-receipt-total { display: flex; justify-content: space-between; align-items: center; margin: 20px 0 0; padding-top: 15px; border-top: 2px solid #0f172a; color: #0f172a !important; font-size: 1.05rem; }
     .admin-receipt-total strong { color: #8f0000 !important; font-size: 1.35rem; }
+    .admin-receipt-fiscal-note {
+      margin-top: 16px;
+      padding: 8px 12px;
+      text-align: center;
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-radius: 6px;
+      color: #475569 !important;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      box-sizing: border-box;
+    }
     .admin-receipt-actions { margin-top: 12px !important; }
     .admin-receipt-actions button { min-width: 104px; border: 1px solid #cbd5e1; border-radius: 7px; background: #ffffff; color: #000000 !important; font-weight: 700; }
     .admin-receipt-actions button.btn-descargar-factura { min-width: 140px; background: #16a34a !important; color: #ffffff !important; border: 1px solid #15803d !important; }
@@ -286,6 +300,7 @@
       .admin-receipt-brand p { font-size: 0.78rem; }
       .admin-receipt-student { grid-template-columns: 1fr; }
       .admin-receipt-table th, .admin-receipt-table td { padding: 10px 5px; font-size: 0.76rem; }
+      .admin-receipt-fiscal-note { font-size: 0.74rem; letter-spacing: 0.1em; padding: 6px 10px; }
     }
 
     @media (max-width: 700px) {
@@ -536,6 +551,7 @@
           </table>
         </div>
         <p class="admin-receipt-total"><span>Total pagado</span><strong>$<span id="reciboTotal"></span></strong></p>
+        <div class="admin-receipt-fiscal-note">SIN CRÉDITO FISCAL</div>
       </div>
       <div class="admin-receipt-actions" style="display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap;">
         <button id="btnDescargarFactura" class="btn-descargar-factura" onclick="descargarReciboPagoPDF()" type="button">
