@@ -1526,6 +1526,96 @@ const mostrarReciboPago = (student, year) => {
 
 const cerrarReciboPago = () => document.getElementById('reciboPagoModal').classList.add('hidden');
 
+const ensureHtml2Canvas = () => new Promise((resolve) => {
+  if (window.html2canvas) return resolve(true);
+  const script = document.createElement('script');
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+  script.onload = () => resolve(true);
+  script.onerror = () => resolve(false);
+  document.head.appendChild(script);
+});
+
+const descargarReciboPagoPDF = async () => {
+  const btnDescargar = document.getElementById('btnDescargarFactura');
+  const contenidoOriginal = btnDescargar ? btnDescargar.innerHTML : '';
+  if (btnDescargar) {
+    btnDescargar.disabled = true;
+    btnDescargar.innerHTML = `
+      <svg style="width:16px;height:16px;animation:spin 1s linear infinite;fill:currentColor;" viewBox="0 0 24 24">
+        <path d="M12 4V2C6.48 2 2 6.48 2 12h2c0-4.41 3.59-8 8-8zm0 16c4.41 0 8-3.59 8-8h2c0 5.52-4.48 10-10 10v-2z"/>
+      </svg>
+      Generando PDF...
+    `;
+  }
+
+  try {
+    const ready = await ensureHtml2Canvas();
+    if (!ready || !window.html2canvas) {
+      showToast('⚠️ No se pudo cargar la librería para generar la factura.');
+      return;
+    }
+    if (!window.jspdf?.jsPDF) {
+      showToast('⚠️ No se pudo cargar el generador de PDF.');
+      return;
+    }
+
+    const receiptPaper = document.querySelector('#reciboPagoModal .admin-receipt-paper');
+    if (!receiptPaper) {
+      showToast('⚠️ No se encontró la factura para descargar.');
+      return;
+    }
+
+    const sealImg = receiptPaper.querySelector('.admin-receipt-seal');
+    if (sealImg && !sealImg.complete) {
+      await sealImg.decode().catch(() => {});
+    }
+
+    const studentName = document.getElementById('reciboNombre')?.textContent?.trim() || 'Estudiante';
+    const canvas = await window.html2canvas(receiptPaper, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: false,
+      backgroundColor: '#ffffff',
+      logging: false,
+    });
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'letter',
+    });
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 14;
+    const availableWidth = pageWidth - (margin * 2);
+    const availableHeight = pageHeight - (margin * 2);
+
+    const proportionalHeight = (canvas.height * availableWidth) / canvas.width;
+    const scale = Math.min(1, availableHeight / proportionalHeight);
+    const finalWidth = availableWidth * scale;
+    const finalHeight = proportionalHeight * scale;
+    const posX = (pageWidth - finalWidth) / 2;
+    const posY = 15;
+
+    doc.addImage(canvas.toDataURL('image/png'), 'PNG', posX, posY, finalWidth, finalHeight);
+
+    const safeName = studentName.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_áéíóúñÁÉÍÓÚÑ]/g, '');
+    const fechaHoy = new Date().toISOString().slice(0, 10);
+    doc.save(`Factura_${safeName}_${fechaHoy}.pdf`);
+    showToast('✅ Factura descargada en PDF correctamente');
+  } catch (err) {
+    console.error('Error generando factura PDF:', err);
+    showToast('⚠️ Ocurrió un error al descargar la factura');
+  } finally {
+    if (btnDescargar) {
+      btnDescargar.disabled = false;
+      btnDescargar.innerHTML = contenidoOriginal;
+    }
+  }
+};
+
 const configurarPeriodosPago = () => {
   const select = document.getElementById('periodoPagoSelect');
   if (!select) return;
@@ -1588,6 +1678,7 @@ window.cambiarFechaPago = cambiarFechaPago;
 window.aplicarFiltroFechaPago = aplicarFiltroFechaPago;
 window.actualizarFiltrosPago = actualizarFiltrosPago;
 window.cerrarReciboPago = cerrarReciboPago;
+window.descargarReciboPagoPDF = descargarReciboPagoPDF;
 
 const alternarEstadisticasGlobales = () => {
   const panel = document.getElementById('estadisticasGlobalesAdmin');

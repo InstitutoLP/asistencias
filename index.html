@@ -276,6 +276,8 @@
     .admin-receipt-total strong { color: #8f0000 !important; font-size: 1.35rem; }
     .admin-receipt-actions { margin-top: 12px !important; }
     .admin-receipt-actions button { min-width: 104px; border: 1px solid #cbd5e1; border-radius: 7px; background: #ffffff; color: #000000 !important; font-weight: 700; }
+    .admin-receipt-actions button.btn-descargar-factura { min-width: 140px; background: #16a34a !important; color: #ffffff !important; border: 1px solid #15803d !important; }
+    .admin-receipt-actions button.btn-descargar-factura:hover { background: #15803d !important; }
 
     @media (max-width: 560px) {
       .admin-receipt-paper { padding: 22px 16px !important; }
@@ -597,8 +599,12 @@
         </div>
         <p class="admin-receipt-total"><span>Total pagado</span><strong>$<span id="reciboTotal"></span></strong></p>
       </div>
-      <div class="admin-receipt-actions" style="display: flex; justify-content: flex-end; gap: 10px;">
-        <button class="secondary" onclick="cerrarReciboPago()" style="padding: 8px 16px;">Cerrar</button>
+      <div class="admin-receipt-actions" style="display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap;">
+        <button id="btnDescargarFactura" class="btn-descargar-factura" onclick="descargarReciboPagoPDF()" type="button">
+          <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+          Descargar Factura (PDF)
+        </button>
+        <button class="secondary" onclick="cerrarReciboPago()" style="padding: 8px 16px;" type="button">Cerrar</button>
       </div>
     </div>
   </div>
@@ -615,6 +621,7 @@
     </div>
   </div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="app.js" defer></script>
 </body>

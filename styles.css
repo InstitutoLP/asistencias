@@ -787,3 +787,33 @@ td { padding: 14px 12px; vertical-align: middle; color: var(--text); }
   .toast { right: 10px; bottom: 10px; left: 10px; text-align: center; }
   .modal-content { width: calc(100% - 28px); min-width: 0; max-width: none; }
 }
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.btn-descargar-factura {
+  min-width: 140px;
+  background: #16a34a !important;
+  color: #ffffff !important;
+  border: 1px solid #15803d !important;
+  padding: 8px 16px;
+  border-radius: 7px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.btn-descargar-factura:hover {
+  background: #15803d !important;
+}
+
+.btn-descargar-factura:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
