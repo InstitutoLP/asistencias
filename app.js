@@ -66,7 +66,7 @@ const TEACHERS = {
     puedeAgregarEstudiantes: false
   },
   "Yudisay Hernández": {
-    password: "15093005",
+    password: "15039005",
     name: "Prof: Yudisay",
     allowedYears: [1, 2, 3, 4, 5], 
     allowedSubjects: ['castellano'],
@@ -122,7 +122,7 @@ const TEACHERS = {
     puedeAgregarEstudiantes: false
   },
   "Ricardo Salcedo": {
-    password: "17348702",
+    password: "14412403",
     name: "Prof: Ricardo",
     allowedYears: [1, 2, 3, 4, 5], 
     allowedSubjects: ['educacion-fisica', 'formacion-soberania'],
