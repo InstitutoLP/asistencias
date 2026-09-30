@@ -1485,7 +1485,16 @@ const obtenerPagoPeriodo = (student, periodo = periodoPagoActual) => {
 const coincideConFiltrosPago = (student, pago) => {
   const busqueda = (document.getElementById('busquedaPagoInput')?.value || '').toLowerCase().trim();
   const anoSeleccionado = document.getElementById('filtroAnoAdminSelect')?.value || '';
-  return (!busqueda || student.name.toLowerCase().includes(busqueda))
+
+  const cedula = String(student.cedula || '').toLowerCase().trim();
+  const cedulaSoloNum = cedula.replace(/\D/g, '');
+  const busquedaSoloNum = busqueda.replace(/\D/g, '');
+
+  const coincideCedula = !busqueda
+    || cedula.includes(busqueda)
+    || (busquedaSoloNum.length > 0 && cedulaSoloNum.includes(busquedaSoloNum));
+
+  return coincideCedula
     && (!anoSeleccionado || String(student.calculatedYear || student.year) === anoSeleccionado)
     && (!filtroFechaPago || pago.date === filtroFechaPago);
 };
