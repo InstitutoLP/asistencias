@@ -1453,7 +1453,7 @@ const actualizarVistaAdminNestor = () => {
 
 let chartEstadoPagosAdmin = null;
 let chartFinanzasAdmin = null;
-const CUOTA_MENSUAL_ESTUDIANTE = 30;
+const CUOTA_MENSUAL_ESTUDIANTE = 60;
 const COSTO_INSCRIPCION = 300;
 const PERIODOS_PAGO = [  { id: 'inscripcion', label: 'Inscripción' },  { id: 'enero', label: 'Enero' },  { id: 'febrero', label: 'Febrero' },  { id: 'marzo', label: 'Marzo' },  { id: 'abril', label: 'Abril' },  { id: 'mayo', label: 'Mayo' },  { id: 'junio', label: 'Junio' },  { id: 'julio', label: 'Julio' },  { id: 'agosto', label: 'Agosto' },  { id: 'septiembre', label: 'Septiembre' },  { id: 'octubre', label: 'Octubre' },  { id: 'noviembre', label: 'Noviembre' },  { id: 'diciembre', label: 'Diciembre' },];
 let periodoPagoActual = getMesActualId();
