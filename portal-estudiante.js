@@ -409,36 +409,51 @@ const cargarEstudianteDesdeUrl = async () => {
   const id = obtenerIdEstudianteDeUrl();
   if (!id) return;
 
+  const landingView = document.getElementById('landingView');
+  const loadingView = document.getElementById('portalLoading');
   const msjError = document.getElementById('errorMensaje');
-  const estudianteSupabase = await obtenerEstudianteSupabasePorId(id);
-  if (!estudianteSupabase) {
-    msjError.textContent = '❌ No se encontró un estudiante con ese enlace.';
-    msjError.style.display = 'block';
-    return;
-  }
+  landingView.classList.add('hidden');
+  loadingView.classList.remove('hidden');
 
-  const todasLasNotas = await obtenerNotasDeSheets();
-  if (!todasLasNotas) {
-    msjError.textContent = '❌ Error conectando con la base de datos.';
+  const mostrarError = (mensaje) => {
+    loadingView.classList.add('hidden');
+    landingView.classList.remove('hidden');
+    landingView.style.display = '';
+    msjError.textContent = mensaje;
     msjError.style.display = 'block';
-    return;
-  }
+  };
 
-  const alumnoEncontrado = todasLasNotas.find((estudiante) => coincideConEstudiante(estudiante, estudianteSupabase));
-  if (!alumnoEncontrado) {
-    msjError.textContent = '❌ No se encontraron las calificaciones de este estudiante.';
-    msjError.style.display = 'block';
-    return;
-  }
+  try {
+    const estudianteSupabase = await obtenerEstudianteSupabasePorId(id);
+    if (!estudianteSupabase) {
+      mostrarError('❌ No se encontró un estudiante con ese enlace.');
+      return;
+    }
 
-  const nombreKey = obtenerClaveEstudiante(alumnoEncontrado, 'nombre');
-  alumnoEncontrado.Nombre = alumnoEncontrado[nombreKey];
-  alumnoEncontrado.id = estudianteSupabase.id;
-  datosEstudianteActual = alumnoEncontrado;
-  boletaAutorizadaActual = await verificarAutorizacionBoleta(datosEstudianteActual);
-  mostrarDashboard();
-  await renderizarReciboEstudiante();
-  mostrarDocumento(boletaAutorizadaActual ? 'boleta' : 'recibo');
+    const todasLasNotas = await obtenerNotasDeSheets();
+    if (!todasLasNotas) {
+      mostrarError('❌ Error conectando con la base de datos.');
+      return;
+    }
+
+    const alumnoEncontrado = todasLasNotas.find((estudiante) => coincideConEstudiante(estudiante, estudianteSupabase));
+    if (!alumnoEncontrado) {
+      mostrarError('❌ No se encontraron las calificaciones de este estudiante.');
+      return;
+    }
+
+    const nombreKey = obtenerClaveEstudiante(alumnoEncontrado, 'nombre');
+    alumnoEncontrado.Nombre = alumnoEncontrado[nombreKey];
+    alumnoEncontrado.id = estudianteSupabase.id;
+    datosEstudianteActual = alumnoEncontrado;
+    boletaAutorizadaActual = await verificarAutorizacionBoleta(datosEstudianteActual);
+    mostrarDashboard();
+    await renderizarReciboEstudiante();
+    mostrarDocumento(boletaAutorizadaActual ? 'boleta' : 'recibo');
+  } catch (error) {
+    console.error('No se pudo cargar el estudiante desde el enlace:', error);
+    mostrarError('❌ No se pudieron cargar los datos del estudiante.');
+  }
 };
 
 cargarEstudianteDesdeUrl();
@@ -453,6 +468,7 @@ const mostrarDashboard = () => {
   if (cedulaBoleta) cedulaBoleta.textContent = cedula;
   renderizarBoletaEstudiante(datosEstudianteActual);
   document.getElementById('nombreAlumnoDisplay').textContent = nombre;
+  document.getElementById('portalLoading').classList.add('hidden');
   document.getElementById('landingView').classList.add('hidden');
   document.getElementById('mainView').classList.remove('hidden');
   document.getElementById('mainView').style.display = '';

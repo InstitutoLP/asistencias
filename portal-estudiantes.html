@@ -39,6 +39,20 @@
       display: none !important;
     }
 
+    .portal-loading {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #eef4ff;
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    .portal-loading.hidden {
+      display: none !important;
+    }
+
     .landing-card {
       position: relative;
       width: 100%;
@@ -612,6 +626,8 @@
   </style>
 </head>
 <body>
+
+  <div id="portalLoading" class="portal-loading hidden" role="status" aria-live="polite">Cargando datos del estudiante...</div>
 
   <!-- VISTA DE INICIO DE SESIÓN -->
   <div id="landingView" class="landing-shell">
