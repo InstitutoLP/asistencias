@@ -7,6 +7,7 @@
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/$1.js" },
     { "handle": "filesystem" },
+    { "src": "/portal-estudiantes.html/(.*)", "dest": "/portal-estudiantes.html" },
     { "src": "/(.*)", "dest": "/index.html" }  ],
 
   

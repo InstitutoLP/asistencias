@@ -3,6 +3,7 @@ const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/e/2PACX-1vR2dzgdf5
 const API_BASE_URL = window.location.protocol === 'file:' ? 'http://localhost:3000' : window.location.origin;
 const API_SYNC_STATE = `${API_BASE_URL}/api/sync-state`; // Endpoint hacia la base de datos
 const API_STUDENTS = `${API_BASE_URL}/api/students`;
+const PORTAL_BASE_PATH = window.location.pathname.match(/^(.*\/portal-estudiantes\.html)(?:\/.*)?$/)?.[1] || window.location.pathname;
 const PERIODOS_PAGO = [
   { id: 'inscripcion', label: 'Inscripción' },
   { id: 'enero', label: 'Enero' },
@@ -323,6 +324,34 @@ const obtenerEstudiantePagosBackend = async (estudiante) => {
   }
 };
 
+const obtenerEstudianteSupabasePorId = async (id) => {
+  try {
+    const response = await fetch(`${API_STUDENTS}?id=${encodeURIComponent(id)}&t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache' },
+    });
+    if (!response.ok) return null;
+    const estudiantes = await response.json().catch(() => []);
+    return Array.isArray(estudiantes)
+      ? estudiantes.find((estudiante) => String(estudiante.id) === String(id)) || null
+      : null;
+  } catch (error) {
+    console.warn('No se pudo consultar el estudiante por ID:', error);
+    return null;
+  }
+};
+
+const actualizarUrlEstudiante = (id) => {
+  const url = new URL(window.location.href);
+  url.pathname = `${PORTAL_BASE_PATH}/${encodeURIComponent(id)}`;
+  window.history.replaceState({}, '', url);
+};
+
+const obtenerIdEstudianteDeUrl = () => {
+  const segmento = window.location.pathname.slice(PORTAL_BASE_PATH.length).replace(/^\/+/, '').split('/')[0];
+  return segmento ? decodeURIComponent(segmento) : '';
+};
+
 document.getElementById('loginEstudianteForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const cedulaIngresada = document.getElementById('estudianteCedula').value;
@@ -332,34 +361,87 @@ document.getElementById('loginEstudianteForm').addEventListener('submit', async 
   botonSubmit.textContent = "Buscando datos...";
   msjError.style.display = 'none';
 
-  const todasLasNotas = await obtenerNotasDeSheets();
-  
-  if (todasLasNotas) {
-    const alumnoEncontrado = todasLasNotas.find(n => {
-      const cedulaKey = obtenerClaveEstudiante(n, 'cedula');
-      return cedulaKey && normalizarCedula(n[cedulaKey]) === normalizarCedula(cedulaIngresada);
-    });
-    
-    if (alumnoEncontrado) {
-      const nombreKey = obtenerClaveEstudiante(alumnoEncontrado, 'nombre');
-      alumnoEncontrado.Nombre = alumnoEncontrado[nombreKey];
-      datosEstudianteActual = alumnoEncontrado;
-
-      // Esperar la respuesta del backend
-      boletaAutorizadaActual = await verificarAutorizacionBoleta(datosEstudianteActual);
-      mostrarDashboard();
-      await renderizarReciboEstudiante(); // Ahora asíncrono
-      mostrarDocumento(boletaAutorizadaActual ? 'boleta' : 'recibo');
-    } else {
-      msjError.textContent = "❌ Cédula no encontrada. Verifica los datos ingresados.";
+  try {
+    const todasLasNotas = await obtenerNotasDeSheets();
+    if (!todasLasNotas) {
+      msjError.textContent = '❌ Error conectando con la base de datos.';
       msjError.style.display = 'block';
+      return;
     }
-  } else {
-    msjError.textContent = "❌ Error conectando con la base de datos.";
+
+    const alumnoEncontrado = todasLasNotas.find((estudiante) => {
+      const cedulaKey = obtenerClaveEstudiante(estudiante, 'cedula');
+      return cedulaKey && normalizarCedula(estudiante[cedulaKey]) === normalizarCedula(cedulaIngresada);
+    });
+
+    if (!alumnoEncontrado) {
+      msjError.textContent = '❌ Cédula no encontrada. Verifica los datos ingresados.';
+      msjError.style.display = 'block';
+      return;
+    }
+
+    const nombreKey = obtenerClaveEstudiante(alumnoEncontrado, 'nombre');
+    alumnoEncontrado.Nombre = alumnoEncontrado[nombreKey];
+    const estudianteSupabase = await obtenerEstudiantePagosBackend(alumnoEncontrado);
+    if (!estudianteSupabase?.id) {
+      msjError.textContent = '❌ No se encontró el registro de este estudiante en Supabase.';
+      msjError.style.display = 'block';
+      return;
+    }
+
+    alumnoEncontrado.id = estudianteSupabase.id;
+    datosEstudianteActual = alumnoEncontrado;
+    actualizarUrlEstudiante(estudianteSupabase.id);
+    boletaAutorizadaActual = await verificarAutorizacionBoleta(datosEstudianteActual);
+    mostrarDashboard();
+    await renderizarReciboEstudiante();
+    mostrarDocumento(boletaAutorizadaActual ? 'boleta' : 'recibo');
+  } catch (error) {
+    console.error('No se pudo cargar el portal del estudiante:', error);
+    msjError.textContent = '❌ No se pudieron cargar los datos del estudiante.';
     msjError.style.display = 'block';
+  } finally {
+    botonSubmit.textContent = 'Entrar';
   }
-  botonSubmit.textContent = "Entrar";
 });
+
+const cargarEstudianteDesdeUrl = async () => {
+  const id = obtenerIdEstudianteDeUrl();
+  if (!id) return;
+
+  const msjError = document.getElementById('errorMensaje');
+  const estudianteSupabase = await obtenerEstudianteSupabasePorId(id);
+  if (!estudianteSupabase) {
+    msjError.textContent = '❌ No se encontró un estudiante con ese enlace.';
+    msjError.style.display = 'block';
+    return;
+  }
+
+  const todasLasNotas = await obtenerNotasDeSheets();
+  if (!todasLasNotas) {
+    msjError.textContent = '❌ Error conectando con la base de datos.';
+    msjError.style.display = 'block';
+    return;
+  }
+
+  const alumnoEncontrado = todasLasNotas.find((estudiante) => coincideConEstudiante(estudiante, estudianteSupabase));
+  if (!alumnoEncontrado) {
+    msjError.textContent = '❌ No se encontraron las calificaciones de este estudiante.';
+    msjError.style.display = 'block';
+    return;
+  }
+
+  const nombreKey = obtenerClaveEstudiante(alumnoEncontrado, 'nombre');
+  alumnoEncontrado.Nombre = alumnoEncontrado[nombreKey];
+  alumnoEncontrado.id = estudianteSupabase.id;
+  datosEstudianteActual = alumnoEncontrado;
+  boletaAutorizadaActual = await verificarAutorizacionBoleta(datosEstudianteActual);
+  mostrarDashboard();
+  await renderizarReciboEstudiante();
+  mostrarDocumento(boletaAutorizadaActual ? 'boleta' : 'recibo');
+};
+
+cargarEstudianteDesdeUrl();
 
 const mostrarDashboard = () => {
   const nombre = datosEstudianteActual?.Nombre || '';
@@ -497,6 +579,7 @@ window.cerrarSesion = () => {
   const cedulaInput = document.getElementById('estudianteCedula');
   const errorMensaje = document.getElementById('errorMensaje');
 
+  window.history.replaceState({}, '', PORTAL_BASE_PATH);
   mainView.style.display = 'none';
   mainView.classList.add('hidden');
   landingView.classList.remove('hidden');
