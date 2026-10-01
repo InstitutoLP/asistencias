@@ -38,13 +38,15 @@ const normalizarMontoPago = (valor) => {
 const coincideConEstudiante = (registro, estudiante) => {
   const cedulaKey = obtenerClaveEstudiante(estudiante, 'cedula');
   const nombreKey = obtenerClaveEstudiante(estudiante, 'nombre');
+  const cedulaRegistroKey = obtenerClaveEstudiante(registro, 'cedula');
+  const nombreRegistroKey = obtenerClaveEstudiante(registro, 'nombre');
   const cedulaEstudiante = normalizarCedula(estudiante[cedulaKey]);
-  const nombreEstudiante = normalizarTexto(estudiante[nombreKey] || estudiante.Nombre);
-  const cedulaRegistro = normalizarCedula(registro.cedula || registro.Cedula || registro.identificacion);
-  const nombreRegistro = normalizarTexto(registro.name || registro.nombre || registro.Nombre);
+  const nombreEstudiante = normalizarTexto(estudiante[nombreKey] || estudiante.Nombre || estudiante.name);
+  const cedulaRegistro = normalizarCedula(registro[cedulaRegistroKey] || registro.identificacion);
+  const nombreRegistro = normalizarTexto(registro[nombreRegistroKey] || registro.name || registro.Nombre);
 
   if (cedulaEstudiante && cedulaRegistro) {
-    return cedulaEstudiante === cedulaRegistro && (!nombreRegistro || nombreRegistro === nombreEstudiante);
+    return cedulaEstudiante === cedulaRegistro;
   }
   return Boolean(nombreEstudiante && nombreRegistro && nombreEstudiante === nombreRegistro);
 };
@@ -53,7 +55,7 @@ const obtenerClaveEstudiante = (estudiante, tipo) => Object.keys(estudiante || {
   const clave = normalizarTexto(key);
   if (tipo === 'cedula') return clave.includes('cedula');
   if (tipo === 'ano') return clave.includes('ano') || clave.includes('grado');
-  return clave.includes('nombre') || clave.includes('estudiante');
+  return clave.includes('nombre') || clave.includes('estudiante') || clave === 'name';
 });
 
 const parseCsvLine = (line) => {
