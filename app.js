@@ -42,7 +42,7 @@ const TEACHERS = {
     esAdmin: false
   },
   "Miriam Ariza": {
-    password: "10794599",
+    password: "Chala2011",
     name: "Prof: Miriam",
     allowedYears: [1, 2, 3, 4, 5],
     allowedSubjects: ['orientacion-convivencia'],
@@ -79,9 +79,9 @@ const TEACHERS = {
     allowedSubjects: ['ingles'],
     puedeAgregarEstudiantes: false
   },
-  "Jhoanna Pedron": {
-    password: "11569235",
-    name: "Prof: Jhoanna",
+  "Jhoana Pedron": {
+    password: "Melanie06",
+    name: "Prof: Jhoana",
     allowedYears: [1, 2, 3, 4, 5], 
     allowedSubjects: ['frances'],
     puedeAgregarEstudiantes: false
@@ -101,7 +101,7 @@ const TEACHERS = {
     puedeAgregarEstudiantes: false
   },
   "Alexis Serrano": {
-    password: "13119709",
+    password: "AS1335",
     name: "Prof: Alexis",
     allowedYears: [1, 2, 3, 4, 5], 
     allowedSubjects: ['ghc'],
