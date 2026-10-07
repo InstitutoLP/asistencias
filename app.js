@@ -21,9 +21,9 @@ console.log('DOM detectado:', {
 
 
 const TEACHERS = {
-  "Patricio": {
+  "Patricia": {
     password: "Tita2026$$",
-    name: "Prof: Patricio",
+    name: "Prof: Patricia",
     soloReportes: true
   },
   "Sara Romero": {
