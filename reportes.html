@@ -138,7 +138,7 @@
   <div id="accessDenied" class="card hidden" style="max-width: 500px; text-align: center; margin: 40px auto;">
     <h2 style="color: var(--danger);">Acceso Restringido</h2>
     <p>Lo sentimos, esta sección es exclusiva para la Dirección Académica.</p>
-    <button class="btn" onclick="window.location.href='index.html#registro-asistencia'">Volver al Panel de Registro de Asistencia</button>
+    <button class="btn" onclick="salirDeReportes()">Volver al Panel de Registro de Asistencia</button>
   </div>
 
   <div id="statsContent" class="dashboard-container hidden">
@@ -148,7 +148,7 @@
         <h2 style="margin: 0;">Panel de Control de Asistencia</h2>
         <p style="margin: 5px 0 0 0; color: #666;">Bienvenido/a, <strong><span id="adminName"></span></strong></p>
       </div>
-      <button class="btn" onclick="window.location.href='index.html#registro-asistencia'">Volver al Panel de Registro de Asistencia</button>
+      <button id="reportExitButton" class="btn" onclick="salirDeReportes()">Volver al Panel de Registro de Asistencia</button>
     </div>
 
     <!-- Filtros por Rango de Fechas y Parámetros -->
@@ -283,11 +283,24 @@
 
     const puedeVerReportes = sessionUser.name === 'Prof: Andy'
       || sessionUser.name === 'Prof: Néstor'
-      || sessionUser.name === 'Prof: Nestor';
+      || sessionUser.name === 'Prof: Nestor'
+      || sessionUser.name === 'Prof: Patricio';
+
+    function salirDeReportes() {
+      if (sessionUser.name === 'Prof: Patricio') {
+        sessionStorage.removeItem('activeUser');
+        window.location.replace('index.html');
+        return;
+      }
+      window.location.href = 'index.html#registro-asistencia';
+    }
 
     if (puedeVerReportes) {
       document.getElementById('statsContent').classList.remove('hidden');
       document.getElementById('adminName').textContent = sessionUser.name;
+      if (sessionUser.name === 'Prof: Patricio') {
+        document.getElementById('reportExitButton').textContent = 'Cerrar sesión';
+      }
       actualizarFiltroMaterias();
     } else {
       document.getElementById('accessDenied').classList.remove('hidden');

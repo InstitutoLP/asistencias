@@ -21,10 +21,10 @@ console.log('DOM detectado:', {
 
 
 const TEACHERS = {
-  "Patricia": {
+  "Patricio": {
     password: "Tita2026$$",
-    name: "Prof: Patricia",
-    soloAdmin: true
+    name: "Prof: Patricio",
+    soloReportes: true
   },
   "Sara Romero": {
     password: "20330592",
@@ -276,6 +276,11 @@ const handleLogin = (e) => {
     syncStudentManagementControls();
 
     sessionStorage.setItem('activeUser', JSON.stringify(currentUser));
+
+    if (currentUser.soloReportes) {
+      window.location.replace('reportes.html');
+      return;
+    }
 
     if (currentUser.soloAdmin) {
       document.getElementById('loginForm').style.display = 'none';
@@ -1879,6 +1884,11 @@ const init = () => {
     } catch (error) {
       sessionStorage.removeItem('activeUser');
     }
+  }
+
+  if (currentUser?.soloReportes && !window.location.pathname.toLowerCase().endsWith('reportes.html')) {
+    window.location.replace('reportes.html');
+    return;
   }
 
   buildSelectors();
