@@ -284,10 +284,10 @@
     const puedeVerReportes = sessionUser.name === 'Prof: Andy'
       || sessionUser.name === 'Prof: Néstor'
       || sessionUser.name === 'Prof: Nestor'
-      || sessionUser.name === 'Prof: Patricio';
+      || sessionUser.name === 'Prof: Patricia';
 
     function salirDeReportes() {
-      if (sessionUser.name === 'Prof: Patricio') {
+      if (sessionUser.name === 'Prof: Patricia') {
         sessionStorage.removeItem('activeUser');
         window.location.replace('index.html');
         return;
@@ -298,7 +298,7 @@
     if (puedeVerReportes) {
       document.getElementById('statsContent').classList.remove('hidden');
       document.getElementById('adminName').textContent = sessionUser.name;
-      if (sessionUser.name === 'Prof: Patricio') {
+      if (sessionUser.name === 'Prof: Patricia') {
         document.getElementById('reportExitButton').textContent = 'Cerrar sesión';
       }
       actualizarFiltroMaterias();
