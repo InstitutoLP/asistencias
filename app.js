@@ -223,6 +223,7 @@ const getAllowedYears = () => {
 };
 
 const canManageStudents = () => Boolean(currentUser?.puedeAgregarEstudiantes);
+const canManageBoletas = () => Boolean(currentUser?.puedeGestionarBoletas);
 const isProfessorNestor = () => Boolean(currentUser?.name?.includes('Néstor') || currentUser?.name?.includes('Nestor'));
 const canViewReports = () => isProfessorNestor() || currentUser?.name === 'Prof: Andy';
 const canMarkAttendance = () => !isProfessorNestor();
@@ -1291,6 +1292,11 @@ const cambiarEstadoBoletas = (habilitado) => {
 };
 
 const autorizarBoletaEstudiante = async (studentId, year) => {
+  if (!canManageBoletas()) {
+    showToast('No tienes permiso para autorizar boletas');
+    return;
+  }
+
   const student = (attendanceData.years[year]?.students || []).find(s => String(s.id) === String(studentId));
   if (!student) return;
 
@@ -1437,6 +1443,9 @@ const actualizarVistaAdminNestor = () => {
         ? "background-color: #16a34a; color: white;" 
         : "background-color: #0284c7; color: white;";
       const textoBotonBoleta = boletaEstudianteAutorizada ? 'desautorizar boleta' : 'autorizar boleta';
+      const botonBoleta = canManageBoletas()
+        ? `<button style="${btnBoletaEstilo} border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold;" aria-pressed="${boletaEstudianteAutorizada}" onclick="autorizarBoletaEstudiante('${st.id}', ${year})">${textoBotonBoleta}</button>`
+        : '';
 
       html += `
         <tr style="border-bottom:1px solid #e2e8f0; color: #000000;">
@@ -1453,7 +1462,7 @@ const actualizarVistaAdminNestor = () => {
               <button class="btn-pago-verde" onclick="cambiarEstadoPago('${st.id}', ${year}, 'pago')">$ Pago</button>
               <button class="btn-pago-rojo" onclick="cambiarEstadoPago('${st.id}', ${year}, 'no_pago')">No pago</button>
               <button class="btn-pago-amarillo" onclick="abrirModalAbono('${st.id}', ${year}, '${st.name}')">$ Abono</button>
-              <button style="${btnBoletaEstilo} border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold;" aria-pressed="${boletaEstudianteAutorizada}" onclick="autorizarBoletaEstudiante('${st.id}', ${year})">${textoBotonBoleta}</button>
+              ${botonBoleta}
             </div>
           </td>
         </tr>`;
