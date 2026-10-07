@@ -99,7 +99,7 @@ const TEACHERS = {
     puedeAgregarEstudiantes: false
   },
   "Yoxelith Camaripano": {
-    password: "16005056",
+    password: "Yoxe21102009",
     name: "Prof: Yoxelith",
     allowedYears: [1, 2, 3, 4], 
     allowedSubjects: ['ciencias-naturales', 'biologia'],
