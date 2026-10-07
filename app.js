@@ -64,7 +64,7 @@ const TEACHERS = {
     puedeAgregarEstudiantes: false
   },
 "Nancy Figueredo": {
-    password: "11851547",
+    password: "1989",
     name: "Prof: Nancy",
     allowedYears: [5],
     allowedSubjects: ['biologia','ciencias-tierra'],
