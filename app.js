@@ -78,7 +78,7 @@ const TEACHERS = {
     puedeAgregarEstudiantes: false
   },
   "Lenis Ávila": {
-    password: "6845543",
+    password: "beno1406",
     name: "Prof: Lenis",
     allowedYears: [3, 4, 5], 
     allowedSubjects: ['ingles'],
