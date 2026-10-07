@@ -21,6 +21,11 @@ console.log('DOM detectado:', {
 
 
 const TEACHERS = {
+  "Patricia": {
+    password: "Tita2026$$",
+    name: "Prof: Patricia",
+    soloAdmin: true
+  },
   "Sara Romero": {
     password: "20330592",
     name: "Administrador de Sistema",
@@ -272,15 +277,16 @@ const handleLogin = (e) => {
 
     sessionStorage.setItem('activeUser', JSON.stringify(currentUser));
 
-    if (!isRegistrationPage()) {
-      redirectToRegistrationPage();
+    if (currentUser.soloAdmin) {
+      document.getElementById('loginForm').style.display = 'none';
+      document.getElementById('landingView')?.classList.add('hidden');
+      abrirAdminNestor();
+      showToast(`Bienvenido/a, ${currentUser.name}`);
       return;
     }
 
-    if (currentUser.soloAdmin) {
-      document.getElementById('landingView')?.classList.add('hidden');
-      abrirAdminNestor();
-      showToast(`Bienvenido Administrador/a`);
+    if (!isRegistrationPage()) {
+      redirectToRegistrationPage();
       return;
     }
 
@@ -398,6 +404,8 @@ let addStudentReturnView = 'landing';
 let estudianteAbonoSeleccionado = null;
 
 const showView = (view) => {
+  if (currentUser?.soloAdmin && view !== 'adminNestor') return;
+
   const hasLanding = Boolean(landingView);
   const hasMainView = Boolean(mainView);
 
@@ -1262,9 +1270,9 @@ const abrirAdminNestor = async () => {
 
 const cerrarAdminNestor = () => {
   if (currentUser && currentUser.soloAdmin) {
-    sessionStorage.clear();
     currentUser = null;
-    location.reload();
+    sessionStorage.removeItem('activeUser');
+    redirectToLoginPage();
     return;
   }
   showView('main');
@@ -1862,8 +1870,12 @@ const init = () => {
     try {
       const parsedUser = JSON.parse(savedUser);
       const currentTeacher = Object.values(TEACHERS).find(teacher => teacher.name === parsedUser.name);
-      currentUser = currentTeacher || parsedUser;
-      if (currentTeacher) sessionStorage.setItem('activeUser', JSON.stringify(currentTeacher));
+      if (currentTeacher) {
+        currentUser = currentTeacher;
+        sessionStorage.setItem('activeUser', JSON.stringify(currentTeacher));
+      } else {
+        sessionStorage.removeItem('activeUser');
+      }
     } catch (error) {
       sessionStorage.removeItem('activeUser');
     }
@@ -1937,4 +1949,3 @@ document.addEventListener('DOMContentLoaded', () => {
   setupPasswordReveal();
   init();
 });
-
