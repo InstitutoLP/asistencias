@@ -57,7 +57,7 @@ const TEACHERS = {
     puedeAgregarEstudiantes: false
   },
   "Tibisay Plaza": {
-    password: "16226428",
+    password: "tibyplaza5",
     name: "Prof: Tibisay",
     allowedYears: [1, 2], 
     allowedSubjects: ['matematicas'],
