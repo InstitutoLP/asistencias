@@ -71,7 +71,7 @@ const TEACHERS = {
     puedeAgregarEstudiantes: false
   },
   "Yudisay Hernández": {
-    password: "15039005",
+    password: "Danna.20",
     name: "Prof: Yudisay",
     allowedYears: [1, 2, 3, 4, 5], 
     allowedSubjects: ['castellano'],
