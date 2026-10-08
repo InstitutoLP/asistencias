@@ -127,17 +127,10 @@ const TEACHERS = {
     puedeAgregarEstudiantes: false
   },
   "Ricardo Salcedo": {
-    password: "14412403",
+    password: "23092024",
     name: "Prof: Ricardo",
     allowedYears: [1, 2, 3, 4, 5], 
     allowedSubjects: ['educacion-fisica', 'formacion-soberania'],
-    puedeAgregarEstudiantes: false
-  },
-  "Leivis Veliz": {
-    password: "17537820",
-    name: "Prof: Leivis",
-    allowedYears: [3, 4, 5], 
-    allowedSubjects: ['matematicas'],
     puedeAgregarEstudiantes: false
   },
 };
