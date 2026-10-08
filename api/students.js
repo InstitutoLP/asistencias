@@ -59,7 +59,7 @@ module.exports = async function handler(req, res) {
       if (year) filters.push(`year=eq.${encodeURIComponent(String(year))}`);
       if (id) filters.push(`id=eq.${encodeURIComponent(String(id))}`);
       if (cedula) filters.push(`cedula=eq.${encodeURIComponent(String(cedula))}`);
-      const query = filters.length ? `?${filters.join('&')}` : '?select=*';
+      const query = `?${['select=*', ...filters, 'order=name.asc'].join('&')}`;
       const response = await supabaseFetch(`/students${query}`);
       const data = await response.json().catch(() => []);
       if (!response.ok) {
