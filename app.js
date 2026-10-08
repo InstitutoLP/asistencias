@@ -21,9 +21,14 @@ console.log('DOM detectado:', {
 
 
 const TEACHERS = {
-  "Patricia": {
+  "Patricia Salinas": {
     password: "Tita2026$$",
     name: "Prof: Patricia",
+    soloReportes: true
+  },
+  "Abrahan Ramirez": {
+    password: "Rami21",
+    name: "Prof: Abrahan",
     soloReportes: true
   },
   "Sara Romero": {
