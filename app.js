@@ -92,7 +92,7 @@ const TEACHERS = {
     puedeAgregarEstudiantes: false
   },
   "Lidis Hernández": {
-    password: "13312907",
+    password: "Activo2",
     name: "Prof: Lidis",
     allowedYears: [1, 2], 
     allowedSubjects: ['ingles'],
@@ -113,14 +113,14 @@ const TEACHERS = {
     puedeAgregarEstudiantes: false
   },
   "Oriana Blanco": {
-    password: "21133488",
+    password: "blanco488",
     name: "Prof: Oriana",
     allowedYears: [1, 2], 
     allowedSubjects: ['arte-patrimonio'],
     puedeAgregarEstudiantes: false
   },
-  "Leidy González": {
-    password: "20658551",
+  "Leidy Gonzalez": {
+    password: "gonza2026",
     name: "Prof: Leidy",
     allowedYears: [3, 4, 5], 
     allowedSubjects: ['quimica'],
