@@ -24,12 +24,16 @@ const TEACHERS = {
   "Patricia Salinas": {
     password: "Tita2026$$",
     name: "Prof: Patricia",
-    soloReportes: true
+    allowedYears: [1, 2, 3, 4, 5],
+    puedeAgregarEstudiantes: true,
+    esAdmin: false
   },
-  "Abrahan Ramirez": {
-    password: "Rami21",
+  "Abraham Ramirez": {
+    password: "Dorado123.",
     name: "Prof: Abrahan",
-    soloReportes: true
+    allowedYears: [1, 2, 3, 4, 5],
+    puedeAgregarEstudiantes: true,
+    esAdmin: false
   },
   "Sara Romero": {
     password: "20330592",
