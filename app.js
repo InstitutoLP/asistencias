@@ -387,6 +387,8 @@ const studentCedulaInput = document.getElementById('studentCedula');
 const studentEmailInput = document.getElementById('studentEmail');
 const studentPhoneInput = document.getElementById('studentPhone');
 const studentListContainer = document.getElementById('studentListContainer');
+const studentSearchInput = document.getElementById('studentSearchInput');
+const studentSearchEmpty = document.getElementById('studentSearchEmpty');
 const lastEmailStatusEl = document.getElementById('lastEmailStatus');
 const toastEl = document.getElementById('toast');
 const exportWordBtn = document.getElementById('exportWord');
@@ -875,6 +877,25 @@ const getCurrentStudents = () => {
   return ensureYearStudents(selectedYear);
 };
 
+const applyStudentNameFilter = () => {
+  if (!studentListContainer || !studentSearchInput) return;
+
+  const searchText = normalizarTexto(studentSearchInput.value.trim());
+  const rows = studentListContainer.querySelectorAll('tbody tr');
+  let visibleRows = 0;
+
+  rows.forEach((row) => {
+    const studentName = normalizarTexto(row.cells[0]?.textContent || '');
+    const matches = studentName.includes(searchText);
+    row.style.display = matches ? '' : 'none';
+    if (matches) visibleRows += 1;
+  });
+
+  if (studentSearchEmpty) {
+    studentSearchEmpty.style.display = rows.length > 0 && visibleRows === 0 ? 'block' : 'none';
+  }
+};
+
 const renderStudentList = () => {
   let students = getCurrentStudents().filter((student) => !isRemovedStudent(student));
   (async () => {
@@ -919,6 +940,7 @@ const renderStudentList = () => {
       if (studentListContainer) {
         studentListContainer.innerHTML = '<p style="color: #000000; font-weight: bold;">No hay estudiantes aún en este curso y materia.</p>';
       }
+      if (studentSearchEmpty) studentSearchEmpty.style.display = 'none';
       renderSelectionInfo();
       return;
     }
@@ -971,6 +993,7 @@ const renderStudentList = () => {
       studentListContainer.innerHTML = '';
       studentListContainer.appendChild(table);
     }
+    applyStudentNameFilter();
     renderSelectionInfo();
   })();
 };
@@ -1938,6 +1961,7 @@ const init = () => {
   if (subjectSelect) subjectSelect.addEventListener('change', updateSubjectSelection);
   if (dateInput) dateInput.addEventListener('change', updateDateSelection);
   if (studentForm) studentForm.addEventListener('submit', handleStudentFormSubmit);
+  if (studentSearchInput) studentSearchInput.addEventListener('input', applyStudentNameFilter);
   if (studentListContainer) studentListContainer.addEventListener('click', handleStudentListClick);
   if (exportWordBtn) exportWordBtn.addEventListener('click', exportCurrentToPdf);
   if (landingAddStudentBtn) landingAddStudentBtn.addEventListener('click', handleLandingAddStudent);
