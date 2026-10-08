@@ -223,7 +223,7 @@ const getAllowedYears = () => {
 const canManageStudents = () => Boolean(currentUser?.puedeAgregarEstudiantes);
 const canManageBoletas = () => Boolean(currentUser?.puedeGestionarBoletas);
 const isProfessorNestor = () => Boolean(currentUser?.name?.includes('Néstor') || currentUser?.name?.includes('Nestor'));
-const canViewReports = () => isProfessorNestor() || currentUser?.name === 'Prof: Andy';
+const canViewReports = () => isProfessorNestor() || currentUser?.name === 'Prof: Andy' || currentUser?.soloReportes;
 const canMarkAttendance = () => !isProfessorNestor();
 
 const syncStudentManagementControls = () => {
