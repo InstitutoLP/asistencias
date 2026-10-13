@@ -450,7 +450,7 @@
             if (totalRegistros > 0) {
               rankingFaltas.push({
                 nombre: nombreMostrar,
-                telefono: est.phone || 'No registrado',
+                telefono: sessionUser.puedeVerDatosPersonales ? est.phone || 'No registrado' : 'Oculto',
                 asistencias: asistenciasEstudiante,
                 inasistencias: inasistenciasEstudiante,
                 totalRegistros,

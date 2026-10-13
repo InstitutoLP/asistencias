@@ -26,6 +26,7 @@ const TEACHERS = {
     name: "Prof: Patricia",
     allowedYears: [1, 2, 3, 4, 5],
     puedeAgregarEstudiantes: true,
+    puedeVerDatosPersonales: true,
     esAdmin: false
   },
   "Abraham Ramirez": {
@@ -33,12 +34,14 @@ const TEACHERS = {
     name: "Prof: Abrahan",
     allowedYears: [1, 2, 3, 4, 5],
     puedeAgregarEstudiantes: true,
+    puedeVerDatosPersonales: true,
     esAdmin: false
   },
   "Sara Romero": {
     password: "20330592",
     name: "Administrador de Sistema",
-    soloAdmin: true
+    soloAdmin: true,
+    puedeVerDatosPersonales: true
   },
   "Nestor Pérez": {
     password: "13557016",
@@ -46,13 +49,15 @@ const TEACHERS = {
     allowedYears: [1, 2, 3, 4, 5],
     puedeAgregarEstudiantes: true,
     esAdmin: true,
-    puedeGestionarBoletas: true
+    puedeGestionarBoletas: true,
+    puedeVerDatosPersonales: true
   },
   "Andy Suárez": {
     password: "14965485",
     name: "Prof: Andy",
     allowedYears: [1, 2, 3, 4, 5],
     puedeAgregarEstudiantes: true,
+    puedeVerDatosPersonales: true,
     esAdmin: false
   },
   "Miriam Ariza": {
@@ -225,6 +230,7 @@ const getAllowedYears = () => {
 };
 
 const canManageStudents = () => Boolean(currentUser?.puedeAgregarEstudiantes);
+const canViewStudentPersonalData = () => Boolean(currentUser?.puedeVerDatosPersonales);
 const canManageBoletas = () => Boolean(currentUser?.puedeGestionarBoletas);
 const isProfessorNestor = () => Boolean(currentUser?.name?.includes('Néstor') || currentUser?.name?.includes('Nestor'));
 const canViewReports = () => isProfessorNestor() || currentUser?.name === 'Prof: Andy' || currentUser?.soloReportes;
@@ -971,9 +977,9 @@ const renderStudentList = () => {
               return `
                 <tr data-id="${student.id}" style="color: #000000;">
                   <td style="color: #000000; font-weight: bold;">${student.name}</td>
-                  <td style="color: #000000;">${student.cedula || 'No registrada'}</td>
-                  <td style="color: #000000;">${student.email || '-'}</td>
-                  <td style="color: #000000;">${student.phone}</td>
+                  <td style="color: #000000;">${canViewStudentPersonalData() ? student.cedula || 'No registrada' : 'Oculto'}</td>
+                  <td style="color: #000000;">${canViewStudentPersonalData() ? student.email || '-' : 'Oculto'}</td>
+                  <td style="color: #000000;">${canViewStudentPersonalData() ? student.phone || '-' : 'Oculto'}</td>
                   <td>
                     <div class="state-buttons">
                       ${attendanceButtons}
@@ -1245,7 +1251,8 @@ const exportCurrentToPdf = () => {
   y += 10;
 
   students.forEach((student) => {
-    doc.text(`${student.name} - ${student.phone} - Status: ${student.status || 'pendiente'}`, 14, y);
+    const phone = canViewStudentPersonalData() ? student.phone : 'Oculto';
+    doc.text(`${student.name} - ${phone} - Status: ${student.status || 'pendiente'}`, 14, y);
     y += 7;
   });
 
