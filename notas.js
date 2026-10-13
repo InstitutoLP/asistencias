@@ -159,7 +159,9 @@ const getSubjectsForYear = (year) => {
 const currentSubject = () => getSubjectsForYear(yearSelect.value).find((subject) => subject.id === subjectSelect.value);
 
 const hasUnsavedChanges = () => Array.from(studentsBody.querySelectorAll('.grade-input'))
-  .some((input) => input.value !== input.dataset.original);
+  .some((input) => input.value !== input.dataset.original)
+  || Array.from(studentsBody.querySelectorAll('.activity-input'))
+    .some((input) => input.value.trim() !== input.dataset.original);
 
 const confirmDiscardChanges = () => !hasUnsavedChanges()
   || window.confirm('Hay notas sin guardar. ¿Descartar esos cambios?');
@@ -176,17 +178,42 @@ const renderStudents = () => {
   if (!students.length) {
     const row = studentsBody.insertRow();
     const cell = row.insertCell();
-    cell.colSpan = 2;
+    cell.colSpan = 5;
     cell.className = 'empty';
     cell.textContent = 'No hay estudiantes registrados en este año.';
   } else {
-    students.forEach((student) => {
+    students.forEach((student, index) => {
       const row = studentsBody.insertRow();
       row.dataset.studentId = String(student.id);
+      const numberCell = row.insertCell();
+      numberCell.dataset.label = 'N.º de lista';
+      numberCell.textContent = String(index + 1);
       const nameCell = row.insertCell();
       nameCell.className = 'student-name';
+      nameCell.dataset.label = 'Nombre del estudiante';
       nameCell.textContent = student.name || 'Estudiante sin nombre';
+      const evaluationCell = row.insertCell();
+      evaluationCell.className = 'evaluation-weight';
+      evaluationCell.dataset.label = 'Porcentaje de evaluación';
+      evaluationCell.textContent = '25%';
+      evaluationCell.setAttribute('aria-label', 'Ponderación de la evaluación: 25%');
+      const activityCell = row.insertCell();
+      activityCell.dataset.label = 'Nombre de la actividad';
+      const activityInput = document.createElement('input');
+      activityInput.className = 'activity-input';
+      activityInput.type = 'text';
+      activityInput.maxLength = 120;
+      activityInput.placeholder = 'Nombre de la actividad';
+      activityInput.setAttribute('aria-label', `Nombre de la actividad de ${student.name || 'estudiante'}`);
+      const subjectGrades = student.grades?.[subject?.id] || {};
+      const activityNames = subjectGrades.activityNames && typeof subjectGrades.activityNames === 'object'
+        ? subjectGrades.activityNames
+        : {};
+      activityInput.value = String(activityNames[period] || '');
+      activityInput.dataset.original = activityInput.value.trim();
+      activityCell.appendChild(activityInput);
       const gradeCell = row.insertCell();
+      gradeCell.dataset.label = `Nota (${PERIOD_LABELS[period]})`;
       const input = document.createElement('input');
       input.className = 'grade-input';
       input.type = 'number';
@@ -195,7 +222,6 @@ const renderStudents = () => {
       input.step = '0.01';
       input.inputMode = 'decimal';
       input.setAttribute('aria-label', `Nota de ${student.name || 'estudiante'}`);
-      const subjectGrades = student.grades?.[subject?.id] || {};
       const hasPersistedGrade = Object.prototype.hasOwnProperty.call(subjectGrades, period);
       const persisted = subjectGrades[period];
       const existingSheetGrade = getSheetGrade(student.sheetRecord, subject?.id, period);
@@ -210,7 +236,7 @@ const renderStudents = () => {
 };
 
 const loadStudents = async () => {
-  studentsBody.innerHTML = '<tr><td class="empty" colspan="2">Cargando estudiantes...</td></tr>';
+  studentsBody.innerHTML = '<tr><td class="empty" colspan="5">Cargando estudiantes...</td></tr>';
   studentCount.textContent = 'Cargando estudiantes...';
   setStatus('');
 
@@ -247,7 +273,7 @@ const filterStudents = () => {
   const search = normalizeText(studentSearch.value);
   let visibleCount = 0;
   studentsBody.querySelectorAll('tr[data-student-id]').forEach((row) => {
-    const visible = normalizeText(row.cells[0]?.textContent).includes(search);
+    const visible = normalizeText(row.querySelector('.student-name')?.textContent).includes(search);
     row.hidden = !visible;
     if (visible) visibleCount += 1;
   });
@@ -266,8 +292,13 @@ const saveGrades = async () => {
   }
 
   const changedRows = Array.from(studentsBody.querySelectorAll('tr[data-student-id]'))
-    .map((row) => ({ row, student: students.find((item) => String(item.id) === row.dataset.studentId), input: row.querySelector('.grade-input') }))
-    .filter(({ input }) => input && input.value !== input.dataset.original);
+    .map((row) => ({
+      student: students.find((item) => String(item.id) === row.dataset.studentId),
+      input: row.querySelector('.grade-input'),
+      activityInput: row.querySelector('.activity-input'),
+    }))
+    .filter(({ input, activityInput }) => input && activityInput
+      && (input.value !== input.dataset.original || activityInput.value.trim() !== activityInput.dataset.original));
 
   if (!changedRows.length) {
     setStatus('No hay cambios pendientes para guardar.');
@@ -285,13 +316,20 @@ const saveGrades = async () => {
   setStatus('Guardando notas...');
   let savedCount = 0;
   const errors = [];
-  for (const { student, input } of changedRows) {
+  for (const { student, input, activityInput } of changedRows) {
     const grades = JSON.parse(JSON.stringify(student.grades || {}));
     grades[subject.id] = { ...(grades[subject.id] || {}) };
-    if (input.value === '') {
-      grades[subject.id][periodSelect.value] = null;
-    } else {
-      grades[subject.id][periodSelect.value] = input.valueAsNumber;
+    grades[subject.id].activityNames = {
+      ...(grades[subject.id].activityNames || {}),
+      [periodSelect.value]: activityInput.value.trim(),
+    };
+    const gradeChanged = input.value !== input.dataset.original;
+    if (gradeChanged) {
+      if (input.value === '') {
+        grades[subject.id][periodSelect.value] = null;
+      } else {
+        grades[subject.id][periodSelect.value] = input.valueAsNumber;
+      }
     }
 
     try {
@@ -304,8 +342,13 @@ const saveGrades = async () => {
       if (!response.ok) throw new Error(result.error || `Error ${response.status}`);
       student.grades = result.grades || grades;
       const savedSubjectGrades = student.grades?.[subject.id] || {};
-      input.value = savedSubjectGrades[periodSelect.value] ?? '';
-      input.dataset.original = input.value;
+      if (gradeChanged) {
+        input.value = savedSubjectGrades[periodSelect.value] ?? '';
+        input.dataset.original = input.value;
+      }
+      const savedActivityNames = savedSubjectGrades.activityNames || {};
+      activityInput.value = savedActivityNames[periodSelect.value] || '';
+      activityInput.dataset.original = activityInput.value.trim();
       savedCount += 1;
     } catch (error) {
       console.error(`No se pudieron guardar las notas de ${student.name}:`, error);
