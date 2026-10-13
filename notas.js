@@ -264,9 +264,9 @@ const renderActivityEditor = () => {
     const weightInput = document.createElement('input');
     weightInput.className = 'activity-weight-input';
     weightInput.type = 'number';
-    weightInput.min = '0.01';
+    weightInput.min = '0';
     weightInput.max = '100';
-    weightInput.step = '0.01';
+    weightInput.step = '0';
     weightInput.required = true;
     weightInput.value = String(activity.weight);
     weightInput.setAttribute('aria-label', `Porcentaje para ${activity.name || 'actividad'}`);
@@ -301,7 +301,7 @@ const loadGradeContext = () => {
       weight: Number(entry.weight) || 0,
     }));
     const totalWeight = activities.reduce((total, activity) => total + activity.weight, 0);
-    if (Math.abs(totalWeight - 100) > 0.01) distributeActivityWeights();
+    if (Math.abs(totalWeight - 100) > 0) distributeActivityWeights();
   } else {
     const legacyName = students
       .map((student) => subjectGrades(student).activityNames?.[period])
@@ -382,7 +382,7 @@ const renderStudents = () => {
         input.type = 'number';
         input.min = '1';
         input.max = '20';
-        input.step = '0.01';
+        input.step = '0';
         input.inputMode = 'decimal';
         input.dataset.studentId = studentId;
         input.dataset.activityId = activity.id;
