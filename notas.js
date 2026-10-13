@@ -169,6 +169,17 @@ const currentSubject = () => getSubjectsForYear(yearSelect.value).find((subject)
 const createActivityId = () => `activity-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 const copyJson = (value) => JSON.parse(JSON.stringify(value));
 
+const distributeActivityWeights = () => {
+  if (!activities.length) return;
+  const weight = Math.floor((10000 / activities.length)) / 100;
+  const remainder = Math.round((100 - weight * activities.length) * 100) / 100;
+  activities.forEach((activity, index) => {
+    activity.weight = index === activities.length - 1
+      ? Math.round((weight + remainder) * 100) / 100
+      : weight;
+  });
+};
+
 const captureDraftScores = () => {
   studentsBody.querySelectorAll('.grade-input').forEach((input) => {
     const { studentId, activityId } = input.dataset;
@@ -289,11 +300,13 @@ const loadGradeContext = () => {
       name: String(entry.name || ''),
       weight: Number(entry.weight) || 0,
     }));
+    const totalWeight = activities.reduce((total, activity) => total + activity.weight, 0);
+    if (Math.abs(totalWeight - 100) > 0.01) distributeActivityWeights();
   } else {
     const legacyName = students
       .map((student) => subjectGrades(student).activityNames?.[period])
       .find((name) => typeof name === 'string' && name.trim());
-    activities = [{ id: 'activity-1', name: legacyName || 'Actividad 1', weight: 25 }];
+    activities = [{ id: 'activity-1', name: legacyName || 'Actividad 1', weight: 100 }];
   }
 
   draftScores = {};
@@ -646,6 +659,7 @@ const initialize = async () => {
     const item = button.closest('.assessment-item');
     const activityId = item?.dataset.activityId;
     activities = activities.filter((activity) => activity.id !== activityId);
+    distributeActivityWeights();
     Object.values(draftScores).forEach((scores) => delete scores[activityId]);
     renderActivityEditor();
     renderStudents();
@@ -654,6 +668,7 @@ const initialize = async () => {
     captureDraftScores();
     const activity = { id: createActivityId(), name: `Actividad ${activities.length + 1}`, weight: 25 };
     activities.push(activity);
+    distributeActivityWeights();
     students.forEach((student) => {
       const studentId = String(student.id);
       if (!draftScores[studentId]) draftScores[studentId] = {};
