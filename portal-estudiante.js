@@ -102,6 +102,41 @@ const obtenerNotasDeSheets = async () => {
   }
 };
 const extraerValorColumna = (datos, materia, lapso) => {
+  const materiaNormalizada = normalizarTexto(materia).replace(/[^a-z0-9]+/g, ' ').trim();
+  const idsMateria = {
+    castellano: ['castellano'],
+    ingles: ['ingles'],
+    matematica: ['matematicas', 'matematica'],
+    matematicas: ['matematicas', 'matematica'],
+    crp: ['frances', 'crp'],
+    'educacion fisica': ['educacion-fisica'],
+    'arte y patrimonio': ['arte-patrimonio'],
+    'ciencias naturales': ['ciencias-naturales'],
+    fisica: ['fisica'],
+    quimica: ['quimica'],
+    biologia: ['biologia'],
+    'ciencias de la tierra': ['ciencias-tierra'],
+    'formacion para la soberania': ['formacion-soberania'],
+    ghc: ['ghc'],
+    'geografia historia y ciudadania': ['ghc'],
+    'orientacion y convivencia': ['orientacion-convivencia'],
+    frances: ['frances'],
+  };
+  const savedGradeEntries = (idsMateria[materiaNormalizada] || [])
+    .map((subjectId) => {
+      const grades = datos?.grades?.[subjectId];
+      const period = Object.keys(grades || {}).find((key) => normalizarTexto(key) === normalizarTexto(lapso));
+      return period ? { value: grades[period] } : null;
+    })
+    .filter((entry) => entry !== null);
+  const savedGradeEntry = savedGradeEntries.find((entry) => entry.value !== null && entry.value !== '')
+    || savedGradeEntries[0];
+  if (savedGradeEntry) {
+    return savedGradeEntry.value === null || savedGradeEntry.value === ''
+      ? '-'
+      : String(savedGradeEntry.value);
+  }
+
   const claveBuscada = normalizarTexto(`${materia}_${lapso}`).replace(/\s+/g, '');
   const clave = Object.keys(datos || {}).find((nombre) => {
     const nombreNormalizado = normalizarTexto(nombre).replace(/\s+/g, '');
@@ -126,10 +161,19 @@ const renderizarBoletaEstudiante = (estudiante) => {
     ['Geografía, historia y ciudadania', 'GHC'],
     ['Orientación y convivencia', 'OyC'],
   ];
+  const materiasAdicionales = [
+    ['Física', 'FI'],
+    ['Química', 'QU'],
+    ['Biología', 'BI'],
+    ['Ciencias de la Tierra', 'CT'],
+    ['Formación para la Soberanía', 'FS'],
+  ].filter(([materia]) => ['1er', '2do', '3er', 'Final']
+    .some((lapso) => extraerValorColumna(estudiante, materia, lapso) !== '-'));
+  const materiasBoleta = [...materias, ...materiasAdicionales];
 
   const cuerpo = document.getElementById('tablaNotasBody');
   if (cuerpo) {
-    cuerpo.innerHTML = materias.map(([materia, codigo]) => `
+    cuerpo.innerHTML = materiasBoleta.map(([materia]) => `
       <tr>
         <td class="col-area">${materia.toUpperCase()}</td>
         <td>${extraerValorColumna(estudiante, materia, '1er')}</td>
@@ -392,6 +436,7 @@ document.getElementById('loginEstudianteForm').addEventListener('submit', async 
     }
 
     alumnoEncontrado.id = estudianteSupabase.id;
+    alumnoEncontrado.grades = estudianteSupabase.grades || {};
     datosEstudianteActual = alumnoEncontrado;
     actualizarUrlEstudiante(estudianteSupabase.id);
     boletaAutorizadaActual = await verificarAutorizacionBoleta(datosEstudianteActual);
@@ -447,6 +492,7 @@ const cargarEstudianteDesdeUrl = async () => {
     const nombreKey = obtenerClaveEstudiante(alumnoEncontrado, 'nombre');
     alumnoEncontrado.Nombre = alumnoEncontrado[nombreKey];
     alumnoEncontrado.id = estudianteSupabase.id;
+    alumnoEncontrado.grades = estudianteSupabase.grades || {};
     datosEstudianteActual = alumnoEncontrado;
     boletaAutorizadaActual = await verificarAutorizacionBoleta(datosEstudianteActual);
     mostrarDashboard();

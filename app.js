@@ -235,6 +235,7 @@ const getAllowedYears = () => {
 const canManageStudents = () => Boolean(currentUser?.puedeAgregarEstudiantes);
 const canViewStudentPersonalData = () => Boolean(currentUser?.puedeVerDatosPersonales);
 const canManageBoletas = () => Boolean(currentUser?.puedeGestionarBoletas);
+const canLoadStudentGrades = () => Boolean(currentUser && !currentUser.soloAdmin && !currentUser.soloReportes);
 const isProfessorNestor = () => Boolean(currentUser?.name?.includes('Néstor') || currentUser?.name?.includes('Nestor'));
 const canViewReports = () => isProfessorNestor() || currentUser?.name === 'Prof: Andy' || currentUser?.soloReportes;
 const canMarkAttendance = () => !isProfessorNestor();
@@ -245,11 +246,13 @@ const syncStudentManagementControls = () => {
   const landingBtn = document.getElementById('landingAddStudent');
   const btnAdminNestor = document.getElementById('btnModuloAdminNestor');
   const reportsBtn = document.getElementById('btnVerReportes');
+  const gradesBtn = document.getElementById('btnCargarNotas');
 
   if (mainBtn) mainBtn.style.display = canManageStudents() ? 'inline-block' : 'none';
   if (sendDailyEmailsBtn) sendDailyEmailsBtn.style.display = canManageStudents() ? 'inline-block' : 'none';
   if (landingBtn) landingBtn.style.display = canManageStudents() ? 'inline-block' : 'none';
   if (reportsBtn) reportsBtn.style.display = canViewReports() ? 'inline-block' : '';
+  if (gradesBtn) gradesBtn.style.display = canLoadStudentGrades() ? 'inline-block' : 'none';
   
   if (btnAdminNestor) {
     const esProfNestor = currentUser && (currentUser.name.includes("Néstor") || currentUser.name.includes("Nestor"));
@@ -734,6 +737,7 @@ const cargarTodosLosEstudiantesDesdeSupabase = async () => {
         cedula: row.cedula || '',
         email: row.email || '',
         phone: row.phone || '',
+        grades: row.grades || {},
         status: row.status || '',
         paymentStatus: row.paymentStatus || row.payment_status || 'no_pago',
         paidAmount: row.paidAmount ?? row.paid_amount ?? 0,
@@ -924,6 +928,7 @@ const renderStudentList = () => {
               cedula: row.cedula || '',
               email: row.email || '',
               phone: row.phone || '',
+              grades: row.grades || {},
               status: row.status || '',
               paymentStatus: row.paymentStatus || row.payment_status || 'no_pago',
               paidAmount: row.paidAmount ?? row.paid_amount ?? 0,
@@ -1219,6 +1224,7 @@ const handleStudentFormSubmit = async (event) => {
     paymentStatus: 'no_pago',
     paidAmount: 0,
     payments: {},
+    grades: {},
     attendance: {},
     BoletaVisible: 'NO',
     year: resolvedYear,
@@ -1852,6 +1858,14 @@ let miGrafica = null;
 
 const abrirReportes = () => {
   window.location.href = 'reportes.html';
+};
+
+const abrirNotas = () => {
+  if (!canLoadStudentGrades()) {
+    showToast('Debes iniciar sesión como profesor para cargar notas');
+    return;
+  }
+  window.location.href = 'notas.html';
 };
 
 const cerrarReportes = () => {

@@ -99,7 +99,7 @@ module.exports = async function handler(req, res) {
     if (req.method === 'POST') {
       const body = await parseBody(req);
       const rawYear = body?.year ?? body?.selectedYear ?? body?.anio ?? body?.anio ?? 1;
-      const { id, name, cedula, email, phone, BoletaVisible, paymentStatus, paidAmount, payments, attendance, attendanceByDate } = body || {};
+      const { id, name, cedula, email, phone, BoletaVisible, paymentStatus, paidAmount, payments, grades, attendance, attendanceByDate } = body || {};
       const year = Number(rawYear);
 
       if (!name || Number.isNaN(year)) {
@@ -118,6 +118,7 @@ module.exports = async function handler(req, res) {
         payment_status: paymentStatus || 'no_pago',
         paid_amount: safeNumber(paidAmount, 0),
         payments: payments || {},
+        grades: grades || {},
         attendance: attendance || {},
         attendance_by_date: attendanceByDate || {},
       };
@@ -141,7 +142,7 @@ module.exports = async function handler(req, res) {
 
     if (req.method === 'PATCH') {
       const body = await parseBody(req);
-      const { id, name, cedula, email, phone, year, BoletaVisible, paymentStatus, paidAmount, payments, attendance, attendanceByDate } = body || {};
+      const { id, name, cedula, email, phone, year, BoletaVisible, paymentStatus, paidAmount, payments, grades, attendance, attendanceByDate } = body || {};
 
       if (!id) {
         return res.status(400).json({ error: 'Falta id del estudiante.' });
@@ -157,6 +158,7 @@ module.exports = async function handler(req, res) {
       if (paymentStatus !== undefined) changes.payment_status = paymentStatus;
       if (paidAmount !== undefined) changes.paid_amount = safeNumber(paidAmount, 0);
       if (payments !== undefined) changes.payments = payments;
+      if (grades !== undefined) changes.grades = grades;
       if (attendance !== undefined) changes.attendance = attendance;
       if (attendanceByDate !== undefined) changes.attendance_by_date = attendanceByDate;
       if (body?.status !== undefined) changes.status = body.status;

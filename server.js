@@ -77,6 +77,7 @@ const normalizeStudentRecord = (row = {}, fallbackYear = 1) => {
     cedula: row.cedula || '',
     email: row.email || '',
     phone: row.phone || '',
+    grades: row.grades || {},
     year,
     status: row.status || '',
     paymentStatus: row.payment_status || row.paymentStatus || 'no_pago',
@@ -94,6 +95,7 @@ const toSafeStudentPayload = (student = {}, dateOverride = null) => ({
   cedula: student.cedula || null,
   email: student.email || null,
   phone: student.phone || null,
+  grades: student.grades || {},
   year: Number(student.year || 1),
   status: student.status || '',
   payment_status: student.paymentStatus || 'no_pago',
@@ -380,7 +382,7 @@ app.get('/api/students', async (req, res) => {
 });
 
 app.post('/api/students', async (req, res) => {
-  const { id, name, cedula, email, phone, year, BoletaVisible, paymentStatus, paidAmount, payments } = req.body || {};
+  const { id, name, cedula, email, phone, year, BoletaVisible, paymentStatus, paidAmount, payments, grades } = req.body || {};
   if (!name || !year) {
     return res.status(400).json({ error: 'Falta nombre o año.' });
   }
@@ -397,6 +399,7 @@ app.post('/api/students', async (req, res) => {
       paymentStatus: paymentStatus || 'no_pago',
       paidAmount: Number(paidAmount || 0),
       payments: payments || {},
+      grades: grades || {},
       attendance: {},
       attendanceByDate: {},
     };
@@ -421,7 +424,7 @@ app.post('/api/students', async (req, res) => {
 });
 
 app.patch('/api/students', async (req, res) => {
-  const { id, name, cedula, email, phone, year, BoletaVisible, payments, paymentStatus, paidAmount } = req.body || {};
+  const { id, name, cedula, email, phone, year, BoletaVisible, payments, paymentStatus, paidAmount, grades } = req.body || {};
   if (!id) {
     return res.status(400).json({ error: 'Falta id del estudiante.' });
   }
@@ -435,6 +438,7 @@ app.patch('/api/students', async (req, res) => {
       year: year === undefined ? undefined : Number(year),
       BoletaVisible,
       payments,
+      grades,
       payment_status: paymentStatus,
       paid_amount: paidAmount === undefined ? undefined : Number(paidAmount),
     };
@@ -468,6 +472,7 @@ app.patch('/api/students', async (req, res) => {
     if (year !== undefined) student.year = Number(year);
     if (BoletaVisible !== undefined) student.BoletaVisible = BoletaVisible;
     if (payments !== undefined) student.payments = payments;
+    if (grades !== undefined) student.grades = grades;
     if (paymentStatus !== undefined) student.paymentStatus = paymentStatus;
     if (paidAmount !== undefined) student.paidAmount = paidAmount;
     data.students[id] = student;

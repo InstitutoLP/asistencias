@@ -12,6 +12,7 @@ create table if not exists public.students (
   paid_amount numeric not null default 0,
   attendance jsonb not null default '{}'::jsonb,
   attendance_by_date jsonb not null default '{}'::jsonb,
+  grades jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
 );
 
@@ -95,4 +96,3 @@ alter table public.students
 add column if not exists attendance_by_date jsonb not null default '{}'::jsonb;
 
 notify pgrst, 'reload schema';
-

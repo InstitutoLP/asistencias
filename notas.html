@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cargar notas - U.E. Instituto Libertad</title>
+  <link rel="icon" type="image/png" href="sello.png">
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Calibri, Arial, sans-serif;
+      color: #172033;
+      background: #edf2f8;
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 24px; }
+    button, input, select { font: inherit; }
+    .page { max-width: 1180px; margin: 0 auto; }
+    .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 20px; }
+    .toolbar a, .save-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 9px 16px;
+      border: 0;
+      border-radius: 8px;
+      background: #1668b2;
+      color: #fff;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .toolbar a { background: #fff; color: #1f3554; border: 1px solid #d5deea; }
+    .boletin {
+      background: #fff;
+      border: 1px solid #d6deea;
+      box-shadow: 0 12px 32px rgba(25, 43, 71, .12);
+      padding: clamp(18px, 4vw, 38px);
+    }
+    .school-header {
+      display: grid;
+      grid-template-columns: 130px 1fr 110px;
+      align-items: center;
+      gap: 18px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid #26364c;
+      text-align: center;
+      font-size: .9rem;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+    .school-header img { display: block; width: 100%; max-height: 100px; object-fit: contain; }
+    .school-header .seal { max-height: 100px; }
+    .school-header h1 { margin: 10px 0 0; font-size: 1.3rem; }
+    .intro { margin: 22px 0; }
+    .intro h2 { margin: 0 0 6px; font-size: 1.5rem; }
+    .intro p { margin: 0; color: #4c5b70; }
+    .filters {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(150px, 1fr));
+      gap: 16px;
+      padding: 18px;
+      background: #f3f6fa;
+      border: 1px solid #dce4ef;
+      border-radius: 10px;
+    }
+    .filters label { display: grid; gap: 7px; font-weight: 700; }
+    .filters select, .search input, .grade-input {
+      width: 100%;
+      min-height: 42px;
+      padding: 8px 10px;
+      border: 1px solid #c8d2e0;
+      border-radius: 7px;
+      background: #fff;
+      color: #172033;
+    }
+    .list-heading { display: flex; justify-content: space-between; align-items: end; gap: 16px; margin: 24px 0 12px; }
+    .list-heading h2 { margin: 0; font-size: 1.2rem; }
+    .list-heading p { margin: 4px 0 0; color: #64748b; }
+    .search { width: min(100%, 360px); }
+    .search label { display: block; margin-bottom: 6px; font-weight: 700; }
+    .table-scroll { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px 14px; border-bottom: 1px solid #dce3ec; text-align: left; }
+    th { background: #e8edf4; color: #26364c; }
+    td:last-child, th:last-child { width: 190px; text-align: center; }
+    .student-name { font-weight: 700; }
+    .grade-input { max-width: 130px; text-align: center; font-weight: 700; }
+    .grade-input:focus, .filters select:focus, .search input:focus { outline: 2px solid #93c5fd; border-color: #2563eb; }
+    .actions { display: flex; justify-content: flex-end; align-items: center; gap: 14px; margin-top: 18px; }
+    .save-button:disabled { opacity: .6; cursor: wait; }
+    .status { min-height: 24px; margin-top: 14px; font-weight: 700; }
+    .status.error { color: #b42318; }
+    .status.success { color: #177245; }
+    .empty { padding: 26px; color: #64748b; text-align: center; }
+
+    @media (max-width: 680px) {
+      body { padding: 12px; }
+      .toolbar { align-items: stretch; }
+      .toolbar a { white-space: nowrap; }
+      .school-header { grid-template-columns: 72px 1fr 60px; gap: 8px; font-size: .68rem; }
+      .school-header h1 { font-size: 1rem; }
+      .filters { grid-template-columns: 1fr; }
+      .list-heading { align-items: stretch; flex-direction: column; }
+      .search { width: 100%; }
+      th, td { padding: 10px 8px; }
+      td:last-child, th:last-child { width: 130px; }
+      .actions { align-items: stretch; flex-direction: column; }
+      .save-button { width: 100%; }
+    }
+  </style>
+  <script src="notas.js" defer></script>
+</head>
+<body>
+  <main class="page">
+    <nav class="toolbar" aria-label="Navegación">
+      <a href="registro.html#registro-asistencia">← Volver al sistema</a>
+      <strong id="teacherName"></strong>
+    </nav>
+
+    <section class="boletin" aria-labelledby="pageTitle">
+      <header class="school-header">
+        <img src="venezuela.png" alt="Ministerio de Educación">
+        <div>
+          REPÚBLICA BOLIVARIANA DE VENEZUELA<br>
+          MINISTERIO DEL PODER POPULAR PARA LA EDUCACIÓN<br>
+          UNIDAD EDUCATIVA INSTITUTO LIBERTAD<br>
+          CÓDIGO: PD02631519
+          <h1 id="pageTitle">MÓDULO DE CARGA DE NOTAS</h1>
+          AÑO ESCOLAR 2026-2027
+        </div>
+        <img class="seal" src="sello-instituto-libertad.jpg" alt="Sello Instituto Libertad">
+      </header>
+
+      <div class="intro">
+        <h2>Notas por estudiante</h2>
+        <p>Selecciona el curso, la materia y el período. Ingresa notas de 1 a 20; las notas guardadas se reflejarán en la boleta del estudiante.</p>
+      </div>
+
+      <div class="filters">
+        <label for="yearSelect">Año escolar
+          <select id="yearSelect"></select>
+        </label>
+        <label for="subjectSelect">Materia
+          <select id="subjectSelect"></select>
+        </label>
+        <label for="periodSelect">Período
+          <select id="periodSelect">
+            <option value="1er">1er lapso</option>
+            <option value="2do">2do lapso</option>
+            <option value="3er">3er lapso</option>
+            <option value="Final">Final</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="list-heading">
+        <div>
+          <h2 id="listTitle">Lista de estudiantes</h2>
+          <p id="studentCount">Cargando estudiantes...</p>
+        </div>
+        <div class="search">
+          <label for="studentSearch">Buscar estudiante</label>
+          <input id="studentSearch" type="search" placeholder="Escribe un nombre...">
+        </div>
+      </div>
+
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th>Estudiante</th><th id="gradeHeading">Nota</th></tr>
+          </thead>
+          <tbody id="studentsBody">
+            <tr><td class="empty" colspan="2">Cargando estudiantes...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="actions">
+        <button id="saveGrades" class="save-button" type="button">Guardar notas</button>
+      </div>
+      <p id="statusMessage" class="status" role="status" aria-live="polite"></p>
+    </section>
+  </main>
+</body>
+</html>
