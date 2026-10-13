@@ -89,13 +89,15 @@ const normalizeStudentRecord = (row = {}, fallbackYear = 1) => {
   };
 };
 
+const hasGrades = (grades) => grades && typeof grades === 'object' && Object.keys(grades).length > 0;
+
 const toSafeStudentPayload = (student = {}, dateOverride = null) => ({
   id: student.id,
   name: student.name || '',
   cedula: student.cedula || null,
   email: student.email || null,
   phone: student.phone || null,
-  grades: student.grades || {},
+  ...(hasGrades(student.grades) ? { grades: student.grades } : {}),
   year: Number(student.year || 1),
   status: student.status || '',
   payment_status: student.paymentStatus || 'no_pago',
@@ -399,7 +401,7 @@ app.post('/api/students', async (req, res) => {
       paymentStatus: paymentStatus || 'no_pago',
       paidAmount: Number(paidAmount || 0),
       payments: payments || {},
-      grades: grades || {},
+      ...(hasGrades(grades) ? { grades } : {}),
       attendance: {},
       attendanceByDate: {},
     };
@@ -438,7 +440,7 @@ app.patch('/api/students', async (req, res) => {
       year: year === undefined ? undefined : Number(year),
       BoletaVisible,
       payments,
-      grades,
+      ...(hasGrades(grades) ? { grades } : {}),
       payment_status: paymentStatus,
       paid_amount: paidAmount === undefined ? undefined : Number(paidAmount),
     };
@@ -472,7 +474,7 @@ app.patch('/api/students', async (req, res) => {
     if (year !== undefined) student.year = Number(year);
     if (BoletaVisible !== undefined) student.BoletaVisible = BoletaVisible;
     if (payments !== undefined) student.payments = payments;
-    if (grades !== undefined) student.grades = grades;
+    if (hasGrades(grades)) student.grades = grades;
     if (paymentStatus !== undefined) student.paymentStatus = paymentStatus;
     if (paidAmount !== undefined) student.paidAmount = paidAmount;
     data.students[id] = student;

@@ -9,6 +9,8 @@ const SUPABASE_URL = (process.env.SUPABASE_URL || '')
   .replace(/\/$/, '');
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
 
+const hasGrades = (grades) => grades && typeof grades === 'object' && Object.keys(grades).length > 0;
+
 const requireSupabase = (res) => {
   if (!SUPABASE_URL || !SUPABASE_KEY) {
     res.status(500).json({ error: 'No se ha configurado Supabase en el servidor.' });
@@ -57,7 +59,7 @@ module.exports = async (req, res) => {
       if (!name || !year) return res.status(400).json({ error: 'Falta nombre o año.' });
       const r = await supabaseFetch('/students', {
         method: 'POST',
-        body: JSON.stringify([{ name, cedula: cedula || null, email: email || null, phone: phone || null, year: Number(year), status: '', payment_status: paymentStatus || 'no_pago', paid_amount: Number(paidAmount) || 0, payments: payments || {}, grades: grades || {}, BoletaVisible: BoletaVisible === 'SI' ? 'SI' : 'NO' }]),
+        body: JSON.stringify([{ name, cedula: cedula || null, email: email || null, phone: phone || null, year: Number(year), status: '', payment_status: paymentStatus || 'no_pago', paid_amount: Number(paidAmount) || 0, payments: payments || {}, ...(hasGrades(grades) ? { grades } : {}), BoletaVisible: BoletaVisible === 'SI' ? 'SI' : 'NO' }]),
         headers: { Prefer: 'return=representation' },
       });
       const data = await r.json();
@@ -74,7 +76,7 @@ module.exports = async (req, res) => {
       });
       const { id, name, cedula, email, phone, year, status, BoletaVisible, payments, paymentStatus, paidAmount, grades } = body;
       if (!id) return res.status(400).json({ error: 'Falta id para actualizar.' });
-      const changes = { name, cedula, email, phone, year: year === undefined ? undefined : Number(year), status, BoletaVisible, payments, payment_status: paymentStatus, paid_amount: paidAmount === undefined ? undefined : Number(paidAmount) || 0, grades };
+      const changes = { name, cedula, email, phone, year: year === undefined ? undefined : Number(year), status, BoletaVisible, payments, payment_status: paymentStatus, paid_amount: paidAmount === undefined ? undefined : Number(paidAmount) || 0, ...(hasGrades(grades) ? { grades } : {}) };
       Object.keys(changes).forEach((key) => changes[key] === undefined && delete changes[key]);
       const r = await supabaseFetch(`/students?id=eq.${encodeURIComponent(id)}`, {
         method: 'PATCH',

@@ -24,6 +24,16 @@ const safeNumber = (value, fallback = 0) => {
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
+const hasGrades = (grades) => grades && typeof grades === 'object' && Object.keys(grades).length > 0;
+
+const getSupabaseError = (data, fallback) => {
+  const message = data.message || data.error || fallback;
+  if (/grades.*(schema cache|column)|column.*grades/i.test(message)) {
+    return 'Supabase aún no tiene la columna grades. Ejecuta supabase-grades.sql en el editor SQL de Supabase para habilitar el guardado de notas.';
+  }
+  return message;
+};
+
 const supabaseFetch = async (path, options = {}) => {
   const url = `${SUPABASE_URL}/rest/v1${path}`;
   const headers = {
@@ -118,7 +128,7 @@ module.exports = async function handler(req, res) {
         payment_status: paymentStatus || 'no_pago',
         paid_amount: safeNumber(paidAmount, 0),
         payments: payments || {},
-        grades: grades || {},
+        ...(hasGrades(grades) ? { grades } : {}),
         attendance: attendance || {},
         attendance_by_date: attendanceByDate || {},
       };
@@ -132,7 +142,7 @@ module.exports = async function handler(req, res) {
 
       if (!response.ok) {
         return res.status(response.status).json({
-          error: data.message || data.error || 'Supabase rechazó el estudiante.',
+          error: getSupabaseError(data, 'Supabase rechazó el estudiante.'),
         });
       }
 
@@ -158,7 +168,7 @@ module.exports = async function handler(req, res) {
       if (paymentStatus !== undefined) changes.payment_status = paymentStatus;
       if (paidAmount !== undefined) changes.paid_amount = safeNumber(paidAmount, 0);
       if (payments !== undefined) changes.payments = payments;
-      if (grades !== undefined) changes.grades = grades;
+      if (hasGrades(grades)) changes.grades = grades;
       if (attendance !== undefined) changes.attendance = attendance;
       if (attendanceByDate !== undefined) changes.attendance_by_date = attendanceByDate;
       if (body?.status !== undefined) changes.status = body.status;
@@ -171,7 +181,7 @@ module.exports = async function handler(req, res) {
       const data = await response.json().catch(() => []);
 
       if (!response.ok) {
-        return res.status(response.status).json({ error: data.message || data.error || 'Supabase rechazó la actualización.' });
+        return res.status(response.status).json({ error: getSupabaseError(data, 'Supabase rechazó la actualización.') });
       }
 
       const updated = Array.isArray(data) ? data[0] : data;
