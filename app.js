@@ -93,9 +93,9 @@ const TEACHERS = {
     allowedSubjects: ['ingles'],
     puedeAgregarEstudiantes: false
   },
-  "Jhoana Pedron": {
+  "Johana Pedron": {
     password: "Melanie06",
-    name: "Prof: Jhoana",
+    name: "Prof: Johana",
     allowedYears: [1, 2, 3, 4, 5], 
     allowedSubjects: ['frances'],
     puedeAgregarEstudiantes: false
