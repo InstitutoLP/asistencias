@@ -67,7 +67,7 @@
       border-radius: 10px;
     }
     .filters label { display: grid; gap: 7px; font-weight: 700; }
-    .filters select, .search input, .grade-input {
+    .filters select, .search input, .grade-input, .activity-name-input, .activity-weight-input {
       width: 100%;
       min-height: 42px;
       padding: 8px 10px;
@@ -81,19 +81,30 @@
     .list-heading p { margin: 4px 0 0; color: #64748b; }
     .search { width: min(100%, 360px); }
     .search label { display: block; margin-bottom: 6px; font-weight: 700; }
+    .assessment-editor { margin-top: 18px; padding: 18px; background: #f3f6fa; border: 1px solid #dce4ef; border-radius: 10px; }
+    .assessment-editor-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .assessment-editor-heading h3 { margin: 0; font-size: 1.05rem; }
+    .assessment-list { display: grid; gap: 10px; }
+    .assessment-item { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(130px, 200px) auto; align-items: end; gap: 12px; padding: 12px; background: #fff; border: 1px solid #dce3ec; border-radius: 8px; }
+    .assessment-item label { display: grid; gap: 6px; font-weight: 700; }
+    .activity-name-input, .activity-weight-input { min-width: 0; }
+    .assessment-total { margin: 12px 0 0; color: #4c5b70; font-weight: 700; }
+    .assessment-total.error { color: #b42318; }
+    .add-activity-button, .remove-activity-button { min-height: 40px; padding: 8px 12px; border: 1px solid #c8d2e0; border-radius: 7px; background: #fff; color: #1f3554; font-weight: 700; cursor: pointer; }
+    .remove-activity-button { color: #b42318; }
     .table-scroll { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; }
     th, td { padding: 12px 14px; border-bottom: 1px solid #dce3ec; text-align: left; }
     th { background: #e8edf4; color: #26364c; }
     td:nth-child(1), th:nth-child(1) { width: 90px; text-align: center; }
-    td:nth-child(3), th:nth-child(3) { width: 120px; text-align: center; }
-    td:last-child, th:last-child { width: 150px; text-align: center; }
+    td:last-child, th:last-child { width: 130px; text-align: center; }
     .student-name { font-weight: 700; }
     .grade-input { max-width: 110px; text-align: center; font-weight: 700; }
-    .activity-input { min-width: 180px; }
-    .activity-input, .grade-input { min-height: 42px; padding: 8px 10px; border: 1px solid #c8d2e0; border-radius: 7px; background: #fff; color: #172033; }
-    .grade-input:focus, .activity-input:focus, .filters select:focus, .search input:focus { outline: 2px solid #93c5fd; border-color: #2563eb; }
-    .evaluation-weight { font-weight: 700; white-space: nowrap; }
+    .grade-input:focus, .activity-name-input:focus, .activity-weight-input:focus, .filters select:focus, .search input:focus { outline: 2px solid #93c5fd; border-color: #2563eb; }
+    .assessment-column { min-width: 150px; text-align: center; }
+    .assessment-heading { display: grid; gap: 3px; }
+    .assessment-heading span:last-child { font-size: .85rem; font-weight: 400; }
+    .calculated-grade { font-weight: 700; white-space: nowrap; }
     .actions { display: flex; justify-content: flex-end; align-items: center; gap: 14px; margin-top: 18px; }
     .save-button:disabled { opacity: .6; cursor: wait; }
     .status { min-height: 24px; margin-top: 14px; font-weight: 700; }
@@ -108,6 +119,8 @@
       .school-header { grid-template-columns: 72px 1fr 60px; gap: 8px; font-size: .68rem; }
       .school-header h1 { font-size: 1rem; }
       .filters { grid-template-columns: 1fr; }
+      .assessment-editor-heading { align-items: stretch; flex-direction: column; }
+      .assessment-item { grid-template-columns: 1fr; }
       .list-heading { align-items: stretch; flex-direction: column; }
       .search { width: 100%; }
       th, td { padding: 10px 8px; }
@@ -118,10 +131,9 @@
       tbody tr { display: grid; border: 1px solid #dce3ec; border-radius: 8px; overflow: hidden; }
       tbody td { display: grid; grid-template-columns: minmax(120px, 38%) minmax(0, 1fr); align-items: center; gap: 8px; padding: 10px 12px; }
       tbody td::before { content: attr(data-label); color: #26364c; font-weight: 700; text-align: left; }
-      tbody td:nth-child(1), tbody td:nth-child(3), tbody td:last-child { width: auto; text-align: left; }
+      tbody td:nth-child(1), tbody td:last-child { width: auto; text-align: left; }
       tbody td.empty { display: block; text-align: center; }
       tbody td.empty::before { content: none; }
-      .activity-input { min-width: 0; width: 100%; }
       .grade-input { width: 100%; }
       .actions { align-items: stretch; flex-direction: column; }
       .save-button { width: 100%; }
@@ -152,7 +164,7 @@
 
       <div class="intro">
         <h2>Notas por estudiante</h2>
-        <p>Selecciona el curso, la materia y el período. Cada evaluación tiene una ponderación fija de 25%; registra el nombre de la actividad y una nota de 1 a 20 por estudiante. Las notas guardadas se reflejarán en la boleta.</p>
+        <p>Selecciona el curso, la materia y el período, agrega las actividades con su porcentaje y registra una nota de 1 a 20 por estudiante. La nota del lapso se calcula como promedio ponderado de las actividades calificadas y se refleja en la boleta.</p>
       </div>
 
       <div class="filters">
@@ -172,6 +184,15 @@
         </label>
       </div>
 
+      <section class="assessment-editor" aria-labelledby="assessmentHeading">
+        <div class="assessment-editor-heading">
+          <h3 id="assessmentHeading">Actividades y porcentajes del lapso</h3>
+          <button id="addActivity" class="add-activity-button" type="button">Agregar actividad</button>
+        </div>
+        <div id="activityList" class="assessment-list"></div>
+        <p id="assessmentTotal" class="assessment-total" aria-live="polite"></p>
+      </section>
+
       <div class="list-heading">
         <div>
           <h2 id="listTitle">Lista de estudiantes</h2>
@@ -185,17 +206,16 @@
 
       <div class="table-scroll">
         <table>
-          <thead>
+          <thead id="studentsHead">
             <tr>
               <th scope="col">N.º de lista</th>
               <th scope="col">Nombre del estudiante</th>
-              <th scope="col">Porcentaje de evaluación</th>
-              <th scope="col">Nombre de la actividad</th>
-              <th id="gradeHeading" scope="col">Nota</th>
+              <th class="assessment-column" scope="col">Actividad</th>
+              <th id="gradeHeading" scope="col">Nota del lapso (1-20)</th>
             </tr>
           </thead>
           <tbody id="studentsBody">
-            <tr><td class="empty" colspan="5">Cargando estudiantes...</td></tr>
+            <tr><td class="empty" colspan="4">Cargando estudiantes...</td></tr>
           </tbody>
         </table>
       </div>
