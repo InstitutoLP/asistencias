@@ -957,6 +957,9 @@ const renderStudentList = () => {
     const canViewPersonalData = canViewStudentPersonalData();
     const table = document.createElement('div');
     table.className = 'table-wrapper student-attendance-list';
+    if (canViewPersonalData && canManageStudents()) {
+      table.classList.add('student-attendance-list--editable');
+    }
     table.innerHTML = `
       <table style="color: #000000;">
         <thead>

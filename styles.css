@@ -759,6 +759,31 @@ td { padding: 14px 12px; vertical-align: middle; color: var(--text); }
 .state-button[data-action="asistente"].active { background: #15803d; border: 2px solid #86efac; }
 .state-button[data-action="inasistente"].active { background: #b91c1c; border: 2px solid #fca5a5; }
 
+.student-attendance-list--editable { overflow-x: hidden; }
+.student-attendance-list--editable table { min-width: 0; table-layout: fixed; }
+.student-attendance-list--editable th,
+.student-attendance-list--editable td { padding-right: 6px; padding-left: 6px; overflow-wrap: anywhere; }
+.student-attendance-list--editable th:nth-child(1),
+.student-attendance-list--editable td:nth-child(1) { width: 16%; }
+.student-attendance-list--editable th:nth-child(2),
+.student-attendance-list--editable td:nth-child(2) { width: 10%; }
+.student-attendance-list--editable th:nth-child(3),
+.student-attendance-list--editable td:nth-child(3) { width: 28%; }
+.student-attendance-list--editable th:nth-child(4),
+.student-attendance-list--editable td:nth-child(4) { width: 14%; }
+.student-attendance-list--editable th:nth-child(5),
+.student-attendance-list--editable td:nth-child(5) { width: 32%; }
+.student-attendance-list--editable .state-buttons { justify-content: flex-end; flex-wrap: wrap; gap: 4px; }
+.student-attendance-list--editable .state-buttons > button {
+  width: auto;
+  min-width: 0;
+  padding: 6px 7px;
+  font-size: 12px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.student-attendance-list--editable .state-button.active { min-height: 44px; }
+
 .export-controls { margin-top: 12px; display: flex; gap: 8px; justify-content: flex-end; }
 
 .toast { position: fixed; bottom: 20px; right: 20px; background: rgba(14,165,255,0.12); color: var(--text); padding:14px 18px; border-radius:14px; box-shadow: 0 20px 50px rgba(2,6,23,0.6); z-index:999; opacity:0; transform:translateY(10px); transition: opacity .25s ease, transform .25s ease; }
@@ -808,6 +833,12 @@ td { padding: 14px 12px; vertical-align: middle; color: var(--text); }
   }
   .student-attendance-list .state-buttons { gap: 8px; }
   .student-attendance-list .state-buttons > button { flex: 1 1 110px; width: auto; }
+  .student-attendance-list--editable { overflow-x: visible; }
+  .student-attendance-list--editable table { table-layout: auto; }
+  .student-attendance-list--editable th,
+  .student-attendance-list--editable td { width: 100%; }
+  .student-attendance-list--editable .state-buttons { justify-content: flex-start; flex-wrap: wrap; gap: 8px; }
+  .student-attendance-list--editable .state-buttons > button { flex: 1 1 110px; padding: 6px 14px; font-size: inherit; }
   .toast { right: 10px; bottom: 10px; left: 10px; text-align: center; }
   .modal-content { width: calc(100% - 28px); min-width: 0; max-width: none; }
 }
