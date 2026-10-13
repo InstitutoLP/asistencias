@@ -200,7 +200,9 @@ const getWeightedGrade = (studentId) => {
       weightTotal += weight;
     }
   });
-  return weightTotal ? Math.round(weightedTotal / weightTotal) : null;
+  if (!weightTotal) return null;
+  const weightedGrade = weightedTotal / weightTotal;
+  return Math.floor(weightedGrade) + (weightedGrade % 1 >= 0.5 ? 1 : 0);
 };
 
 const updateAssessmentTotal = () => {
