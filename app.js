@@ -951,6 +951,7 @@ const renderStudentList = () => {
       return;
     }
 
+    const canViewPersonalData = canViewStudentPersonalData();
     const table = document.createElement('div');
     table.className = 'table-wrapper';
     table.innerHTML = `
@@ -958,9 +959,11 @@ const renderStudentList = () => {
         <thead>
           <tr style="color: #000000;">
             <th style="color: #000000; font-weight: bold;">Nombre</th>
-            <th style="color: #000000; font-weight: bold;">Cédula</th>
-            <th style="color: #000000; font-weight: bold;">Correo</th>
-            <th style="color: #000000; font-weight: bold;">Representante</th>
+            ${canViewPersonalData ? `
+              <th style="color: #000000; font-weight: bold;">Cédula</th>
+              <th style="color: #000000; font-weight: bold;">Correo</th>
+              <th style="color: #000000; font-weight: bold;">Representante</th>
+            ` : ''}
             <th style="color: #000000; font-weight: bold;">${canMarkAttendance() ? 'Asistencia' : ''}</th>
           </tr>
         </thead>
@@ -977,9 +980,11 @@ const renderStudentList = () => {
               return `
                 <tr data-id="${student.id}" style="color: #000000;">
                   <td style="color: #000000; font-weight: bold;">${student.name}</td>
-                  <td style="color: #000000;">${canViewStudentPersonalData() ? student.cedula || 'No registrada' : 'Oculto'}</td>
-                  <td style="color: #000000;">${canViewStudentPersonalData() ? student.email || '-' : 'Oculto'}</td>
-                  <td style="color: #000000;">${canViewStudentPersonalData() ? student.phone || '-' : 'Oculto'}</td>
+                  ${canViewPersonalData ? `
+                    <td style="color: #000000;">${student.cedula || 'No registrada'}</td>
+                    <td style="color: #000000;">${student.email || '-'}</td>
+                    <td style="color: #000000;">${student.phone || '-'}</td>
+                  ` : ''}
                   <td>
                     <div class="state-buttons">
                       ${attendanceButtons}
