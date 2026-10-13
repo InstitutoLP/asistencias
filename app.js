@@ -956,7 +956,7 @@ const renderStudentList = () => {
 
     const canViewPersonalData = canViewStudentPersonalData();
     const table = document.createElement('div');
-    table.className = 'table-wrapper';
+    table.className = 'table-wrapper student-attendance-list';
     table.innerHTML = `
       <table style="color: #000000;">
         <thead>
@@ -984,11 +984,11 @@ const renderStudentList = () => {
                 <tr data-id="${student.id}" style="color: #000000;">
                   <td style="color: #000000; font-weight: bold;">${student.name}</td>
                   ${canViewPersonalData ? `
-                    <td style="color: #000000;">${student.cedula || 'No registrada'}</td>
-                    <td style="color: #000000;">${student.email || '-'}</td>
-                    <td style="color: #000000;">${student.phone || '-'}</td>
+                    <td data-label="Cédula" style="color: #000000;">${student.cedula || 'No registrada'}</td>
+                    <td data-label="Correo" style="color: #000000;">${student.email || '-'}</td>
+                    <td data-label="Representante" style="color: #000000;">${student.phone || '-'}</td>
                   ` : ''}
-                  <td>
+                  <td data-label="${canMarkAttendance() ? 'Asistencia' : ''}">
                     <div class="state-buttons">
                       ${attendanceButtons}
                       ${canEditStudents ? `<button class="secondary" style="color: #000000;" data-action="edit" data-id="${student.id}">Editar</button>` : ''}
