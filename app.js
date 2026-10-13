@@ -40,8 +40,8 @@ const TEACHERS = {
   "Sara Romero": {
     password: "20330592",
     name: "Administrador de Sistema",
-    soloAdmin: true,
-    puedeVerDatosPersonales: true
+    puedeVerDatosPersonales: true,
+    soloAdmin: true
   },
   "Nestor Pérez": {
     password: "13557016",
@@ -49,8 +49,8 @@ const TEACHERS = {
     allowedYears: [1, 2, 3, 4, 5],
     puedeAgregarEstudiantes: true,
     esAdmin: true,
-    puedeGestionarBoletas: true,
-    puedeVerDatosPersonales: true
+    puedeVerDatosPersonales: true,
+    puedeGestionarBoletas: true
   },
   "Andy Suárez": {
     password: "14965485",
@@ -1251,7 +1251,7 @@ const exportCurrentToPdf = () => {
   y += 10;
 
   students.forEach((student) => {
-    const phone = canViewStudentPersonalData() ? student.phone : 'Oculto';
+    const phone = canViewStudentPersonalData() ? student.phone || '-' : 'Oculto';
     doc.text(`${student.name} - ${phone} - Status: ${student.status || 'pendiente'}`, 14, y);
     y += 7;
   });
@@ -1482,7 +1482,7 @@ const actualizarVistaAdminNestor = () => {
       html += `
         <tr style="border-bottom:1px solid #e2e8f0; color: #000000;">
           <td style="padding:8px; color: #000000;">${year}° Año</td>
-          <td style="padding:8px; color: #000000;">${st.cedula || 'No registrada'}</td>
+          <td style="padding:8px; color: #000000;">${canViewStudentPersonalData() ? st.cedula || 'No registrada' : 'Oculto'}</td>
           <td style="padding:8px; font-weight:bold; color: #000000;">${st.name}</td>
           <td style="padding:8px; color: #000000;">${PERIODOS_PAGO.find(periodo => periodo.id === periodoPagoActual)?.label || periodoPagoActual}</td>
           <td style="padding:8px; color: #000000;">${pago.date || 'Sin fecha'}</td>
@@ -1573,7 +1573,9 @@ const mostrarReciboPago = (student, year) => {
   const cedulaKey = Object.keys(student).find(key => normalizarTexto(key).includes('cedula'));
   const nombrePeriodo = periodo => PERIODOS_PAGO.find(item => item.id === periodo)?.label || periodo;
   document.getElementById('reciboNombre').textContent = student.name;
-  document.getElementById('reciboCedula').textContent = student[cedulaKey] || 'No registrada';
+  document.getElementById('reciboCedula').textContent = canViewStudentPersonalData()
+    ? student[cedulaKey] || 'No registrada'
+    : 'Oculto';
   document.getElementById('reciboAno').textContent = `${year}° Año`;
   const obtenerMontoPago = (periodo, pago) => parseFloat(pago.amount) || (pago.status === 'pago' ? costoPeriodo(periodo) : 0);
   document.getElementById('reciboPagosBody').innerHTML = pagos.length
