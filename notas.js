@@ -531,7 +531,10 @@ const saveGrades = async () => {
       savedCount += 1;
     } catch (error) {
       console.error(`No se pudieron guardar las notas de ${student.name}:`, error);
-      errors.push(student.name || String(student.id));
+      errors.push({
+        student: student.name || String(student.id),
+        message: error.message || 'Error desconocido al guardar.',
+      });
     }
   }
 
@@ -545,7 +548,12 @@ const saveGrades = async () => {
     input.disabled = false;
   });
   if (errors.length) {
-    setStatus(`Se guardaron ${savedCount} estudiante(s), pero falló el guardado de: ${errors.join(', ')}.`, 'error');
+    const missingGradesColumn = errors.some(({ message }) => /columna\s+grades|grades.*(schema cache|column)|column.*grades/i.test(message));
+    const failedStudents = errors.map(({ student }) => student).join(', ');
+    const details = missingGradesColumn
+      ? ' Supabase no tiene la columna grades. Ejecuta supabase-grades.sql en el editor SQL de Supabase y vuelve a intentarlo.'
+      : ` Detalle: ${errors[0].message}`;
+    setStatus(`Falló el guardado para: ${failedStudents}.${details}`, 'error');
   } else {
     originalActivities = copyJson(activities);
     originalScores = copyJson(draftScores);
@@ -697,7 +705,7 @@ const initialize = async () => {
     console.error('No se pudieron cargar estudiantes:', error);
     students = [];
     loadGradeContext();
-    setStatus(error.message || 'No se pudieron cargar los estudiantes.', 'error');
+    setStatus(error.message || 'No se pudieron  cargar los estudiantes.', 'error');
   }
 };
 
