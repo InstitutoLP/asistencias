@@ -989,20 +989,23 @@ const renderStudentList = () => {
               const attendanceButtons = canMarkAttendance() ? `
                 <button class="state-button btn-asistente ${asistClass}" data-action="asistente" data-id="${student.id}" aria-pressed="${currentStatus === 'asistente'}" title="${currentStatus === 'asistente' ? 'Estado actual: asistente' : 'Marcar como asistente'}">${currentStatus === 'asistente' ? '<span class="state-check">✓</span>' : ''}<span>Asistente</span></button>
                 <button class="state-button btn-inasistente ${inasistClass}" data-action="inasistente" data-id="${student.id}" aria-pressed="${currentStatus === 'inasistente'}" title="${currentStatus === 'inasistente' ? 'Estado actual: inasistente' : 'Marcar como inasistente'}">${currentStatus === 'inasistente' ? '<span class="state-check">✓</span>' : ''}<span>Inasistente</span></button>` : '';
+              const studentActionButtons = `
+                ${attendanceButtons}
+                ${canEditStudents ? `<button class="secondary" style="color: #000000;" data-action="edit" data-id="${student.id}">Editar</button>` : ''}
+                ${canEditStudents ? `<button class="secondary" style="color: #000000;" data-action="delete" data-id="${student.id}">Borrar</button>` : ''}`;
               return `
                 <tr data-id="${student.id}" style="color: #000000;">
-                  <td style="color: #000000; font-weight: bold;">${student.name}</td>
+                  <td class="student-name-cell" style="color: #000000; font-weight: bold;">
+                    <span class="student-name">${student.name}</span>
+                    <div class="state-buttons state-buttons--mobile">${studentActionButtons}</div>
+                  </td>
                   ${canViewPersonalData ? `
                     <td data-label="Cédula" style="color: #000000;">${student.cedula || 'No registrada'}</td>
                     <td data-label="Correo" style="color: #000000;">${student.email || '-'}</td>
                     <td data-label="Representante" style="color: #000000;">${student.phone || '-'}</td>
                   ` : ''}
                   <td data-label="${canMarkAttendance() ? 'Asistencia' : ''}">
-                    <div class="state-buttons">
-                      ${attendanceButtons}
-                      ${canEditStudents ? `<button class="secondary" style="color: #000000;" data-action="edit" data-id="${student.id}">Editar</button>` : ''}
-                      ${canEditStudents ? `<button class="secondary" style="color: #000000;" data-action="delete" data-id="${student.id}">Borrar</button>` : ''}
-                    </div>
+                    <div class="state-buttons state-buttons--desktop">${studentActionButtons}</div>
                   </td>
                 </tr>
               `;
