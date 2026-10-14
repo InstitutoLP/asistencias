@@ -1017,6 +1017,9 @@ const renderStudentList = () => {
 
     if (studentListContainer) {
       studentListContainer.innerHTML = '';
+      if (canViewPersonalData) {
+        table.classList.add('student-attendance-list--personal-data');
+      }
       studentListContainer.appendChild(table);
     }
     applyStudentNameFilter();
