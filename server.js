@@ -277,7 +277,7 @@ const buildStudentAttendanceMessage = (student) => {
 
   return `Estimado/a representante,
 
-Aquí está el resumen diario de asistencia del/la estudiante ${student.name} para el curso Año ${student.year}.
+Aquí está el resumen diario de asistencia del estudiante ${student.name} para el curso Año ${student.year}.
 
 Materias:
 ${rows.join('\n')}
