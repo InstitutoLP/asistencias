@@ -41,7 +41,7 @@
     }
     .school-header {
       display: grid;
-      grid-template-columns: 130px 1fr 110px;
+      grid-template-columns: 160px 1fr 140px;
       align-items: center;
       gap: 18px;
       padding-bottom: 20px;
@@ -51,8 +51,8 @@
       font-weight: 700;
       line-height: 1.35;
     }
-    .school-header img { display: block; width: 100%; max-height: 100px; object-fit: contain; }
-    .school-header .seal { max-height: 100px; }
+    .school-header img { display: block; width: 100%; max-height: 140px; object-fit: contain; }
+    .school-header .seal { max-height: 130px; }
     .school-header h1 { margin: 10px 0 0; font-size: 1.3rem; }
     .intro { margin: 22px 0; }
     .intro h2 { margin: 0 0 6px; font-size: 1.5rem; }
@@ -117,7 +117,9 @@
       body { padding: 12px; }
       .toolbar { align-items: stretch; }
       .toolbar a { white-space: nowrap; }
-      .school-header { grid-template-columns: 72px 1fr 60px; gap: 8px; font-size: .68rem; }
+      .school-header { grid-template-columns: 88px 1fr 76px; gap: 6px; font-size: .68rem; }
+      .school-header img { max-height: 88px; }
+      .school-header .seal { max-height: 82px; }
       .school-header h1 { font-size: 1rem; }
       .filters { grid-template-columns: 1fr; }
       .assessment-editor-heading { align-items: stretch; flex-direction: column; }
@@ -151,7 +153,7 @@
 
     <section class="boletin" aria-labelledby="pageTitle">
       <header class="school-header">
-        <img src="venezuela.png" alt="Ministerio de Educación" height="500" width="500">
+        <img src="venezuela.png" alt="Ministerio de Educación">
         <div>
           REPÚBLICA BOLIVARIANA DE VENEZUELA<br>
           MINISTERIO DEL PODER POPULAR PARA LA EDUCACIÓN<br>
@@ -160,7 +162,7 @@
           <h1 id="pageTitle">MÓDULO DE CARGA DE NOTAS</h1>
           AÑO ESCOLAR 2026-2027
         </div>
-        <img class="seal" src="sello-instituto-libertad.jpg" alt="Sello Instituto Libertad" height="100" width="110">
+        <img class="seal" src="sello-instituto-libertad.jpg" alt="Sello Instituto Libertad">
       </header>
 
       <div class="intro">
