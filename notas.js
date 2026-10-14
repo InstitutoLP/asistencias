@@ -155,6 +155,9 @@ const getAllowedYears = () => {
   return years.filter((year) => Number.isInteger(year) && year >= 1 && year <= 5);
 };
 
+const canManageActivities = () => currentUser?.puedeGestionarActividades === true
+  || normalizeText(currentUser?.name) === 'prof: andy';
+
 const getSubjectsForYear = (year) => {
   const subjects = SUBJECTS_BY_YEAR[Number(year)] || [];
   const allowedByYear = currentUser.allowedSubjectsByYear?.[Number(year)];
@@ -250,6 +253,17 @@ const renderActivityEditor = () => {
     item.className = 'assessment-item';
     item.dataset.activityId = activity.id;
 
+    if (!canManageActivities()) {
+      item.classList.add('read-only');
+      const name = document.createElement('strong');
+      name.textContent = activity.name || 'Actividad sin nombre';
+      const weight = document.createElement('span');
+      weight.textContent = `${Number(activity.weight) || 0}%`;
+      item.append(name, weight);
+      activityList.appendChild(item);
+      return;
+    }
+
     const nameLabel = document.createElement('label');
     nameLabel.textContent = 'Nombre de la actividad';
     const nameInput = document.createElement('input');
@@ -303,7 +317,7 @@ const loadGradeContext = () => {
       weight: Number(entry.weight) || 0,
     }));
     const totalWeight = activities.reduce((total, activity) => total + activity.weight, 0);
-    if (Math.abs(totalWeight - 100) > 0) distributeActivityWeights();
+    if (canManageActivities() && Math.abs(totalWeight - 100) > 0) distributeActivityWeights();
   } else {
     const legacyName = students
       .map((student) => subjectGrades(student).activityNames?.[period])
@@ -461,14 +475,15 @@ const saveGrades = async () => {
   }
 
   captureDraftScores();
-  if (!activities.length || activities.some((activity) => !activity.name.trim())) {
+  if (canManageActivities() && (!activities.length || activities.some((activity) => !activity.name.trim()))) {
     setStatus('Escribe un nombre para cada actividad.', 'error');
     return;
   }
 
   const weights = activities.map((activity) => Number(activity.weight));
   const totalWeight = weights.reduce((total, weight) => total + (Number.isFinite(weight) ? weight : 0), 0);
-  if (weights.some((weight) => !Number.isFinite(weight) || weight <= 0 || weight > 100) || totalWeight > 100) {
+  if (canManageActivities()
+    && (weights.some((weight) => !Number.isFinite(weight) || weight <= 0 || weight > 100) || totalWeight > 100)) {
     setStatus('Cada porcentaje debe ser mayor que 0 y la suma de las actividades no puede superar 100%.', 'error');
     return;
   }
@@ -507,10 +522,18 @@ const saveGrades = async () => {
     const grades = copyJson(student.grades || {});
     const subjectGrades = { ...(grades[subject.id] || {}) };
     const savedAssessments = { ...(subjectGrades.assessments || {}) };
+    const existingAssessments = Array.isArray(savedAssessments[periodSelect.value])
+      ? savedAssessments[periodSelect.value]
+      : [];
     const assessmentEntries = activities.map((activity) => ({
+      ...(existingAssessments.find((entry) => String(entry.id) === activity.id) || {}),
       id: activity.id,
-      name: activity.name.trim(),
-      weight: Number(activity.weight),
+      name: canManageActivities()
+        ? activity.name.trim()
+        : existingAssessments.find((entry) => String(entry.id) === activity.id)?.name ?? activity.name,
+      weight: canManageActivities()
+        ? Number(activity.weight)
+        : existingAssessments.find((entry) => String(entry.id) === activity.id)?.weight ?? activity.weight,
       score: draftScores[String(student.id)]?.[activity.id] === ''
         ? null
         : Number(draftScores[String(student.id)]?.[activity.id]),
@@ -543,7 +566,9 @@ const saveGrades = async () => {
   activityList.querySelectorAll('input, button').forEach((control) => {
     control.disabled = false;
   });
-  if (activities.length === 1) activityList.querySelector('.remove-activity-button').disabled = true;
+  if (canManageActivities() && activities.length === 1) {
+    activityList.querySelector('.remove-activity-button').disabled = true;
+  }
   studentsBody.querySelectorAll('.grade-input').forEach((input) => {
     input.disabled = false;
   });
@@ -576,6 +601,7 @@ const initialize = async () => {
   }
 
   document.getElementById('teacherName').textContent = currentUser.name;
+  addActivityButton.hidden = !canManageActivities();
   const years = getAllowedYears();
   if (!years.length) {
     setStatus('Tu perfil no tiene años escolares asignados.', 'error');
@@ -644,6 +670,7 @@ const initialize = async () => {
   periodSelect.addEventListener('change', updateSelectedFilters);
   studentSearch.addEventListener('input', filterStudents);
   activityList.addEventListener('input', (event) => {
+    if (!canManageActivities()) return;
     const item = event.target.closest('.assessment-item');
     if (!item) return;
     const activity = activities.find((entry) => entry.id === item.dataset.activityId);
@@ -662,6 +689,7 @@ const initialize = async () => {
     });
   });
   activityList.addEventListener('click', (event) => {
+    if (!canManageActivities()) return;
     const button = event.target.closest('.remove-activity-button');
     if (!button) return;
     if (!window.confirm('¿Quitar esta actividad y las notas registradas para ella?')) return;
@@ -675,6 +703,7 @@ const initialize = async () => {
     renderStudents();
   });
   addActivityButton.addEventListener('click', () => {
+    if (!canManageActivities()) return;
     captureDraftScores();
     const activity = { id: createActivityId(), name: `Actividad ${activities.length + 1}`, weight: 25 };
     activities.push(activity);
