@@ -819,10 +819,11 @@ td { padding: 14px 12px; vertical-align: middle; color: var(--text); }
   .student-attendance-list { overflow-x: auto; }
   .student-attendance-list table { display: block; min-width: 0; width: 100%; }
   .student-attendance-list thead { display: none; }
-  .student-attendance-list tbody { display: block; width: max-content; min-width: 100%; }
+  .student-attendance-list tbody { display: block; width: 100%; }
   .student-attendance-list tbody tr {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
+    width: 100%;
     column-gap: 14px;
     row-gap: 12px;
     margin-bottom: 12px;
@@ -832,17 +833,18 @@ td { padding: 14px 12px; vertical-align: middle; color: var(--text); }
     background: rgba(255,255,255,0.03);
   }
   .student-attendance-list--personal-data tbody tr {
-    grid-template-columns: 260px 120px 180px 150px;
-    min-width: 710px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .student-attendance-list tbody td {
     display: block;
     width: auto;
     padding: 0;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
+    word-break: normal;
   }
   .student-attendance-list tbody td:last-child { display: none; }
   .student-attendance-list .student-name-cell {
+    grid-column: 1 / -1;
     display: flex;
     flex-direction: column;
     align-items: stretch;
