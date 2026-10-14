@@ -399,15 +399,19 @@
             let asistenciasEstudiante = 0;
             let inasistenciasEstudiante = 0;
 
-            const registrosPorFecha = est.attendanceByDate || {};
+            const registrosCamelCase = est.attendanceByDate || {};
+            const registrosPorFecha = Object.keys(registrosCamelCase).length
+              ? registrosCamelCase
+              : est.attendance_by_date || registrosCamelCase;
             Object.entries(registrosPorFecha).forEach(([fecha, materias]) => {
               const fechaValida = (!startDate || fecha >= startDate) && (!endDate || fecha <= endDate);
               if (!fechaValida) return;
 
               Object.entries(materias || {}).forEach(([materia, estado]) => {
                 if (selectedSubject !== 'general' && materia !== selectedSubject) return;
-                if (estado === 'asistente') { totalAsistencias++; asistenciasEstudiante++; }
-                if (estado === 'inasistente') { totalInasistencias++; inasistenciasEstudiante++; }
+                const estadoGuardado = typeof estado === 'object' && estado !== null ? estado.status : estado;
+                if (estadoGuardado === 'asistente') { totalAsistencias++; asistenciasEstudiante++; }
+                if (estadoGuardado === 'inasistente') { totalInasistencias++; inasistenciasEstudiante++; }
               });
             });
 
@@ -432,7 +436,10 @@
                 const estado = typeof registro === 'object' ? registro.status : registro;
                 const fechaReg = typeof registro === 'object' ? registro.date : null;
 
-                const fechaEnRango = (!fechaReg) || ((!startDate || fechaReg >= startDate) && (!endDate || fechaReg <= endDate));
+                const fechaNormalizada = fechaReg ? String(fechaReg).slice(0, 10) : '';
+                const fechaEnRango = fechaNormalizada
+                  ? ((!startDate || fechaNormalizada >= startDate) && (!endDate || fechaNormalizada <= endDate))
+                  : (!startDate && !endDate);
 
                 if (fechaEnRango) {
                   if (estado === 'asistente') { totalAsistencias++; asistenciasEstudiante++; }
@@ -462,7 +469,7 @@
           const tasaAsistencia = totalRegistrosGlobales === 0 ? 0 : Math.round((totalAsistencias / totalRegistrosGlobales) * 100);
           const tasaInasistencia = totalRegistrosGlobales === 0 ? 0 : Math.round((totalInasistencias / totalRegistrosGlobales) * 100);
 
-          document.getElementById('kpiTotalEstudiantes').textContent = estudiantes.length;
+          document.getElementById('kpiTotalEstudiantes').textContent = rankingFaltas.length;
           document.getElementById('kpiTasaAsistencia').textContent = `${tasaAsistencia}%`;
           document.getElementById('kpiTotalFaltas').textContent = `${tasaInasistencia}%`;
           document.getElementById('numAsistencias').textContent = totalAsistencias;
