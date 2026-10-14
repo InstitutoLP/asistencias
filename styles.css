@@ -415,6 +415,8 @@ body {
   font-size: 0.95rem;
 }
 
+.student-list-section { padding: 26px; }
+
 @media (max-width:860px) {
   .header-top {
     flex-direction: column;
@@ -740,6 +742,8 @@ tbody tr { border-bottom: 1px solid rgba(255,255,255,0.03); }
 
 td { padding: 14px 12px; vertical-align: middle; color: var(--text); }
 
+.student-attendance-list tbody td { padding-top: 16px; padding-bottom: 16px; }
+
 .status-chip { display: inline-flex; align-items: center; gap: 8px; font-size: 0.95rem; padding: 8px 12px; border-radius: 999px; }
 .status-chip.present { background: rgba(52,211,153,0.08); color: var(--success); }
 .status-chip.absent { background: rgba(255,107,107,0.06); color: var(--danger); }
@@ -766,19 +770,20 @@ td { padding: 14px 12px; vertical-align: middle; color: var(--text); }
 .student-attendance-list--editable th:nth-child(1),
 .student-attendance-list--editable td:nth-child(1) { width: 16%; }
 .student-attendance-list--editable th:nth-child(2),
-.student-attendance-list--editable td:nth-child(2) { width: 10%; }
+.student-attendance-list--editable td:nth-child(2) { width: 9%; }
 .student-attendance-list--editable th:nth-child(3),
-.student-attendance-list--editable td:nth-child(3) { width: 28%; }
+.student-attendance-list--editable td:nth-child(3) { width: 23%; }
 .student-attendance-list--editable th:nth-child(4),
-.student-attendance-list--editable td:nth-child(4) { width: 14%; }
+.student-attendance-list--editable td:nth-child(4) { width: 12%; }
 .student-attendance-list--editable th:nth-child(5),
-.student-attendance-list--editable td:nth-child(5) { width: 32%; }
-.student-attendance-list--editable .state-buttons { justify-content: flex-end; flex-wrap: wrap; gap: 4px; }
+.student-attendance-list--editable td:nth-child(5) { width: 40%; }
+.student-attendance-list--editable .state-buttons { justify-content: center; flex-wrap: wrap; gap: 6px; }
 .student-attendance-list--editable .state-buttons > button {
   width: auto;
-  min-width: 0;
-  padding: 6px 7px;
-  font-size: 12px;
+  min-width: 56px;
+  min-height: 40px;
+  padding: 8px 10px;
+  font-size: 14px;
   line-height: 1.2;
   white-space: nowrap;
 }
@@ -799,6 +804,7 @@ td { padding: 14px 12px; vertical-align: middle; color: var(--text); }
 @media (max-width: 600px) {
   body { overflow-x: hidden; }
   .app-shell { width: 100%; max-width: 100%; padding: 14px 10px; }
+  .student-list-section { padding: 18px 14px; }
   .landing-shell { width: 100%; min-height: 100svh; padding: 16px 10px; }
   .landing-card { width: 100%; padding: 24px 16px; border-radius: 24px; }
   .header-top, .table-header { gap: 12px; }
@@ -816,8 +822,12 @@ td { padding: 14px 12px; vertical-align: middle; color: var(--text); }
   .student-attendance-list tbody tr {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    padding: 14px 0;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding: 18px 14px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: rgba(255,255,255,0.03);
   }
   .student-attendance-list tbody td {
     display: block;
@@ -832,13 +842,13 @@ td { padding: 14px 12px; vertical-align: middle; color: var(--text); }
     font-weight: 700;
   }
   .student-attendance-list .state-buttons { gap: 8px; }
-  .student-attendance-list .state-buttons > button { flex: 1 1 110px; width: auto; }
+  .student-attendance-list .state-buttons > button { flex: 1 1 120px; width: auto; }
   .student-attendance-list--editable { overflow-x: visible; }
   .student-attendance-list--editable table { table-layout: auto; }
   .student-attendance-list--editable th,
   .student-attendance-list--editable td { width: 100%; }
   .student-attendance-list--editable .state-buttons { justify-content: flex-start; flex-wrap: wrap; gap: 8px; }
-  .student-attendance-list--editable .state-buttons > button { flex: 1 1 110px; padding: 6px 14px; font-size: inherit; }
+  .student-attendance-list--editable .state-buttons > button { flex: 1 1 120px; padding: 8px 14px; font-size: 14px; }
   .toast { right: 10px; bottom: 10px; left: 10px; text-align: center; }
   .modal-content { width: calc(100% - 28px); min-width: 0; max-width: none; }
 }
