@@ -821,9 +821,10 @@ td { padding: 14px 12px; vertical-align: middle; color: var(--text); }
   .student-attendance-list thead { display: none; }
   .student-attendance-list tbody { display: block; }
   .student-attendance-list tbody tr {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 14px;
+    row-gap: 12px;
     margin-bottom: 12px;
     padding: 18px 14px;
     border: 1px solid var(--border);
@@ -832,11 +833,13 @@ td { padding: 14px 12px; vertical-align: middle; color: var(--text); }
   }
   .student-attendance-list tbody td {
     display: block;
-    width: 100%;
+    width: auto;
     padding: 0;
     overflow-wrap: anywhere;
   }
+  .student-attendance-list tbody td:last-child { display: none; }
   .student-attendance-list .student-name-cell {
+    grid-column: 1 / -1;
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -846,16 +849,6 @@ td { padding: 14px 12px; vertical-align: middle; color: var(--text); }
     font-size: 1.08rem;
     line-height: 1.35;
   }
-  .student-attendance-list tbody td[data-label]:not(.student-name-cell) {
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
-  }
-  .student-attendance-list tbody td[data-label]:not(.student-name-cell)::before {
-    flex: 0 0 34%;
-    margin-bottom: 0;
-  }
-  .student-attendance-list tbody td:last-child { display: none; }
   .student-attendance-list .state-buttons--desktop { display: none; }
   .student-attendance-list .state-buttons--mobile {
     display: flex;
