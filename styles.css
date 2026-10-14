@@ -870,6 +870,17 @@ td { padding: 14px 12px; vertical-align: middle; color: var(--text); }
   .student-attendance-list--editable table { table-layout: auto; }
   .student-attendance-list--editable th,
   .student-attendance-list--editable td { width: 100%; }
+  .student-attendance-list--editable tbody tr > td:first-child {
+    width: 100%;
+    overflow-wrap: normal;
+    word-break: normal;
+  }
+  .student-attendance-list .student-name {
+    display: block;
+    width: 100%;
+    overflow-wrap: normal;
+    word-break: normal;
+  }
   .student-attendance-list--editable .state-buttons { justify-content: flex-start; flex-wrap: wrap; gap: 8px; }
   .student-attendance-list--editable .state-buttons--mobile > button { flex: 1 1 calc(50% - 4px); min-width: 0; padding: 10px 12px; font-size: 14px; }
   .toast { right: 10px; bottom: 10px; left: 10px; text-align: center; }
