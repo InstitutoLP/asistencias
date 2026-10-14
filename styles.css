@@ -816,39 +816,34 @@ td { padding: 14px 12px; vertical-align: middle; color: var(--text); }
   table { min-width: 680px; }
   .state-buttons { flex-wrap: wrap; }
   .state-button { flex: 1 1 110px; min-width: 0; }
-  .student-attendance-list { overflow-x: auto; }
+  .student-attendance-list { overflow-x: hidden; }
   .student-attendance-list table { display: block; min-width: 0; width: 100%; }
   .student-attendance-list thead { display: none; }
   .student-attendance-list tbody { display: block; width: 100%; }
   .student-attendance-list tbody tr {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
     width: 100%;
-    column-gap: 14px;
-    row-gap: 12px;
     margin-bottom: 12px;
     padding: 18px 14px;
     border: 1px solid var(--border);
     border-radius: 16px;
     background: rgba(255,255,255,0.03);
   }
-  .student-attendance-list--personal-data tbody tr {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
   .student-attendance-list tbody td {
     display: block;
-    width: auto;
+    width: 100%;
     padding: 0;
-    overflow-wrap: break-word;
-    word-break: normal;
   }
+  .student-attendance-list--personal-data tbody td[data-label] { display: none; }
   .student-attendance-list tbody td:last-child { display: none; }
   .student-attendance-list .student-name-cell {
-    grid-column: 1 / -1;
     display: flex;
     flex-direction: column;
     align-items: stretch;
     gap: 12px;
+    overflow-wrap: anywhere;
   }
   .student-attendance-list .student-name {
     font-size: 1.08rem;
@@ -862,28 +857,21 @@ td { padding: 14px 12px; vertical-align: middle; color: var(--text); }
     width: 100%;
   }
   .student-attendance-list .state-buttons--mobile > button {
-    flex: 1 1 calc(50% - 8px);
-    min-width: 120px;
+    flex: 1 1 calc(50% - 4px);
+    min-width: 0;
     min-height: 48px;
     padding: 10px 12px;
     font-size: 14px;
     line-height: 1.2;
   }
-  .student-attendance-list tbody td[data-label]::before {
-    content: attr(data-label);
-    display: block;
-    margin-bottom: 5px;
-    font-weight: 700;
-  }
   .student-attendance-list .state-buttons { gap: 8px; }
   .student-attendance-list .state-buttons > button { flex: 1 1 120px; width: auto; }
-  .student-attendance-list--editable { overflow-x: auto; }
+  .student-attendance-list--editable { overflow-x: hidden; }
   .student-attendance-list--editable table { table-layout: auto; }
   .student-attendance-list--editable th,
   .student-attendance-list--editable td { width: 100%; }
-  .student-attendance-list--personal-data tbody td { width: auto; }
   .student-attendance-list--editable .state-buttons { justify-content: flex-start; flex-wrap: wrap; gap: 8px; }
-  .student-attendance-list--editable .state-buttons > button { flex: 1 1 120px; padding: 8px 14px; font-size: 14px; }
+  .student-attendance-list--editable .state-buttons--mobile > button { flex: 1 1 calc(50% - 4px); min-width: 0; padding: 10px 12px; font-size: 14px; }
   .toast { right: 10px; bottom: 10px; left: 10px; text-align: center; }
   .modal-content { width: calc(100% - 28px); min-width: 0; max-width: none; }
 }
