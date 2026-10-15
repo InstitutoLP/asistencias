@@ -378,6 +378,39 @@ body {
   gap: 18px;
 }
 
+#mainView .header-top {
+  position: relative;
+  display: block;
+  min-height: 90px;
+}
+
+#mainView .header-copy {
+  width: 100%;
+  text-align: center;
+}
+
+#mainView .header-copy h1 {
+  margin-top: 0;
+}
+
+#mainView .header-copy p {
+  max-width: 680px;
+  margin: 16px auto 0;
+}
+
+#mainView .header-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  align-items: center;
+  flex-wrap: nowrap !important;
+}
+
+#mainView .header-actions > * {
+  flex: 0 0 auto;
+  margin-top: 0;
+}
+
 .info-row {
   text-align: center;
   margin-top: 14px;
@@ -421,6 +454,17 @@ body {
   .header-top {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  #mainView .header-top {
+    min-height: 0;
+  }
+
+  #mainView .header-actions {
+    position: static;
+    justify-content: flex-end;
+    flex-wrap: wrap !important;
+    margin-top: 14px;
   }
 }
 
@@ -483,6 +527,15 @@ body {
     flex-direction: column;
     align-items: stretch;
     text-align: left;
+  }
+
+  #mainView .header-copy {
+    text-align: center;
+  }
+
+  #mainView .header-actions > button,
+  #mainView .header-actions > a {
+    width: auto;
   }
 
   .info-row {
