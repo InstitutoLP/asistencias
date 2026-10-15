@@ -402,7 +402,8 @@ body {
   position: absolute;
   top: 0;
   right: 0;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-end;
   flex-wrap: nowrap !important;
 }
 
@@ -462,7 +463,9 @@ body {
 
   #mainView .header-actions {
     position: static;
+    flex-direction: column;
     justify-content: flex-end;
+    align-items: flex-end;
     flex-wrap: wrap !important;
     margin-top: 14px;
   }
