@@ -797,6 +797,104 @@ td { padding: 14px 12px; vertical-align: middle; color: var(--text); }
 .hidden { display:none !important; }
 
 @media (max-width: 700px) {
+  #adminNestorView {
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  #adminNestorView > header {
+    align-items: stretch !important;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  #adminNestorView > header > div,
+  #adminNestorView > header button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  #adminNestorView [style*="grid-template-columns"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  #adminNestorView select,
+  #adminNestorView input {
+    width: 100%;
+    min-width: 0;
+  }
+
+  #adminNestorView > div[style*="overflow-x"] {
+    min-width: 0;
+    padding: 14px !important;
+  }
+
+  #adminNestorView #adminStudentOverviewContainer,
+  #adminNestorView .admin-payments-table {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  #adminNestorView .admin-payments-table,
+  #adminNestorView .admin-payments-table tbody {
+    display: block;
+  }
+
+  #adminNestorView .admin-payments-table thead {
+    display: none;
+  }
+
+  #adminNestorView .admin-payments-table tbody tr {
+    display: block;
+    margin: 0 0 12px;
+    padding: 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #ffffff;
+  }
+
+  #adminNestorView .admin-payments-table tbody td {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 2px !important;
+    text-align: left !important;
+    overflow-wrap: anywhere;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  #adminNestorView .admin-payments-table tbody td::before {
+    content: attr(data-label);
+    flex: 0 0 82px;
+    color: #475569;
+    font-weight: 700;
+  }
+
+  #adminNestorView .admin-payments-table tbody td:last-child {
+    display: block;
+    padding-top: 10px !important;
+    border-bottom: 0;
+  }
+
+  #adminNestorView .admin-payments-table tbody td:last-child::before {
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  #adminNestorView .admin-payments-table tbody td:last-child > div {
+    justify-content: flex-start !important;
+  }
+
+  #adminNestorView .admin-payments-table tbody td:last-child button {
+    flex: 1 1 calc(50% - 6px);
+    width: auto;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 700px) {
     .controls {
         grid-template-columns: 1fr; /* O el valor que necesites */
     }

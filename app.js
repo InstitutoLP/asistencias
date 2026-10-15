@@ -1463,7 +1463,7 @@ const actualizarVistaAdminNestor = () => {
   if (!container) return;
 
   let totalAlumnos = 0;
-  let html = `<table style="width:100%; border-collapse:collapse; margin-top:10px; color: #000000;">
+  let html = `<table class="admin-payments-table" style="width:100%; border-collapse:collapse; margin-top:10px; color: #000000;">
     <thead>
       <tr style="background:#f1f5f9; text-align:left; color: #000000;">
         <th style="padding:10px; color: #000000; font-weight:bold;">Año</th>
@@ -1505,15 +1505,15 @@ const actualizarVistaAdminNestor = () => {
 
       html += `
         <tr style="border-bottom:1px solid #e2e8f0; color: #000000;">
-          <td style="padding:8px; color: #000000;">${year}° Año</td>
-          <td style="padding:8px; color: #000000;">${canViewStudentPersonalData() ? st.cedula || 'No registrada' : 'Oculto'}</td>
-          <td style="padding:8px; font-weight:bold; color: #000000;">${st.name}</td>
-          <td style="padding:8px; color: #000000;">${PERIODOS_PAGO.find(periodo => periodo.id === periodoPagoActual)?.label || periodoPagoActual}</td>
-          <td style="padding:8px; color: #000000;">${pago.date || 'Sin fecha'}</td>
-          <td style="padding:8px;">
+          <td data-label="Año" style="padding:8px; color: #000000;">${year}° Año</td>
+          <td data-label="Cédula" style="padding:8px; color: #000000;">${canViewStudentPersonalData() ? st.cedula || 'No registrada' : 'Oculto'}</td>
+          <td data-label="Nombre" style="padding:8px; font-weight:bold; color: #000000;">${st.name}</td>
+          <td data-label="Período" style="padding:8px; color: #000000;">${PERIODOS_PAGO.find(periodo => periodo.id === periodoPagoActual)?.label || periodoPagoActual}</td>
+          <td data-label="Fecha" style="padding:8px; color: #000000;">${pago.date || 'Sin fecha'}</td>
+          <td data-label="Estado Pago" style="padding:8px;">
             <span class="badge-pago" style="${badgeStyle}">${estadoTexto}</span>
           </td>
-          <td style="padding:8px; text-align:center;">
+          <td data-label="Acciones de pago y boleta" style="padding:8px; text-align:center;">
             <div style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap;">
               <button class="btn-pago-verde" onclick="cambiarEstadoPago('${st.id}', ${year}, 'pago')">$ Pago</button>
               <button class="btn-pago-rojo" onclick="cambiarEstadoPago('${st.id}', ${year}, 'no_pago')">No pago</button>
