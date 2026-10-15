@@ -400,7 +400,7 @@ body {
 
 #mainView .header-actions {
   position: absolute;
-  top: 10px;
+  top: 0px;
   right: -185px;
   flex-direction: column;
   align-items: flex-end;

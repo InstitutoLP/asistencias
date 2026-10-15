@@ -610,7 +610,11 @@ const renderizarReciboEstudiante = async () => {
 
   const pagosFiltrados = pagos
     .filter((pago) => pago.status === 'pago' || pago.status === 'abono')
-    .sort((first, second) => String(first.date || '').localeCompare(String(second.date || '')));
+    .sort((first, second) => {
+      if (first.periodo === 'inscripcion') return second.periodo === 'inscripcion' ? 0 : -1;
+      if (second.periodo === 'inscripcion') return 1;
+      return String(first.date || '').localeCompare(String(second.date || ''));
+    });
 
   const cedulaKey = obtenerClaveEstudiante(datosEstudianteActual, 'cedula');
   const obtenerMontoPago = (pago) => normalizarMontoPago(pago.amount) || (pago.status === 'pago' ? 30 : 0);

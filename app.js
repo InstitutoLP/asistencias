@@ -1593,7 +1593,11 @@ const guardarPagoPeriodo = (student, status, amount = 0, periodo = periodoPagoAc
 const mostrarReciboPago = (student, year) => {
   const pagos = Object.entries(student.payments || {})
     .filter(([, pago]) => pago.status === 'pago' || pago.status === 'abono')
-    .sort(([, first], [, second]) => String(first.date || '').localeCompare(String(second.date || '')));
+    .sort(([firstPeriod, firstPago], [secondPeriod, secondPago]) => {
+      if (firstPeriod === 'inscripcion') return secondPeriod === 'inscripcion' ? 0 : -1;
+      if (secondPeriod === 'inscripcion') return 1;
+      return String(firstPago.date || '').localeCompare(String(secondPago.date || ''));
+    });
   const cedulaKey = Object.keys(student).find(key => normalizarTexto(key).includes('cedula'));
   const nombrePeriodo = periodo => PERIODOS_PAGO.find(item => item.id === periodo)?.label || periodo;
   document.getElementById('reciboNombre').textContent = student.name;
