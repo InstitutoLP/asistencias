@@ -7,6 +7,7 @@ const API_SEND_EMAIL = `${API_BASE_URL}/api/send-email`;
 const API_STUDENTS = `${API_BASE_URL}/api/students`;
 const API_ATTENDANCE = `${API_BASE_URL}/api/attendance`;
 const API_SEND_DAILY_EMAILS = `${API_BASE_URL}/api/cron-daily-emails`;
+const API_GRADE_LOCK_AUTH = `${API_BASE_URL}/api/grade-lock-auth`;
 const deletedStudentIds = new Set();
 
 const isRemovedStudent = (student) => deletedStudentIds.has(String(student?.id));
@@ -53,7 +54,6 @@ const TEACHERS = {
     puedeGestionarBoletas: true
   },
   "Andy Suárez": {
-    password: "14965485",
     name: "Prof: Andy",
     allowedYears: [1, 2, 3, 4, 5],
     puedeAgregarEstudiantes: true,
@@ -281,73 +281,101 @@ const redirectToLoginPage = () => {
   window.location.href = 'index.html';
 };
 
-const handleLogin = (e) => {
+const handleLogin = async (e) => {
   e.preventDefault();
 
   const user = document.getElementById('loginUser').value.trim();
   const pass = document.getElementById('loginPassword').value.trim();
+  const teacher = TEACHERS[user];
 
-  if (TEACHERS[user] && TEACHERS[user].password === pass) {
-    currentUser = TEACHERS[user];
-    syncStudentManagementControls();
-
-    sessionStorage.setItem('activeUser', JSON.stringify(currentUser));
-
-    if (currentUser.soloReportes) {
-      window.location.replace('reportes.html');
-      return;
-    }
-
-    if (currentUser.soloAdmin) {
-      document.getElementById('loginForm').style.display = 'none';
-      document.getElementById('landingView')?.classList.add('hidden');
-      abrirAdminNestor();
-      showToast(`Bienvenido/a, ${currentUser.name}`);
-      return;
-    }
-
-    if (!isRegistrationPage()) {
-      redirectToRegistrationPage();
-      return;
-    }
-
-    document.getElementById('loginForm').style.display = 'none';
-    const introCenter = document.querySelector('.landing-intro center');
-    if (introCenter) introCenter.style.display = 'none';
-
-    const yearsSection = document.getElementById('years-section');
-    if (yearsSection) yearsSection.style.display = 'block';
-
-    const yearsContainer = document.getElementById('years-container');
-    yearsContainer.innerHTML = '';
-    let primerBotonAno = null;
-
-    getAllowedYears().forEach((year) => {
-      const btn = document.createElement('button');
-      btn.className = 'primary';
-      btn.textContent = `${year}° Año`;
-      btn.style.margin = '5px';
-     
-      btn.addEventListener('click', () => {
-        selectedYear = String(year);
-        document.getElementById('landingView').classList.add('hidden');
-        document.getElementById('mainView').classList.remove('hidden');
-        renderStudentList();
-        renderSelectionInfo();
-      });
-      if (!primerBotonAno) primerBotonAno = btn;
-      yearsContainer.appendChild(btn);
-    });
-
-    if (window.location.hash === '#registro-asistencia') {
-      primerBotonAno?.click();
-      history.replaceState(null, '', window.location.pathname);
-    }
-
-    showToast(`Bienvenido/a, ${currentUser.name}`);
-  } else {
+  if (!teacher) {
     showToast('Usuario o contraseña incorrectos');
+    return;
   }
+
+  if (user === 'Andy Suárez') {
+    try {
+      const response = await fetch(API_GRADE_LOCK_AUTH, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pass }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        showToast(result.error || 'No se pudo verificar el acceso de Andy.');
+        return;
+      }
+      sessionStorage.setItem('gradeLockToken', result.token);
+    } catch (error) {
+      console.error('No se pudo verificar el acceso de Andy:', error);
+      showToast('No se pudo verificar el acceso de Andy. Revisa la conexión con el servidor.');
+      return;
+    }
+  } else {
+    if (teacher.password !== pass) {
+      showToast('Usuario o contraseña incorrectos');
+      return;
+    }
+    sessionStorage.removeItem('gradeLockToken');
+  }
+
+  currentUser = teacher;
+  syncStudentManagementControls();
+
+  sessionStorage.setItem('activeUser', JSON.stringify(currentUser));
+
+  if (currentUser.soloReportes) {
+    window.location.replace('reportes.html');
+    return;
+  }
+
+  if (currentUser.soloAdmin) {
+    document.getElementById('loginForm').style.display = 'none';
+    document.getElementById('landingView')?.classList.add('hidden');
+    abrirAdminNestor();
+    showToast(`Bienvenido/a, ${currentUser.name}`);
+    return;
+  }
+
+  if (!isRegistrationPage()) {
+    redirectToRegistrationPage();
+    return;
+  }
+
+  document.getElementById('loginForm').style.display = 'none';
+  const introCenter = document.querySelector('.landing-intro center');
+  if (introCenter) introCenter.style.display = 'none';
+
+  const yearsSection = document.getElementById('years-section');
+  if (yearsSection) yearsSection.style.display = 'block';
+
+  const yearsContainer = document.getElementById('years-container');
+  yearsContainer.innerHTML = '';
+  let primerBotonAno = null;
+
+  getAllowedYears().forEach((year) => {
+    const btn = document.createElement('button');
+    btn.className = 'primary';
+    btn.textContent = `${year}° Año`;
+    btn.style.margin = '5px';
+
+    btn.addEventListener('click', () => {
+      selectedYear = String(year);
+      document.getElementById('landingView').classList.add('hidden');
+      document.getElementById('mainView').classList.remove('hidden');
+      renderStudentList();
+      renderSelectionInfo();
+    });
+    if (!primerBotonAno) primerBotonAno = btn;
+    yearsContainer.appendChild(btn);
+  });
+
+  if (window.location.hash === '#registro-asistencia') {
+    primerBotonAno?.click();
+    history.replaceState(null, '', window.location.pathname);
+  }
+
+  showToast(`Bienvenido/a, ${currentUser.name}`);
 };
 
 const setupPasswordReveal = () => {
@@ -497,6 +525,7 @@ const closeAddStudentView = () => {
 const cerrarSesion = () => {
   currentUser = null;
   sessionStorage.removeItem('activeUser');
+  sessionStorage.removeItem('gradeLockToken');
 
   if (!document.getElementById('landingView') || isRegistrationPage()) {
     redirectToLoginPage();
@@ -1959,9 +1988,11 @@ const init = () => {
         sessionStorage.setItem('activeUser', JSON.stringify(currentTeacher));
       } else {
         sessionStorage.removeItem('activeUser');
+        sessionStorage.removeItem('gradeLockToken');
       }
     } catch (error) {
       sessionStorage.removeItem('activeUser');
+      sessionStorage.removeItem('gradeLockToken');
     }
   }
 

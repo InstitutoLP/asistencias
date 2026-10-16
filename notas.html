@@ -85,7 +85,8 @@
     .assessment-editor-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; }
     .assessment-editor-heading h3 { margin: 0; font-size: 1.05rem; }
     .assessment-list { display: grid; gap: 10px; }
-    .assessment-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 12px; padding: 12px; background: #fff; border: 1px solid #dce3ec; border-radius: 8px; }
+    .assessment-item { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: end; gap: 12px; padding: 12px; background: #fff; border: 1px solid #dce3ec; border-radius: 8px; }
+    .assessment-item.read-only { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
     .assessment-fields { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
     .assessment-field { display: grid; align-content: start; gap: 6px; min-width: 0; padding: 10px; border: 1px solid #dce3ec; border-radius: 8px; background: #f8fafc; font-weight: 700; }
     .assessment-field-label { color: #4c5b70; font-size: .85rem; }
@@ -93,8 +94,10 @@
     .activity-name-input, .activity-weight-input { min-width: 0; }
     .assessment-total { margin: 12px 0 0; color: #4c5b70; font-weight: 700; }
     .assessment-total.error { color: #b42318; }
-    .add-activity-button, .remove-activity-button { min-height: 40px; padding: 8px 12px; border: 1px solid #c8d2e0; border-radius: 7px; background: #fff; color: #1f3554; font-weight: 700; cursor: pointer; }
+    .add-activity-button, .remove-activity-button, .toggle-activity-lock { min-height: 40px; padding: 8px 12px; border: 1px solid #c8d2e0; border-radius: 7px; background: #fff; color: #1f3554; font-weight: 700; cursor: pointer; }
     .remove-activity-button { color: #b42318; }
+    .toggle-activity-lock[aria-pressed="true"], .assessment-lock-status { color: #b42318; }
+    .assessment-lock-status { font-weight: 700; }
     .table-scroll { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; }
     th, td { padding: 12px 14px; border-bottom: 1px solid #dce3ec; text-align: left; }
@@ -134,6 +137,7 @@
       .filters { grid-template-columns: 1fr; }
       .assessment-editor-heading { align-items: stretch; flex-direction: column; }
       .assessment-item { grid-template-columns: 1fr; }
+      .assessment-item.read-only { grid-template-columns: 1fr; }
       .list-heading { align-items: stretch; flex-direction: column; }
       .search { width: 100%; }
       .grade-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }

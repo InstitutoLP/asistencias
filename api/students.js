@@ -1,5 +1,7 @@
 const SUPABASE_URL = (process.env.SUPABASE_URL || '').replace(/\/rest\/v1\/?$/, '').replace(/\/$/, '');
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
+const { hasGradeLockToken } = require('../grade-lock-security');
+const { validateGradeLockUpdate } = require('../grade-locks');
 
 const parseBody = async (req) => {
   if (req.body && typeof req.body === 'object') return req.body;
@@ -116,8 +118,30 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ error: 'Falta nombre o el año es inválido.' });
       }
 
+      const studentId = id || `student-${Date.now()}`;
+      let validatedGrades = grades;
+      if (hasGrades(grades)) {
+        const cohortResponse = await supabaseFetch(
+          `/students?year=eq.${encodeURIComponent(String(year))}&select=id,year,grades`,
+        );
+        const cohort = await cohortResponse.json().catch(() => []);
+        if (!cohortResponse.ok) {
+          return res.status(cohortResponse.status).json({
+            error: cohort.message || cohort.error || 'No se pudo validar el bloqueo de notas.',
+          });
+        }
+        const validation = validateGradeLockUpdate(
+          Array.isArray(cohort) ? cohort : [],
+          studentId,
+          grades,
+          hasGradeLockToken(req.headers.authorization),
+        );
+        if (validation.error) return res.status(423).json({ error: validation.error });
+        validatedGrades = validation.grades;
+      }
+
       const payload = {
-        id: id || `student-${Date.now()}`,
+        id: studentId,
         name,
         cedula: cedula || null,
         email: email || null,
@@ -128,7 +152,7 @@ module.exports = async function handler(req, res) {
         payment_status: paymentStatus || 'no_pago',
         paid_amount: safeNumber(paidAmount, 0),
         payments: payments || {},
-        ...(hasGrades(grades) ? { grades } : {}),
+        ...(hasGrades(validatedGrades) ? { grades: validatedGrades } : {}),
         attendance: attendance || {},
         attendance_by_date: attendanceByDate || {},
       };
@@ -158,6 +182,36 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ error: 'Falta id del estudiante.' });
       }
 
+      if (hasGrades(grades)) {
+        const currentResponse = await supabaseFetch(`/students?id=eq.${encodeURIComponent(String(id))}&select=id,year,grades`);
+        const currentRows = await currentResponse.json().catch(() => []);
+        if (!currentResponse.ok) {
+          return res.status(currentResponse.status).json({
+            error: currentRows.message || currentRows.error || 'No se pudo validar el bloqueo de notas.',
+          });
+        }
+        const currentStudent = Array.isArray(currentRows) ? currentRows[0] : null;
+        if (!currentStudent) return res.status(404).json({ error: 'Estudiante no encontrado.' });
+
+        const cohortResponse = await supabaseFetch(
+          `/students?year=eq.${encodeURIComponent(String(currentStudent.year))}&select=id,year,grades`,
+        );
+        const cohort = await cohortResponse.json().catch(() => []);
+        if (!cohortResponse.ok) {
+          return res.status(cohortResponse.status).json({
+            error: cohort.message || cohort.error || 'No se pudo validar el bloqueo de notas.',
+          });
+        }
+        const validation = validateGradeLockUpdate(
+          Array.isArray(cohort) ? cohort : [],
+          id,
+          grades,
+          hasGradeLockToken(req.headers.authorization),
+        );
+        if (validation.error) return res.status(423).json({ error: validation.error });
+        body.grades = validation.grades;
+      }
+
       const changes = {};
       if (name !== undefined) changes.name = name;
       if (cedula !== undefined) changes.cedula = cedula;
@@ -168,7 +222,7 @@ module.exports = async function handler(req, res) {
       if (paymentStatus !== undefined) changes.payment_status = paymentStatus;
       if (paidAmount !== undefined) changes.paid_amount = safeNumber(paidAmount, 0);
       if (payments !== undefined) changes.payments = payments;
-      if (hasGrades(grades)) changes.grades = grades;
+      if (hasGrades(body?.grades)) changes.grades = body.grades;
       if (attendance !== undefined) changes.attendance = attendance;
       if (attendanceByDate !== undefined) changes.attendance_by_date = attendanceByDate;
       if (body?.status !== undefined) changes.status = body.status;

@@ -5,6 +5,8 @@ const nodemailer = require('nodemailer');
 const dotenv = require('dotenv');
 const path = require('path');
 const fs = require('fs');
+const { issueGradeLockToken, hasGradeLockToken } = require('./grade-lock-security');
+const { validateGradeLockUpdate } = require('./grade-locks');
 
 dotenv.config();
 
@@ -366,6 +368,17 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
+app.post('/api/grade-lock-auth', (req, res) => {
+  try {
+    const token = issueGradeLockToken(req.body?.password);
+    if (!token) return res.status(401).json({ error: 'Contraseña de Andy incorrecta.' });
+    return res.json({ token });
+  } catch (error) {
+    console.error('No se pudo autorizar la gestión de bloqueos:', error.message);
+    return res.status(503).json({ error: error.message });
+  }
+});
+
 app.get('/api/students', async (req, res) => {
   try {
     if (IS_SUPABASE_CONFIGURED) {
@@ -390,8 +403,24 @@ app.post('/api/students', async (req, res) => {
   }
 
   try {
+    const studentId = id || `student-${Date.now()}`;
+    let validatedGrades = grades;
+    if (hasGrades(grades)) {
+      const cohort = IS_SUPABASE_CONFIGURED
+        ? await getStudentsFromSupabase()
+        : Object.values(loadAttendanceData().students);
+      const validation = validateGradeLockUpdate(
+        cohort,
+        studentId,
+        grades,
+        hasGradeLockToken(req.headers.authorization),
+      );
+      if (validation.error) return res.status(423).json({ error: validation.error });
+      validatedGrades = validation.grades;
+    }
+
     const student = {
-      id: id || `student-${Date.now()}`,
+      id: studentId,
       name,
       cedula: cedula || '',
       email: email || '',
@@ -401,7 +430,7 @@ app.post('/api/students', async (req, res) => {
       paymentStatus: paymentStatus || 'no_pago',
       paidAmount: Number(paidAmount || 0),
       payments: payments || {},
-      ...(hasGrades(grades) ? { grades } : {}),
+      ...(hasGrades(validatedGrades) ? { grades: validatedGrades } : {}),
       attendance: {},
       attendanceByDate: {},
     };
@@ -413,7 +442,6 @@ app.post('/api/students', async (req, res) => {
     }
 
     const data = loadAttendanceData();
-    const studentId = student.id;
     const existing = data.students[studentId] || { id: studentId, attendance: {}, attendanceByDate: {} };
     const merged = { ...existing, ...student };
     data.students[studentId] = merged;
@@ -432,6 +460,24 @@ app.patch('/api/students', async (req, res) => {
   }
 
   try {
+    let validatedGrades = grades;
+    if (hasGrades(grades)) {
+      let cohort;
+      if (IS_SUPABASE_CONFIGURED) {
+        cohort = await getStudentsFromSupabase();
+      } else {
+        cohort = Object.values(loadAttendanceData().students);
+      }
+      const validation = validateGradeLockUpdate(
+        cohort,
+        id,
+        grades,
+        hasGradeLockToken(req.headers.authorization),
+      );
+      if (validation.error) return res.status(423).json({ error: validation.error });
+      validatedGrades = validation.grades;
+    }
+
     const changes = {
       name,
       cedula,
@@ -440,7 +486,7 @@ app.patch('/api/students', async (req, res) => {
       year: year === undefined ? undefined : Number(year),
       BoletaVisible,
       payments,
-      ...(hasGrades(grades) ? { grades } : {}),
+      ...(hasGrades(validatedGrades) ? { grades: validatedGrades } : {}),
       payment_status: paymentStatus,
       paid_amount: paidAmount === undefined ? undefined : Number(paidAmount),
     };
@@ -474,7 +520,7 @@ app.patch('/api/students', async (req, res) => {
     if (year !== undefined) student.year = Number(year);
     if (BoletaVisible !== undefined) student.BoletaVisible = BoletaVisible;
     if (payments !== undefined) student.payments = payments;
-    if (hasGrades(grades)) student.grades = grades;
+    if (hasGrades(validatedGrades)) student.grades = validatedGrades;
     if (paymentStatus !== undefined) student.paymentStatus = paymentStatus;
     if (paidAmount !== undefined) student.paidAmount = paidAmount;
     data.students[id] = student;
