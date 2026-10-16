@@ -217,6 +217,8 @@ const getWeightedGrade = (studentId) => {
   return hasScore ? Math.round(weightedPoints) : null;
 };
 
+const formatFinalGrade = (grade) => (grade !== null && grade < 10 ? String(grade).padStart(2, '0') : String(grade));
+
 const getActivityMaximumPoints = (activity) => Number(((Number(activity.weight) || 0) * 20 / 100).toFixed(2));
 const formatPoints = (points) => String(Number(points.toFixed(2)));
 
@@ -286,7 +288,7 @@ const updateTableHeaders = () => {
 const updateCalculatedGrades = () => {
   studentsBody.querySelectorAll('tr[data-student-id]').forEach((row) => {
     const grade = getWeightedGrade(row.dataset.studentId);
-    row.querySelector('.calculated-grade').textContent = grade === null ? '-' : String(grade);
+    row.querySelector('.calculated-grade').textContent = grade === null ? '-' : formatFinalGrade(grade);
   });
   updateGradeSummary();
 };
@@ -532,7 +534,7 @@ const renderStudents = () => {
       calculatedCell.className = 'calculated-grade';
       calculatedCell.dataset.label = `Nota ponderada (${PERIOD_LABELS[period]})`;
       const grade = getWeightedGrade(studentId);
-      calculatedCell.textContent = grade === null ? '-' : String(grade);
+      calculatedCell.textContent = grade === null ? '-' : formatFinalGrade(grade);
     });
   }
 
