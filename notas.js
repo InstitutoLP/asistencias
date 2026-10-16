@@ -207,10 +207,11 @@ const getWeightedGrade = (studentId) => {
 };
 
 const getActivityMaximumPoints = (activity) => Number(((Number(activity.weight) || 0) * 20 / 100).toFixed(2));
+const formatPoints = (points) => String(Number(points.toFixed(2)));
 
 const updateActivityMaximumPoints = (item, activity) => {
   const points = item.querySelector('.assessment-points');
-  if (points) points.textContent = `Aporta hasta ${getActivityMaximumPoints(activity)} de 20 puntos`;
+  if (points) points.textContent = `Aporta hasta ${formatPoints(getActivityMaximumPoints(activity))} de 20 puntos`;
 };
 
 const updateAssessmentTotal = () => {
@@ -227,17 +228,16 @@ const updateTableHeaders = () => {
     heading.scope = 'col';
     heading.className = 'assessment-column';
     heading.dataset.activityId = activity.id;
-    const content = document.createElement('span');
-    content.className = 'assessment-heading';
     const name = document.createElement('span');
-    name.className = 'assessment-heading-name';
-    name.textContent = activity.name || 'Actividad sin nombre';
-    const weight = document.createElement('span');
-    weight.className = 'assessment-heading-weight';
-    weight.textContent = `${Number(activity.weight) || 0}%`;
-    content.append(name, weight);
-    heading.appendChild(content);
+    name.textContent = `${activity.name || 'Actividad sin nombre'} (nota /20)`;
+    heading.appendChild(name);
     row.appendChild(heading);
+
+    const weightHeading = document.createElement('th');
+    weightHeading.scope = 'col';
+    weightHeading.className = 'assessment-weight-column';
+    weightHeading.textContent = 'Porcentaje = puntos';
+    row.appendChild(weightHeading);
   });
   const gradeHeading = document.createElement('th');
   gradeHeading.id = 'gradeHeading';
@@ -409,7 +409,7 @@ const renderStudents = () => {
   if (!students.length) {
     const row = studentsBody.insertRow();
     const cell = row.insertCell();
-    cell.colSpan = activities.length + 3;
+    cell.colSpan = activities.length * 2 + 3;
     cell.className = 'empty';
     cell.textContent = 'No hay estudiantes registrados en este año.';
   } else {
@@ -426,11 +426,11 @@ const renderStudents = () => {
       nameCell.textContent = student.name || 'Estudiante sin nombre';
       activities.forEach((activity) => {
         const gradeCell = row.insertCell();
-        gradeCell.dataset.label = `${activity.name || 'Actividad'} (${Number(activity.weight) || 0}%)`;
+        gradeCell.dataset.label = `${activity.name || 'Actividad'} (nota /20)`;
         const input = document.createElement('input');
         input.className = 'grade-input';
         input.type = 'number';
-        input.min = '0';
+        input.min = '1';
         input.max = '20';
         input.step = '0.01';
         input.inputMode = 'decimal';
@@ -439,6 +439,12 @@ const renderStudents = () => {
         input.value = draftScores[studentId]?.[activity.id] || '';
         input.setAttribute('aria-label', `Nota de ${student.name || 'estudiante'} en ${activity.name || 'actividad'}`);
         gradeCell.appendChild(input);
+
+        const weightCell = row.insertCell();
+        weightCell.className = 'assessment-weight-value';
+        weightCell.dataset.activityWeightId = activity.id;
+        weightCell.dataset.label = 'Porcentaje = puntos';
+        weightCell.textContent = `${Number(activity.weight) || 0}% = ${formatPoints(getActivityMaximumPoints(activity))} pts`;
       });
       const calculatedCell = row.insertCell();
       calculatedCell.className = 'calculated-grade';
@@ -526,12 +532,12 @@ const saveGrades = async () => {
     const score = scores[activity.id];
     if (score === '') return false;
     const parsedScore = Number(score);
-    if (Number.isFinite(parsedScore) && parsedScore >= 0 && parsedScore <= 20) return false;
+    if (Number.isFinite(parsedScore) && parsedScore >= 1 && parsedScore <= 20) return false;
     const input = Array.from(studentsBody.querySelectorAll('.grade-input')).find((item) => (
       item.dataset.studentId === studentId && item.dataset.activityId === activity.id
     ));
     input?.focus();
-    setStatus('Cada nota debe estar entre 0 y 20. Deja el campo vacío si quieres quitar una nota.', 'error');
+    setStatus('Cada nota debe estar entre 1 y 20. Deja el campo vacío si quieres quitar una nota.', 'error');
     return true;
   }));
   if (invalidScore) return;
@@ -718,9 +724,12 @@ const initialize = async () => {
     updateTableHeaders();
     updateCalculatedGrades();
     studentsBody.querySelectorAll('tr[data-student-id]').forEach((row) => {
-      const activityIndex = activities.findIndex((entry) => entry.id === activity.id);
-      const cell = row.cells[activityIndex + 2];
-      if (cell) cell.dataset.label = `${activity.name || 'Actividad'} (${Number(activity.weight) || 0}%)`;
+      const scoreCell = row.querySelector(`.grade-input[data-activity-id="${activity.id}"]`)?.parentElement;
+      if (scoreCell) scoreCell.dataset.label = `${activity.name || 'Actividad'} (nota /20)`;
+      const weightCell = row.querySelector(`[data-activity-weight-id="${activity.id}"]`);
+      if (weightCell) {
+        weightCell.textContent = `${Number(activity.weight) || 0}% = ${formatPoints(getActivityMaximumPoints(activity))} pts`;
+      }
     });
   });
   activityList.addEventListener('click', (event) => {

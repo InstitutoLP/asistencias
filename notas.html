@@ -105,9 +105,8 @@
     .grade-input { max-width: 110px; text-align: center; font-weight: 700; }
     .grade-input:focus, .activity-name-input:focus, .activity-weight-input:focus, .filters select:focus, .search input:focus { outline: 2px solid #93c5fd; border-color: #2563eb; }
     .assessment-column { min-width: 150px; text-align: center; }
-    .assessment-heading { display: grid; justify-items: center; gap: 4px; }
-    .assessment-heading-name, .assessment-heading-weight { padding: 4px 7px; border: 1px solid #d2dbe7; border-radius: 6px; background: #f8fafc; }
-    .assessment-heading-weight { font-size: .85rem; font-weight: 400; white-space: nowrap; }
+    .assessment-weight-column, .assessment-weight-value { min-width: 120px; text-align: center; }
+    .assessment-weight-value { color: #4c5b70; font-size: .9rem; white-space: nowrap; }
     .calculated-grade { font-weight: 700; white-space: nowrap; }
     .actions { display: flex; justify-content: flex-end; align-items: center; gap: 14px; margin-top: 18px; }
     .save-button:disabled { opacity: .6; cursor: wait; }
@@ -170,7 +169,7 @@
 
       <div class="intro">
         <h2>Notas por estudiante</h2>
-        <p>Selecciona el curso, la materia y el período, agrega las actividades con su porcentaje y registra una nota de 0 a 20 por estudiante. Cada nota aporta según su porcentaje: por ejemplo, sacar 20 en una actividad que vale 15% aporta 3 puntos. La nota del lapso es la suma de esos aportes, sobre 20 puntos, y se refleja en la boleta.</p>
+        <p>Selecciona el curso, la materia y el período, agrega las actividades con su porcentaje y registra una nota de 1 a 20 por estudiante. La tabla muestra por separado la nota de cada actividad y la equivalencia de su porcentaje en puntos; por ejemplo, una actividad de 15% equivale a 3 puntos de los 20 del lapso.</p>
       </div>
 
       <div class="filters">
@@ -216,12 +215,13 @@
             <tr>
               <th scope="col">N.º de lista</th>
               <th scope="col">Nombre del estudiante</th>
-              <th class="assessment-column" scope="col">Actividad</th>
+              <th class="assessment-column" scope="col">Actividad (nota /20)</th>
+              <th class="assessment-weight-column" scope="col">Porcentaje = puntos</th>
               <th id="gradeHeading" scope="col">Nota del lapso (1-20)</th>
             </tr>
           </thead>
           <tbody id="studentsBody">
-            <tr><td class="empty" colspan="4">Cargando estudiantes...</td></tr>
+            <tr><td class="empty" colspan="5">Cargando estudiantes...</td></tr>
           </tbody>
         </table>
       </div>
