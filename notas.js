@@ -78,6 +78,10 @@ let activities = [];
 let originalActivities = [];
 let draftScores = {};
 let originalScores = {};
+let draftEarnedPoints = {};
+let originalEarnedPoints = {};
+let manualEarnedPoints = {};
+let originalManualEarnedPoints = {};
 
 const normalizeText = (value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 const normalizeCedula = (value) => String(value || '').toUpperCase().replace(/\D/g, '');
@@ -191,15 +195,22 @@ const captureDraftScores = () => {
   });
 };
 
+const captureDraftEarnedPoints = () => {
+  studentsBody.querySelectorAll('.earned-points-input').forEach((input) => {
+    const { studentId, activityId } = input.dataset;
+    if (!draftEarnedPoints[studentId]) draftEarnedPoints[studentId] = {};
+    draftEarnedPoints[studentId][activityId] = input.value;
+  });
+};
+
 const getWeightedGrade = (studentId) => {
-  const scores = draftScores[studentId] || {};
+  const points = draftEarnedPoints[studentId] || {};
   let weightedPoints = 0;
   let hasScore = false;
   activities.forEach((activity) => {
-    const score = scores[activity.id];
-    const weight = Number(activity.weight);
-    if (score !== '' && Number.isFinite(Number(score)) && Number.isFinite(weight) && weight > 0) {
-      weightedPoints += Number(score) * weight / 100;
+    const earnedPoints = points[activity.id];
+    if (earnedPoints !== '' && Number.isFinite(Number(earnedPoints))) {
+      weightedPoints += Number(earnedPoints);
       hasScore = true;
     }
   });
@@ -208,6 +219,31 @@ const getWeightedGrade = (studentId) => {
 
 const getActivityMaximumPoints = (activity) => Number(((Number(activity.weight) || 0) * 20 / 100).toFixed(2));
 const formatPoints = (points) => String(Number(points.toFixed(2)));
+
+const calculateEarnedPoints = (score, activity) => {
+  if (score === '' || !Number.isFinite(Number(score))) return '';
+  return String(Number((Number(score) * Number(activity.weight) / 100).toFixed(2)));
+};
+
+const updateAutomaticEarnedPoints = (studentId, activity) => {
+  if (manualEarnedPoints[studentId]?.[activity.id]) return;
+  if (!draftEarnedPoints[studentId]) draftEarnedPoints[studentId] = {};
+  const points = calculateEarnedPoints(draftScores[studentId]?.[activity.id] || '', activity);
+  draftEarnedPoints[studentId][activity.id] = points;
+  const input = studentsBody.querySelector(
+    `.earned-points-input[data-student-id="${studentId}"][data-activity-id="${activity.id}"]`,
+  );
+  if (input) {
+    input.value = points;
+    input.max = String(getActivityMaximumPoints(activity));
+  }
+};
+
+const recalculateAutomaticEarnedPoints = () => {
+  students.forEach((student) => {
+    activities.forEach((activity) => updateAutomaticEarnedPoints(String(student.id), activity));
+  });
+};
 
 const updateActivityMaximumPoints = (item, activity) => {
   const points = item.querySelector('.assessment-points');
@@ -236,7 +272,8 @@ const updateTableHeaders = () => {
     const weightHeading = document.createElement('th');
     weightHeading.scope = 'col';
     weightHeading.className = 'assessment-weight-column';
-    weightHeading.textContent = 'Porcentaje = puntos';
+    weightHeading.dataset.activityId = activity.id;
+    weightHeading.textContent = `${Number(activity.weight) || 0}% = ${formatPoints(getActivityMaximumPoints(activity))} pts`;
     row.appendChild(weightHeading);
   });
   const gradeHeading = document.createElement('th');
@@ -360,11 +397,15 @@ const loadGradeContext = () => {
   }
 
   draftScores = {};
+  draftEarnedPoints = {};
+  manualEarnedPoints = {};
   students.forEach((student) => {
     const studentId = String(student.id);
     const grades = subjectGrades(student);
     const persistedActivities = grades.assessments?.[period];
     draftScores[studentId] = {};
+    draftEarnedPoints[studentId] = {};
+    manualEarnedPoints[studentId] = {};
     activities.forEach((activity, index) => {
       const persistedActivity = Array.isArray(persistedActivities)
         ? persistedActivities.find((entry) => String(entry.id) === activity.id)
@@ -379,19 +420,31 @@ const loadGradeContext = () => {
       } else {
         draftScores[studentId][activity.id] = '';
       }
+      const savedEntry = Array.isArray(persistedActivities)
+        ? persistedActivities.find((entry) => String(entry.id) === activity.id)
+        : null;
+      draftEarnedPoints[studentId][activity.id] = savedEntry?.earnedPoints !== null && savedEntry?.earnedPoints !== undefined
+        ? String(savedEntry.earnedPoints)
+        : calculateEarnedPoints(draftScores[studentId][activity.id], activity);
+      manualEarnedPoints[studentId][activity.id] = savedEntry?.earnedPointsManual === true;
     });
   });
 
   originalActivities = copyJson(activities);
   originalScores = copyJson(draftScores);
+  originalEarnedPoints = copyJson(draftEarnedPoints);
+  originalManualEarnedPoints = copyJson(manualEarnedPoints);
   renderActivityEditor();
   renderStudents();
 };
 
 const hasUnsavedChanges = () => {
   captureDraftScores();
+  captureDraftEarnedPoints();
   return JSON.stringify(activities) !== JSON.stringify(originalActivities)
-    || JSON.stringify(draftScores) !== JSON.stringify(originalScores);
+    || JSON.stringify(draftScores) !== JSON.stringify(originalScores)
+    || JSON.stringify(draftEarnedPoints) !== JSON.stringify(originalEarnedPoints)
+    || JSON.stringify(manualEarnedPoints) !== JSON.stringify(originalManualEarnedPoints);
 };
 
 const confirmDiscardChanges = () => !hasUnsavedChanges()
@@ -443,8 +496,22 @@ const renderStudents = () => {
         const weightCell = row.insertCell();
         weightCell.className = 'assessment-weight-value';
         weightCell.dataset.activityWeightId = activity.id;
-        weightCell.dataset.label = 'Porcentaje = puntos';
-        weightCell.textContent = `${Number(activity.weight) || 0}% = ${formatPoints(getActivityMaximumPoints(activity))} pts`;
+        weightCell.dataset.label = `Puntos obtenidos (máx. ${formatPoints(getActivityMaximumPoints(activity))})`;
+        const pointsInput = document.createElement('input');
+        pointsInput.className = 'earned-points-input';
+        pointsInput.type = 'number';
+        pointsInput.min = '0';
+        pointsInput.max = String(getActivityMaximumPoints(activity));
+        pointsInput.step = '0.01';
+        pointsInput.inputMode = 'decimal';
+        pointsInput.dataset.studentId = studentId;
+        pointsInput.dataset.activityId = activity.id;
+        pointsInput.value = draftEarnedPoints[studentId]?.[activity.id] || '';
+        pointsInput.setAttribute(
+          'aria-label',
+          `Puntos obtenidos de ${formatPoints(getActivityMaximumPoints(activity))} posibles para ${student.name || 'estudiante'} en ${activity.name || 'actividad'}`,
+        );
+        weightCell.appendChild(pointsInput);
       });
       const calculatedCell = row.insertCell();
       calculatedCell.className = 'calculated-grade';
@@ -515,6 +582,7 @@ const saveGrades = async () => {
   }
 
   captureDraftScores();
+  captureDraftEarnedPoints();
   if (canManageActivities() && (!activities.length || activities.some((activity) => !activity.name.trim()))) {
     setStatus('Escribe un nombre para cada actividad.', 'error');
     return;
@@ -542,6 +610,20 @@ const saveGrades = async () => {
   }));
   if (invalidScore) return;
 
+  const invalidEarnedPoints = Object.entries(draftEarnedPoints).some(([studentId, points]) => activities.some((activity) => {
+    const earnedPoints = points[activity.id];
+    if (earnedPoints === '') return false;
+    const parsedPoints = Number(earnedPoints);
+    if (Number.isFinite(parsedPoints) && parsedPoints >= 0 && parsedPoints <= getActivityMaximumPoints(activity)) return false;
+    const input = Array.from(studentsBody.querySelectorAll('.earned-points-input')).find((item) => (
+      item.dataset.studentId === studentId && item.dataset.activityId === activity.id
+    ));
+    input?.focus();
+    setStatus(`Los puntos obtenidos deben estar entre 0 y ${formatPoints(getActivityMaximumPoints(activity))} para cada actividad.`, 'error');
+    return true;
+  }));
+  if (invalidEarnedPoints) return;
+
   if (!students.length) {
     setStatus('No hay estudiantes donde guardar estas actividades.', 'error');
     return;
@@ -553,6 +635,9 @@ const saveGrades = async () => {
     control.disabled = true;
   });
   studentsBody.querySelectorAll('.grade-input').forEach((input) => {
+    input.disabled = true;
+  });
+  studentsBody.querySelectorAll('.earned-points-input').forEach((input) => {
     input.disabled = true;
   });
   setStatus('Guardando actividades y notas...');
@@ -577,6 +662,10 @@ const saveGrades = async () => {
       score: draftScores[String(student.id)]?.[activity.id] === ''
         ? null
         : Number(draftScores[String(student.id)]?.[activity.id]),
+      earnedPoints: draftEarnedPoints[String(student.id)]?.[activity.id] === ''
+        ? null
+        : Number(draftEarnedPoints[String(student.id)]?.[activity.id]),
+      earnedPointsManual: manualEarnedPoints[String(student.id)]?.[activity.id] === true,
     }));
     savedAssessments[periodSelect.value] = assessmentEntries;
     subjectGrades.assessments = savedAssessments;
@@ -612,6 +701,9 @@ const saveGrades = async () => {
   studentsBody.querySelectorAll('.grade-input').forEach((input) => {
     input.disabled = false;
   });
+  studentsBody.querySelectorAll('.earned-points-input').forEach((input) => {
+    input.disabled = false;
+  });
   if (errors.length) {
     const missingGradesColumn = errors.some(({ message }) => /columna\s+grades|grades.*(schema cache|column)|column.*grades/i.test(message));
     const failedStudents = errors.map(({ student }) => student).join(', ');
@@ -622,6 +714,8 @@ const saveGrades = async () => {
   } else {
     originalActivities = copyJson(activities);
     originalScores = copyJson(draftScores);
+    originalEarnedPoints = copyJson(draftEarnedPoints);
+    originalManualEarnedPoints = copyJson(manualEarnedPoints);
     setStatus(`Actividades y notas guardadas. Nota ponderada actualizada para ${savedCount} estudiante(s).`, 'success');
   }
 };
@@ -719,6 +813,7 @@ const initialize = async () => {
     if (event.target.matches('.activity-weight-input')) {
       activity.weight = event.target.value === '' ? '' : Number(event.target.value);
       updateActivityMaximumPoints(item, activity);
+      students.forEach((student) => updateAutomaticEarnedPoints(String(student.id), activity));
     }
     updateAssessmentTotal();
     updateTableHeaders();
@@ -726,9 +821,12 @@ const initialize = async () => {
     studentsBody.querySelectorAll('tr[data-student-id]').forEach((row) => {
       const scoreCell = row.querySelector(`.grade-input[data-activity-id="${activity.id}"]`)?.parentElement;
       if (scoreCell) scoreCell.dataset.label = `${activity.name || 'Actividad'} (nota /20)`;
-      const weightCell = row.querySelector(`[data-activity-weight-id="${activity.id}"]`);
-      if (weightCell) {
-        weightCell.textContent = `${Number(activity.weight) || 0}% = ${formatPoints(getActivityMaximumPoints(activity))} pts`;
+      const pointsInput = row.querySelector(`.earned-points-input[data-activity-id="${activity.id}"]`);
+      if (pointsInput) {
+        pointsInput.max = String(getActivityMaximumPoints(activity));
+        const label = `Puntos obtenidos (máx. ${formatPoints(getActivityMaximumPoints(activity))})`;
+        pointsInput.parentElement.dataset.label = label;
+        pointsInput.setAttribute('aria-label', `${label} para ${row.querySelector('.student-name').textContent} en ${activity.name || 'actividad'}`);
       }
     });
   });
@@ -738,34 +836,56 @@ const initialize = async () => {
     if (!button) return;
     if (!window.confirm('¿Quitar esta actividad y las notas registradas para ella?')) return;
     captureDraftScores();
+    captureDraftEarnedPoints();
     const item = button.closest('.assessment-item');
     const activityId = item?.dataset.activityId;
     activities = activities.filter((activity) => activity.id !== activityId);
     distributeActivityWeights();
     Object.values(draftScores).forEach((scores) => delete scores[activityId]);
+    Object.values(draftEarnedPoints).forEach((points) => delete points[activityId]);
+    Object.values(manualEarnedPoints).forEach((points) => delete points[activityId]);
+    recalculateAutomaticEarnedPoints();
     renderActivityEditor();
     renderStudents();
   });
   addActivityButton.addEventListener('click', () => {
     if (!canManageActivities()) return;
     captureDraftScores();
+    captureDraftEarnedPoints();
     const activity = { id: createActivityId(), name: `Actividad ${activities.length + 1}`, weight: 25 };
     activities.push(activity);
     distributeActivityWeights();
+    recalculateAutomaticEarnedPoints();
     students.forEach((student) => {
       const studentId = String(student.id);
       if (!draftScores[studentId]) draftScores[studentId] = {};
       draftScores[studentId][activity.id] = '';
+      if (!draftEarnedPoints[studentId]) draftEarnedPoints[studentId] = {};
+      draftEarnedPoints[studentId][activity.id] = '';
+      if (!manualEarnedPoints[studentId]) manualEarnedPoints[studentId] = {};
+      manualEarnedPoints[studentId][activity.id] = false;
     });
     renderActivityEditor();
     renderStudents();
     activityList.querySelector(`[data-activity-id="${activity.id}"] .activity-name-input`).focus();
   });
   studentsBody.addEventListener('input', (event) => {
+    if (event.target.matches('.earned-points-input')) {
+      const { studentId, activityId } = event.target.dataset;
+      if (!draftEarnedPoints[studentId]) draftEarnedPoints[studentId] = {};
+      if (!manualEarnedPoints[studentId]) manualEarnedPoints[studentId] = {};
+      draftEarnedPoints[studentId][activityId] = event.target.value;
+      manualEarnedPoints[studentId][activityId] = true;
+      const grade = getWeightedGrade(studentId);
+      event.target.closest('tr').querySelector('.calculated-grade').textContent = grade === null ? '-' : String(grade);
+      return;
+    }
     if (!event.target.matches('.grade-input')) return;
     const { studentId, activityId } = event.target.dataset;
     if (!draftScores[studentId]) draftScores[studentId] = {};
     draftScores[studentId][activityId] = event.target.value;
+    const activity = activities.find((entry) => entry.id === activityId);
+    if (activity) updateAutomaticEarnedPoints(studentId, activity);
     const row = event.target.closest('tr');
     const grade = getWeightedGrade(studentId);
     row.querySelector('.calculated-grade').textContent = grade === null ? '-' : String(grade);
