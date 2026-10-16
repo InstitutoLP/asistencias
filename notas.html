@@ -107,6 +107,10 @@
     .assessment-column { min-width: 150px; text-align: center; }
     .assessment-weight-column, .assessment-weight-value { min-width: 135px; text-align: center; }
     .calculated-grade { font-weight: 700; white-space: nowrap; }
+    .grade-summary { display: grid; grid-template-columns: repeat(4, minmax(130px, 1fr)); gap: 12px; margin-top: 16px; }
+    .grade-summary-item { display: grid; gap: 4px; padding: 12px 14px; border: 1px solid #dce3ec; border-radius: 8px; background: #f8fafc; }
+    .grade-summary-item span { color: #4c5b70; font-size: .9rem; }
+    .grade-summary-item strong { font-size: 1.25rem; }
     .actions { display: flex; justify-content: flex-end; align-items: center; gap: 14px; margin-top: 18px; }
     .save-button:disabled { opacity: .6; cursor: wait; }
     .status { min-height: 24px; margin-top: 14px; font-weight: 700; }
@@ -127,6 +131,7 @@
       .assessment-item { grid-template-columns: 1fr; }
       .list-heading { align-items: stretch; flex-direction: column; }
       .search { width: 100%; }
+      .grade-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       th, td { padding: 10px 8px; }
       .table-scroll { overflow: visible; }
       table { display: block; }
@@ -224,6 +229,13 @@
           </tbody>
         </table>
       </div>
+
+      <section class="grade-summary" aria-label="Resumen de notas de la nómina" aria-live="polite">
+        <div class="grade-summary-item"><span>Estudiantes del año</span><strong id="gradeSummaryStudents">0</strong></div>
+        <div class="grade-summary-item"><span>Aprobados (10 o más)</span><strong id="gradeSummaryPassed">0</strong></div>
+        <div class="grade-summary-item"><span>Aplazados (menos de 10)</span><strong id="gradeSummaryFailed">0</strong></div>
+        <div class="grade-summary-item"><span>Sin nota</span><strong id="gradeSummaryPending">0</strong></div>
+      </section>
 
       <div class="actions">
         <button id="saveGrades" class="save-button" type="button">Guardar notas</button>

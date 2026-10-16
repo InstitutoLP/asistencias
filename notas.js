@@ -214,7 +214,7 @@ const getWeightedGrade = (studentId) => {
       hasScore = true;
     }
   });
-  return hasScore ? Number(weightedPoints.toFixed(2)) : null;
+  return hasScore ? Math.round(weightedPoints) : null;
 };
 
 const getActivityMaximumPoints = (activity) => Number(((Number(activity.weight) || 0) * 20 / 100).toFixed(2));
@@ -288,6 +288,21 @@ const updateCalculatedGrades = () => {
     const grade = getWeightedGrade(row.dataset.studentId);
     row.querySelector('.calculated-grade').textContent = grade === null ? '-' : String(grade);
   });
+  updateGradeSummary();
+};
+
+const updateGradeSummary = () => {
+  const summary = { students: students.length, passed: 0, failed: 0, pending: 0 };
+  students.forEach((student) => {
+    const grade = getWeightedGrade(String(student.id));
+    if (grade === null) summary.pending += 1;
+    else if (grade >= 10) summary.passed += 1;
+    else summary.failed += 1;
+  });
+  document.getElementById('gradeSummaryStudents').textContent = String(summary.students);
+  document.getElementById('gradeSummaryPassed').textContent = String(summary.passed);
+  document.getElementById('gradeSummaryFailed').textContent = String(summary.failed);
+  document.getElementById('gradeSummaryPending').textContent = String(summary.pending);
 };
 
 const renderActivityEditor = () => {
@@ -523,6 +538,7 @@ const renderStudents = () => {
 
   studentCount.textContent = `${students.length} estudiante${students.length === 1 ? '' : 's'}`;
   filterStudents();
+  updateCalculatedGrades();
 };
 
 const loadStudents = async () => {
@@ -876,8 +892,7 @@ const initialize = async () => {
       if (!manualEarnedPoints[studentId]) manualEarnedPoints[studentId] = {};
       draftEarnedPoints[studentId][activityId] = event.target.value;
       manualEarnedPoints[studentId][activityId] = true;
-      const grade = getWeightedGrade(studentId);
-      event.target.closest('tr').querySelector('.calculated-grade').textContent = grade === null ? '-' : String(grade);
+      updateCalculatedGrades();
       return;
     }
     if (!event.target.matches('.grade-input')) return;
@@ -886,9 +901,7 @@ const initialize = async () => {
     draftScores[studentId][activityId] = event.target.value;
     const activity = activities.find((entry) => entry.id === activityId);
     if (activity) updateAutomaticEarnedPoints(studentId, activity);
-    const row = event.target.closest('tr');
-    const grade = getWeightedGrade(studentId);
-    row.querySelector('.calculated-grade').textContent = grade === null ? '-' : String(grade);
+    updateCalculatedGrades();
   });
   saveButton.addEventListener('click', saveGrades);
 
