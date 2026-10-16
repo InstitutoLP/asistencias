@@ -277,7 +277,7 @@ const buildStudentAttendanceMessage = (student) => {
 
   return `Estimado/a representante,
 
-Aquí está el resumen diario de asistencia del estudiante ${student.name} para el curso Año ${student.year}.
+Aquí está el resumen diario de asistencia del estudiante ${student.name} para el ${student.year} año.
 
 Materias:
 ${rows.join('\n')}
@@ -285,7 +285,7 @@ ${rows.join('\n')}
 Este correo se envía automáticamente a las ${DAILY_SEND_HOUR}:${String(DAILY_SEND_MINUTE).padStart(2,'0')} hora de Venezuela con la asistencia registrada hasta ese momento.
 
 Saludos cordiales,
-Sistema de Gestión del Libertad`;
+Sistema de Gestión del U.E.P Instituto Libertad Sede Petare`;
 };
 
 const sendEmailToStudent = async (student) => {
