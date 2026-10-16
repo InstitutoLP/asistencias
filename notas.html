@@ -85,9 +85,11 @@
     .assessment-editor-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; }
     .assessment-editor-heading h3 { margin: 0; font-size: 1.05rem; }
     .assessment-list { display: grid; gap: 10px; }
-    .assessment-item { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(130px, 200px) auto; align-items: end; gap: 12px; padding: 12px; background: #fff; border: 1px solid #dce3ec; border-radius: 8px; }
-    .assessment-item.read-only { grid-template-columns: minmax(180px, 1fr) minmax(130px, 200px); align-items: center; }
-    .assessment-item label { display: grid; gap: 6px; font-weight: 700; }
+    .assessment-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 12px; padding: 12px; background: #fff; border: 1px solid #dce3ec; border-radius: 8px; }
+    .assessment-fields { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(130px, 200px); gap: 12px; }
+    .assessment-field { display: grid; align-content: start; gap: 6px; min-width: 0; padding: 10px; border: 1px solid #dce3ec; border-radius: 8px; background: #f8fafc; font-weight: 700; }
+    .assessment-field-label { color: #4c5b70; font-size: .85rem; }
+    .assessment-points { color: #4c5b70; font-size: .82rem; font-weight: 400; }
     .activity-name-input, .activity-weight-input { min-width: 0; }
     .assessment-total { margin: 12px 0 0; color: #4c5b70; font-weight: 700; }
     .assessment-total.error { color: #b42318; }
@@ -103,8 +105,9 @@
     .grade-input { max-width: 110px; text-align: center; font-weight: 700; }
     .grade-input:focus, .activity-name-input:focus, .activity-weight-input:focus, .filters select:focus, .search input:focus { outline: 2px solid #93c5fd; border-color: #2563eb; }
     .assessment-column { min-width: 150px; text-align: center; }
-    .assessment-heading { display: grid; gap: 3px; }
-    .assessment-heading span:last-child { font-size: .85rem; font-weight: 400; }
+    .assessment-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; }
+    .assessment-heading-name, .assessment-heading-weight { padding: 4px 7px; border: 1px solid #d2dbe7; border-radius: 6px; background: #f8fafc; }
+    .assessment-heading-weight { font-size: .85rem; font-weight: 400; white-space: nowrap; }
     .calculated-grade { font-weight: 700; white-space: nowrap; }
     .actions { display: flex; justify-content: flex-end; align-items: center; gap: 14px; margin-top: 18px; }
     .save-button:disabled { opacity: .6; cursor: wait; }
@@ -124,6 +127,7 @@
       .filters { grid-template-columns: 1fr; }
       .assessment-editor-heading { align-items: stretch; flex-direction: column; }
       .assessment-item { grid-template-columns: 1fr; }
+      .assessment-fields { grid-template-columns: minmax(0, 1fr) minmax(110px, .7fr); gap: 8px; }
       .list-heading { align-items: stretch; flex-direction: column; }
       .search { width: 100%; }
       th, td { padding: 10px 8px; }
@@ -167,7 +171,7 @@
 
       <div class="intro">
         <h2>Notas por estudiante</h2>
-        <p>Selecciona el curso, la materia y el período, agrega las actividades con su porcentaje y registra una nota de 1 a 20 por estudiante. La nota del lapso se calcula como promedio ponderado de las actividades calificadas y se refleja en la boleta.</p>
+        <p>Selecciona el curso, la materia y el período, agrega las actividades con su porcentaje y registra una nota de 0 a 20 por estudiante. Cada nota aporta según su porcentaje: por ejemplo, sacar 20 en una actividad que vale 15% aporta 3 puntos. La nota del lapso es la suma de esos aportes, sobre 20 puntos, y se refleja en la boleta.</p>
       </div>
 
       <div class="filters">

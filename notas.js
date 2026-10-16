@@ -193,19 +193,24 @@ const captureDraftScores = () => {
 
 const getWeightedGrade = (studentId) => {
   const scores = draftScores[studentId] || {};
-  let weightedTotal = 0;
-  let weightTotal = 0;
+  let weightedPoints = 0;
+  let hasScore = false;
   activities.forEach((activity) => {
     const score = scores[activity.id];
     const weight = Number(activity.weight);
     if (score !== '' && Number.isFinite(Number(score)) && Number.isFinite(weight) && weight > 0) {
-      weightedTotal += Number(score) * weight;
-      weightTotal += weight;
+      weightedPoints += Number(score) * weight / 100;
+      hasScore = true;
     }
   });
-  if (!weightTotal) return null;
-  const weightedGrade = weightedTotal / weightTotal;
-  return Math.floor(weightedGrade) + (weightedGrade % 1 >= 0.5 ? 1 : 0);
+  return hasScore ? Number(weightedPoints.toFixed(2)) : null;
+};
+
+const getActivityMaximumPoints = (activity) => Number(((Number(activity.weight) || 0) * 20 / 100).toFixed(2));
+
+const updateActivityMaximumPoints = (item, activity) => {
+  const points = item.querySelector('.assessment-points');
+  if (points) points.textContent = `Aporta hasta ${getActivityMaximumPoints(activity)} de 20 puntos`;
 };
 
 const updateAssessmentTotal = () => {
@@ -225,8 +230,10 @@ const updateTableHeaders = () => {
     const content = document.createElement('span');
     content.className = 'assessment-heading';
     const name = document.createElement('span');
+    name.className = 'assessment-heading-name';
     name.textContent = activity.name || 'Actividad sin nombre';
     const weight = document.createElement('span');
+    weight.className = 'assessment-heading-weight';
     weight.textContent = `${Number(activity.weight) || 0}%`;
     content.append(name, weight);
     heading.appendChild(content);
@@ -255,16 +262,37 @@ const renderActivityEditor = () => {
 
     if (!canManageActivities()) {
       item.classList.add('read-only');
+      const fields = document.createElement('div');
+      fields.className = 'assessment-fields';
+      const nameField = document.createElement('div');
+      nameField.className = 'assessment-field';
+      const nameLabel = document.createElement('span');
+      nameLabel.className = 'assessment-field-label';
+      nameLabel.textContent = 'Actividad';
       const name = document.createElement('strong');
       name.textContent = activity.name || 'Actividad sin nombre';
+      nameField.append(nameLabel, name);
+      const weightField = document.createElement('div');
+      weightField.className = 'assessment-field';
+      const weightLabel = document.createElement('span');
+      weightLabel.className = 'assessment-field-label';
+      weightLabel.textContent = 'Porcentaje';
       const weight = document.createElement('span');
       weight.textContent = `${Number(activity.weight) || 0}%`;
-      item.append(name, weight);
+      const points = document.createElement('span');
+      points.className = 'assessment-points';
+      points.textContent = `Aporta hasta ${getActivityMaximumPoints(activity)} de 20 puntos`;
+      weightField.append(weightLabel, weight, points);
+      fields.append(nameField, weightField);
+      item.append(fields);
       activityList.appendChild(item);
       return;
     }
 
+    const fields = document.createElement('div');
+    fields.className = 'assessment-fields';
     const nameLabel = document.createElement('label');
+    nameLabel.className = 'assessment-field';
     nameLabel.textContent = 'Nombre de la actividad';
     const nameInput = document.createElement('input');
     nameInput.className = 'activity-name-input';
@@ -276,6 +304,7 @@ const renderActivityEditor = () => {
     nameLabel.appendChild(nameInput);
 
     const weightLabel = document.createElement('label');
+    weightLabel.className = 'assessment-field';
     weightLabel.textContent = 'Porcentaje de evaluación';
     const weightInput = document.createElement('input');
     weightInput.className = 'activity-weight-input';
@@ -287,6 +316,11 @@ const renderActivityEditor = () => {
     weightInput.value = String(activity.weight);
     weightInput.setAttribute('aria-label', `Porcentaje para ${activity.name || 'actividad'}`);
     weightLabel.appendChild(weightInput);
+    const points = document.createElement('span');
+    points.className = 'assessment-points';
+    points.textContent = `Aporta hasta ${getActivityMaximumPoints(activity)} de 20 puntos`;
+    weightLabel.appendChild(points);
+    fields.append(nameLabel, weightLabel);
 
     const removeButton = document.createElement('button');
     removeButton.className = 'remove-activity-button';
@@ -294,7 +328,7 @@ const renderActivityEditor = () => {
     removeButton.textContent = 'Quitar';
     removeButton.disabled = activities.length === 1;
     removeButton.setAttribute('aria-label', `Quitar ${activity.name || 'actividad'}`);
-    item.append(nameLabel, weightLabel, removeButton);
+    item.append(fields, removeButton);
     activityList.appendChild(item);
   });
   updateAssessmentTotal();
@@ -396,9 +430,9 @@ const renderStudents = () => {
         const input = document.createElement('input');
         input.className = 'grade-input';
         input.type = 'number';
-        input.min = '1';
+        input.min = '0';
         input.max = '20';
-        input.step = '0';
+        input.step = '0.01';
         input.inputMode = 'decimal';
         input.dataset.studentId = studentId;
         input.dataset.activityId = activity.id;
@@ -492,12 +526,12 @@ const saveGrades = async () => {
     const score = scores[activity.id];
     if (score === '') return false;
     const parsedScore = Number(score);
-    if (Number.isFinite(parsedScore) && parsedScore >= 1 && parsedScore <= 20) return false;
+    if (Number.isFinite(parsedScore) && parsedScore >= 0 && parsedScore <= 20) return false;
     const input = Array.from(studentsBody.querySelectorAll('.grade-input')).find((item) => (
       item.dataset.studentId === studentId && item.dataset.activityId === activity.id
     ));
     input?.focus();
-    setStatus('Cada nota debe estar entre 1 y 20. Deja el campo vacío si quieres quitar una nota.', 'error');
+    setStatus('Cada nota debe estar entre 0 y 20. Deja el campo vacío si quieres quitar una nota.', 'error');
     return true;
   }));
   if (invalidScore) return;
@@ -678,6 +712,7 @@ const initialize = async () => {
     if (event.target.matches('.activity-name-input')) activity.name = event.target.value;
     if (event.target.matches('.activity-weight-input')) {
       activity.weight = event.target.value === '' ? '' : Number(event.target.value);
+      updateActivityMaximumPoints(item, activity);
     }
     updateAssessmentTotal();
     updateTableHeaders();
