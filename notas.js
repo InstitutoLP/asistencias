@@ -203,7 +203,7 @@ const captureDraftEarnedPoints = () => {
   });
 };
 
-const getWeightedGrade = (studentId) => {
+const getPreciseWeightedGrade = (studentId) => {
   const points = draftEarnedPoints[studentId] || {};
   let weightedPoints = 0;
   let hasScore = false;
@@ -214,10 +214,43 @@ const getWeightedGrade = (studentId) => {
       hasScore = true;
     }
   });
-  return hasScore ? Math.round(weightedPoints) : null;
+  return hasScore ? Number(weightedPoints.toFixed(2)) : null;
+};
+
+const getWeightedGrade = (studentId) => {
+  const grade = getPreciseWeightedGrade(studentId);
+  return grade === null ? null : Math.round(grade);
 };
 
 const formatFinalGrade = (grade) => (grade !== null && grade < 10 ? String(grade).padStart(2, '0') : String(grade));
+const formatPreciseGrade = (grade) => String(Number(grade.toFixed(2)));
+
+const renderFinalGrade = (cell, studentId) => {
+  const preciseGrade = getPreciseWeightedGrade(studentId);
+  cell.replaceChildren();
+  if (preciseGrade === null) {
+    cell.textContent = '-';
+    return;
+  }
+
+  const grades = document.createElement('span');
+  grades.className = 'final-grade-values';
+  [
+    { label: 'Exacta', value: formatPreciseGrade(preciseGrade), className: 'final-grade-exact' },
+    { label: 'Redondeada', value: formatFinalGrade(Math.round(preciseGrade)), className: 'final-grade-rounded' },
+  ].forEach(({ label, value, className }) => {
+    const grade = document.createElement('span');
+    grade.className = `final-grade-value ${className}`;
+    const gradeLabel = document.createElement('span');
+    gradeLabel.textContent = label;
+    const gradeValue = document.createElement('strong');
+    gradeValue.textContent = value;
+    grade.append(gradeLabel, gradeValue);
+    grades.appendChild(grade);
+  });
+  cell.appendChild(grades);
+};
+
 
 const getActivityMaximumPoints = (activity) => Number(((Number(activity.weight) || 0) * 20 / 100).toFixed(2));
 const formatPoints = (points) => String(Number(points.toFixed(2)));
@@ -281,14 +314,13 @@ const updateTableHeaders = () => {
   const gradeHeading = document.createElement('th');
   gradeHeading.id = 'gradeHeading';
   gradeHeading.scope = 'col';
-  gradeHeading.textContent = `Nota ponderada (${PERIOD_LABELS[periodSelect.value]})`;
+  gradeHeading.textContent = `Nota exacta y redondeada (${PERIOD_LABELS[periodSelect.value]})`;
   row.appendChild(gradeHeading);
 };
 
 const updateCalculatedGrades = () => {
   studentsBody.querySelectorAll('tr[data-student-id]').forEach((row) => {
-    const grade = getWeightedGrade(row.dataset.studentId);
-    row.querySelector('.calculated-grade').textContent = grade === null ? '-' : formatFinalGrade(grade);
+    renderFinalGrade(row.querySelector('.calculated-grade'), row.dataset.studentId);
   });
   updateGradeSummary();
 };
@@ -533,8 +565,7 @@ const renderStudents = () => {
       const calculatedCell = row.insertCell();
       calculatedCell.className = 'calculated-grade';
       calculatedCell.dataset.label = `Nota ponderada (${PERIOD_LABELS[period]})`;
-      const grade = getWeightedGrade(studentId);
-      calculatedCell.textContent = grade === null ? '-' : formatFinalGrade(grade);
+      renderFinalGrade(calculatedCell, studentId);
     });
   }
 

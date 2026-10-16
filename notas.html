@@ -100,13 +100,18 @@
     th, td { padding: 12px 14px; border-bottom: 1px solid #dce3ec; text-align: left; }
     th { background: #e8edf4; color: #26364c; }
     td:nth-child(1), th:nth-child(1) { width: 90px; text-align: center; }
-    td:last-child, th:last-child { width: 130px; text-align: center; }
+    td:last-child, th:last-child { width: 190px; text-align: center; }
     .student-name { font-weight: 700; }
     .grade-input, .earned-points-input { max-width: 110px; text-align: center; font-weight: 700; }
     .grade-input:focus, .earned-points-input:focus, .activity-name-input:focus, .activity-weight-input:focus, .filters select:focus, .search input:focus { outline: 2px solid #93c5fd; border-color: #2563eb; }
     .assessment-column { min-width: 150px; text-align: center; }
     .assessment-weight-column, .assessment-weight-value { min-width: 135px; text-align: center; }
-    .calculated-grade { font-weight: 700; white-space: nowrap; }
+    .calculated-grade { font-weight: 700; }
+    .final-grade-values { display: flex; justify-content: center; gap: 6px; }
+    .final-grade-value { display: grid; gap: 2px; min-width: 68px; padding: 5px 7px; border: 1px solid #d2dbe7; border-radius: 6px; background: #f8fafc; }
+    .final-grade-value > span { color: #64748b; font-size: .68rem; font-weight: 400; }
+    .final-grade-exact { color: #1f3554; }
+    .final-grade-rounded { border-color: #b7d2f0; background: #edf5ff; color: #14569a; }
     .grade-summary { display: grid; grid-template-columns: repeat(4, minmax(130px, 1fr)); gap: 12px; margin-top: 16px; }
     .grade-summary-item { display: grid; gap: 4px; padding: 12px 14px; border: 1px solid #dce3ec; border-radius: 8px; background: #f8fafc; }
     .grade-summary-item span { color: #4c5b70; font-size: .9rem; }
@@ -141,6 +146,7 @@
       tbody td { display: grid; grid-template-columns: minmax(120px, 38%) minmax(0, 1fr); align-items: center; gap: 8px; padding: 10px 12px; }
       tbody td::before { content: attr(data-label); color: #26364c; font-weight: 700; text-align: left; }
       tbody td:nth-child(1), tbody td:last-child { width: auto; text-align: left; }
+      .final-grade-values { justify-content: flex-start; }
       tbody td.empty { display: block; text-align: center; }
       tbody td.empty::before { content: none; }
       .grade-input, .earned-points-input { width: 100%; }
