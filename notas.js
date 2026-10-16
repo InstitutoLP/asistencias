@@ -336,7 +336,7 @@ const updateTableHeaders = () => {
     heading.className = 'assessment-column';
     heading.dataset.activityId = activity.id;
     const name = document.createElement('span');
-    name.textContent = `${activity.name || 'Actividad sin nombre'} (nota /20)${activity.locked ? ' · BLOQUEADA' : ''}`;
+    name.textContent = `${activity.name || 'Actividad sin nombre'} (nota /20)`;
     heading.appendChild(name);
     row.appendChild(heading);
 
@@ -344,7 +344,7 @@ const updateTableHeaders = () => {
     weightHeading.scope = 'col';
     weightHeading.className = 'assessment-weight-column';
     weightHeading.dataset.activityId = activity.id;
-    weightHeading.textContent = `${Number(activity.weight) || 0}% = ${formatPoints(getActivityMaximumPoints(activity))} pts${activity.locked ? ' · BLOQUEADA' : ''}`;
+    weightHeading.textContent = `${Number(activity.weight) || 0}% = ${formatPoints(getActivityMaximumPoints(activity))} pts`;
     row.appendChild(weightHeading);
   });
   const gradeHeading = document.createElement('th');
@@ -415,14 +415,7 @@ const renderActivityEditor = () => {
       points.textContent = `Aporta hasta ${getActivityMaximumPoints(activity)} de 20 puntos`;
       weightField.append(weightLabel, weight, points);
       fields.append(nameField, weightField);
-      if (activity.locked) {
-        const lockStatus = document.createElement('span');
-        lockStatus.className = 'assessment-lock-status';
-        lockStatus.textContent = 'Columna bloqueada por Andy';
-        item.append(fields, lockStatus);
-      } else {
-        item.append(fields);
-      }
+      item.append(fields);
       activityList.appendChild(item);
       return;
     }
@@ -466,13 +459,7 @@ const renderActivityEditor = () => {
     removeButton.textContent = 'Quitar';
     removeButton.disabled = activities.length === 1;
     removeButton.setAttribute('aria-label', `Quitar ${activity.name || 'actividad'}`);
-    const lockButton = document.createElement('button');
-    lockButton.className = 'toggle-activity-lock';
-    lockButton.type = 'button';
-    lockButton.textContent = activity.locked ? 'Desbloquear columna' : 'Bloquear columna';
-    lockButton.setAttribute('aria-pressed', String(activity.locked === true));
-    lockButton.setAttribute('aria-label', `${activity.locked ? 'Desbloquear' : 'Bloquear'} notas de ${activity.name || 'actividad'}`);
-    item.append(fields, lockButton, removeButton);
+    item.append(fields, removeButton);
     activityList.appendChild(item);
   });
   updateAssessmentTotal();
@@ -493,11 +480,6 @@ const loadGradeContext = () => {
       id: String(entry.id || createActivityId()),
       name: String(entry.name || ''),
       weight: Number(entry.weight) || 0,
-      locked: students.some((student) => (
-        subjectGrades(student).assessments?.[period]?.some(
-          (savedActivity) => String(savedActivity.id) === String(entry.id) && savedActivity.locked === true,
-        )
-      )),
     }));
     const totalWeight = activities.reduce((total, activity) => total + activity.weight, 0);
     if (canManageActivities() && Math.abs(totalWeight - 100) > 0) distributeActivityWeights();
@@ -609,7 +591,6 @@ const renderStudents = () => {
         input.inputMode = 'decimal';
         input.dataset.studentId = studentId;
         input.dataset.activityId = activity.id;
-        input.disabled = activity.locked === true && !canManageActivities();
         input.value = draftScores[studentId]?.[activity.id] || '';
         input.setAttribute('aria-label', `Nota de ${student.name || 'estudiante'} en ${activity.name || 'actividad'}`);
         gradeCell.appendChild(input);
@@ -627,7 +608,6 @@ const renderStudents = () => {
         pointsInput.inputMode = 'decimal';
         pointsInput.dataset.studentId = studentId;
         pointsInput.dataset.activityId = activity.id;
-        pointsInput.disabled = activity.locked === true && !canManageActivities();
         pointsInput.value = draftEarnedPoints[studentId]?.[activity.id] || '';
         pointsInput.setAttribute(
           'aria-label',
@@ -801,9 +781,6 @@ const saveGrades = async () => {
       weight: canManageActivities()
         ? Number(activity.weight)
         : existingAssessments.find((entry) => String(entry.id) === activity.id)?.weight ?? activity.weight,
-      locked: canManageActivities()
-        ? activity.locked === true
-        : existingAssessments.find((entry) => String(entry.id) === activity.id)?.locked === true || activity.locked === true,
       score: draftScores[String(student.id)]?.[activity.id] === ''
         ? null
         : Number(draftScores[String(student.id)]?.[activity.id]),
@@ -819,12 +796,7 @@ const saveGrades = async () => {
     try {
       const response = await fetch(API_STUDENTS, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(sessionStorage.getItem('gradeLockToken')
-            ? { Authorization: `Bearer ${sessionStorage.getItem('gradeLockToken')}` }
-            : {}),
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: student.id, grades }),
       });
       const result = await response.json().catch(() => ({}));
@@ -842,8 +814,18 @@ const saveGrades = async () => {
 
   saveButton.disabled = false;
   addActivityButton.disabled = false;
-  renderActivityEditor();
-  renderStudents();
+  activityList.querySelectorAll('input, button').forEach((control) => {
+    control.disabled = false;
+  });
+  if (canManageActivities() && activities.length === 1) {
+    activityList.querySelector('.remove-activity-button').disabled = true;
+  }
+  studentsBody.querySelectorAll('.grade-input').forEach((input) => {
+    input.disabled = false;
+  });
+  studentsBody.querySelectorAll('.earned-points-input').forEach((input) => {
+    input.disabled = false;
+  });
   if (errors.length) {
     const missingGradesColumn = errors.some(({ message }) => /columna\s+grades|grades.*(schema cache|column)|column.*grades/i.test(message));
     const failedStudents = errors.map(({ student }) => student).join(', ');
@@ -975,17 +957,6 @@ const initialize = async () => {
   });
   activityList.addEventListener('click', (event) => {
     if (!canManageActivities()) return;
-    const lockButton = event.target.closest('.toggle-activity-lock');
-    if (lockButton) {
-      const item = lockButton.closest('.assessment-item');
-      const activity = activities.find((entry) => entry.id === item?.dataset.activityId);
-      if (!activity) return;
-      activity.locked = !activity.locked;
-      renderActivityEditor();
-      renderStudents();
-      setStatus(`Columna ${activity.locked ? 'marcada para bloquear' : 'marcada para desbloquear'}. Guarda los cambios para aplicar el bloqueo.`, 'success');
-      return;
-    }
     const button = event.target.closest('.remove-activity-button');
     if (!button) return;
     if (!window.confirm('¿Quitar esta actividad y las notas registradas para ella?')) return;
@@ -1006,7 +977,7 @@ const initialize = async () => {
     if (!canManageActivities()) return;
     captureDraftScores();
     captureDraftEarnedPoints();
-    const activity = { id: createActivityId(), name: `Actividad ${activities.length + 1}`, weight: 25, locked: false };
+    const activity = { id: createActivityId(), name: `Actividad ${activities.length + 1}`, weight: 25 };
     activities.push(activity);
     distributeActivityWeights();
     recalculateAutomaticEarnedPoints();
