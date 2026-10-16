@@ -222,11 +222,27 @@ const getWeightedGrade = (studentId) => {
   return grade === null ? null : Math.round(grade);
 };
 
+const LAPSO_PERIODS = ['1er', '2do', '3er'];
+
+const getLapsoGrade = (student, period) => {
+  const subjectId = currentSubject()?.id;
+  const value = subjectId ? student.grades?.[subjectId]?.[period] : null;
+  if (value === null || value === undefined || value === '') return null;
+  const grade = Number(value);
+  return Number.isFinite(grade) ? Math.round(grade) : null;
+};
+
+const getDefinitiveGrade = (student) => {
+  const lapsoGrades = LAPSO_PERIODS.map((period) => getLapsoGrade(student, period));
+  if (lapsoGrades.some((grade) => grade === null)) return null;
+  const exactGrade = Number((lapsoGrades.reduce((sum, grade) => sum + grade, 0) / LAPSO_PERIODS.length).toFixed(2));
+  return { exactGrade, roundedGrade: Math.round(exactGrade) };
+};
+
 const formatFinalGrade = (grade) => (grade !== null && grade < 10 ? String(grade).padStart(2, '0') : String(grade));
 const formatPreciseGrade = (grade) => String(Number(grade.toFixed(2)));
 
-const renderFinalGrade = (cell, studentId) => {
-  const preciseGrade = getPreciseWeightedGrade(studentId);
+const renderGradePair = (cell, preciseGrade, roundedGrade) => {
   cell.replaceChildren();
   if (preciseGrade === null) {
     cell.textContent = '-';
@@ -237,7 +253,7 @@ const renderFinalGrade = (cell, studentId) => {
   grades.className = 'final-grade-values';
   [
     { label: 'Exacta', value: formatPreciseGrade(preciseGrade), className: 'final-grade-exact' },
-    { label: 'Redondeada', value: formatFinalGrade(Math.round(preciseGrade)), className: 'final-grade-rounded' },
+    { label: 'Redondeada', value: formatFinalGrade(roundedGrade), className: 'final-grade-rounded' },
   ].forEach(({ label, value, className }) => {
     const grade = document.createElement('span');
     grade.className = `final-grade-value ${className}`;
@@ -249,6 +265,11 @@ const renderFinalGrade = (cell, studentId) => {
     grades.appendChild(grade);
   });
   cell.appendChild(grades);
+};
+
+const renderFinalGrade = (cell, studentId) => {
+  const preciseGrade = getPreciseWeightedGrade(studentId);
+  renderGradePair(cell, preciseGrade, preciseGrade === null ? null : Math.round(preciseGrade));
 };
 
 
@@ -294,6 +315,21 @@ const updateAssessmentTotal = () => {
 const updateTableHeaders = () => {
   const row = studentsHead.rows[0];
   while (row.cells.length > 2) row.deleteCell(row.cells.length - 1);
+  if (periodSelect.value === 'Final') {
+    LAPSO_PERIODS.forEach((period) => {
+      const heading = document.createElement('th');
+      heading.scope = 'col';
+      heading.className = 'assessment-column';
+      heading.textContent = `Nota redondeada (${PERIOD_LABELS[period]})`;
+      row.appendChild(heading);
+    });
+    const definitiveHeading = document.createElement('th');
+    definitiveHeading.id = 'gradeHeading';
+    definitiveHeading.scope = 'col';
+    definitiveHeading.textContent = 'Definitiva de la materia';
+    row.appendChild(definitiveHeading);
+    return;
+  }
   activities.forEach((activity) => {
     const heading = document.createElement('th');
     heading.scope = 'col';
@@ -320,7 +356,14 @@ const updateTableHeaders = () => {
 
 const updateCalculatedGrades = () => {
   studentsBody.querySelectorAll('tr[data-student-id]').forEach((row) => {
-    renderFinalGrade(row.querySelector('.calculated-grade'), row.dataset.studentId);
+    const cell = row.querySelector('.calculated-grade');
+    if (periodSelect.value === 'Final') {
+      const student = students.find((entry) => String(entry.id) === row.dataset.studentId);
+      const definitiveGrade = student ? getDefinitiveGrade(student) : null;
+      renderGradePair(cell, definitiveGrade?.exactGrade ?? null, definitiveGrade?.roundedGrade ?? null);
+    } else {
+      renderFinalGrade(cell, row.dataset.studentId);
+    }
   });
   updateGradeSummary();
 };
@@ -328,7 +371,9 @@ const updateCalculatedGrades = () => {
 const updateGradeSummary = () => {
   const summary = { students: students.length, passed: 0, failed: 0, pending: 0 };
   students.forEach((student) => {
-    const grade = getWeightedGrade(String(student.id));
+    const grade = periodSelect.value === 'Final'
+      ? getDefinitiveGrade(student)?.roundedGrade ?? null
+      : getWeightedGrade(String(student.id));
     if (grade === null) summary.pending += 1;
     else if (grade >= 10) summary.passed += 1;
     else summary.failed += 1;
@@ -511,7 +556,7 @@ const renderStudents = () => {
   if (!students.length) {
     const row = studentsBody.insertRow();
     const cell = row.insertCell();
-    cell.colSpan = activities.length * 2 + 3;
+    cell.colSpan = period === 'Final' ? LAPSO_PERIODS.length + 3 : activities.length * 2 + 3;
     cell.className = 'empty';
     cell.textContent = 'No hay estudiantes registrados en este año.';
   } else {
@@ -526,7 +571,15 @@ const renderStudents = () => {
       nameCell.className = 'student-name';
       nameCell.dataset.label = 'Nombre del estudiante';
       nameCell.textContent = student.name || 'Estudiante sin nombre';
-      activities.forEach((activity) => {
+      if (period === 'Final') {
+        LAPSO_PERIODS.forEach((lapso) => {
+          const lapsoCell = row.insertCell();
+          lapsoCell.className = 'lapso-grade';
+          lapsoCell.dataset.label = `Nota redondeada (${PERIOD_LABELS[lapso]})`;
+          const grade = getLapsoGrade(student, lapso);
+          lapsoCell.textContent = grade === null ? '-' : formatFinalGrade(grade);
+        });
+      } else activities.forEach((activity) => {
         const gradeCell = row.insertCell();
         gradeCell.dataset.label = `${activity.name || 'Actividad'} (nota /20)`;
         const input = document.createElement('input');
@@ -564,14 +617,34 @@ const renderStudents = () => {
       });
       const calculatedCell = row.insertCell();
       calculatedCell.className = 'calculated-grade';
-      calculatedCell.dataset.label = `Nota ponderada (${PERIOD_LABELS[period]})`;
-      renderFinalGrade(calculatedCell, studentId);
+      if (period === 'Final') {
+        calculatedCell.dataset.label = 'Definitiva de la materia';
+        const definitiveGrade = getDefinitiveGrade(student);
+        renderGradePair(
+          calculatedCell,
+          definitiveGrade?.exactGrade ?? null,
+          definitiveGrade?.roundedGrade ?? null,
+        );
+      } else {
+        calculatedCell.dataset.label = `Nota ponderada (${PERIOD_LABELS[period]})`;
+        renderFinalGrade(calculatedCell, studentId);
+      }
     });
   }
 
   studentCount.textContent = `${students.length} estudiante${students.length === 1 ? '' : 's'}`;
   filterStudents();
   updateCalculatedGrades();
+};
+
+const updatePeriodView = () => {
+  const isFinal = periodSelect.value === 'Final';
+  document.querySelector('.assessment-editor').hidden = isFinal;
+  saveButton.closest('.actions').hidden = isFinal;
+  addActivityButton.hidden = isFinal || !canManageActivities();
+  document.getElementById('periodInstructions').textContent = isFinal
+    ? 'En el período Final se muestran las notas redondeadas de cada lapso. La definitiva de la materia es el promedio de las tres notas y se redondea al entero más cercano. Se calcula cuando están registradas las notas de los tres lapsos.'
+    : 'Selecciona el curso, la materia y el período. En cada actividad registra la nota de 1 a 20 y, en el cuadro blanco contiguo, el aporte en puntos (hasta el máximo indicado por su porcentaje). La nota del lapso suma esos aportes sobre 20.';
 };
 
 const loadStudents = async () => {
@@ -821,6 +894,7 @@ const initialize = async () => {
   }
   previousFilters = { year: yearSelect.value, subject: subjectSelect.value, period: periodSelect.value };
   document.getElementById('teacherName').textContent = currentUser.name;
+  updatePeriodView();
 
   yearSelect.addEventListener('change', async () => {
     if (!confirmDiscardChanges()) {
@@ -832,6 +906,7 @@ const initialize = async () => {
       return;
     }
     previousFilters = { year: yearSelect.value, subject: subjectSelect.value, period: periodSelect.value };
+    updatePeriodView();
     try {
       await loadStudents();
     } catch (error) {
@@ -847,6 +922,7 @@ const initialize = async () => {
       return;
     }
     previousFilters = { year: yearSelect.value, subject: subjectSelect.value, period: periodSelect.value };
+    updatePeriodView();
     loadGradeContext();
   };
   subjectSelect.addEventListener('change', updateSelectedFilters);
