@@ -1,4 +1,4 @@
-const API_STUDENTS = `${window.location.protocol === 'file:' ? 'http://localhost:3000' : window.location.origin}/api/students`;
+const API_STUDENTS = window.APP_CONFIG.api.students;
 const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR2dzgdf5bWl2KBYcGTWxjjiIk6qKQ5NWjde1eyiv0Gy0velu_8JTPdu8O8WicEJQ/pub?output=csv';
 const PERIOD_LABELS = { '1er': '1er lapso', '2do': '2do lapso', '3er': '3er lapso', Final: 'Final' };
 const SUBJECTS_BY_YEAR = {

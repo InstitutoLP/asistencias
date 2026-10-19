@@ -1,12 +1,13 @@
 const SENDER_WHATSAPP_NUMBER = '04142475155';
 const DEFAULT_PHONE = '04125486575';
 const DEFAULT_MESSAGE = 'La estudiante Arianny Suarez está asistente';
-const API_BASE_URL = window.location.protocol === 'file:' ? 'http://localhost:3000' : window.location.origin;
-const API_SEND_WHATSAPP = `${API_BASE_URL}/api/send-whatsapp`;
-const API_SEND_EMAIL = `${API_BASE_URL}/api/send-email`;
-const API_STUDENTS = `${API_BASE_URL}/api/students`;
-const API_ATTENDANCE = `${API_BASE_URL}/api/attendance`;
-const API_SEND_DAILY_EMAILS = `${API_BASE_URL}/api/cron-daily-emails`;
+const {
+  sendWhatsApp: API_SEND_WHATSAPP,
+  sendEmail: API_SEND_EMAIL,
+  students: API_STUDENTS,
+  attendance: API_ATTENDANCE,
+  sendDailyEmails: API_SEND_DAILY_EMAILS,
+} = window.APP_CONFIG.api;
 const deletedStudentIds = new Set();
 
 const isRemovedStudent = (student) => deletedStudentIds.has(String(student?.id));
@@ -717,16 +718,7 @@ const cargarTodosLosEstudiantesDesdeSupabase = async () => {
   attendanceData.selectedDate = selectedDate;
 
   try {
-    const response = await fetch(API_STUDENTS, {
-      headers: { 'Cache-Control': 'no-cache' }
-    });
-
-    if (!response.ok) {
-      console.warn('No se pudo cargar todos los estudiantes desde Supabase; se muestra estado vacío en memoria.');
-      return;
-    }
-
-    const data = await response.json().catch(() => []);
+    const data = await window.EstudiantesModelo.listar();
     if (!Array.isArray(data)) return;
 
     data.forEach((row) => {
@@ -768,17 +760,11 @@ const saveData = () => {
 
 const sincronizarEstudiante = async (student, method = 'POST') => {
   try {
-    const options = { method, headers: { 'Content-Type': 'application/json' } };
-    if (method !== 'DELETE') options.body = JSON.stringify(student);
-    const url = method === 'DELETE'
-      ? `${API_STUDENTS}?id=${encodeURIComponent(student.id)}`
-      : API_STUDENTS;
-    const response = await fetch(url, options);
-    if (!response.ok) {
-      const errorBody = await response.json().catch(() => ({}));
-      throw new Error(errorBody.error || `Error ${response.status} al sincronizar estudiante`);
+    if (method === 'DELETE') {
+      await window.EstudiantesModelo.eliminar(student.id);
+      return true;
     }
-    return method === 'DELETE' ? true : await response.json();
+    return await window.EstudiantesModelo.guardar(student, method);
   } catch (error) {
     console.warn('No se pudo sincronizar el estudiante con el servidor:', error);
     showToast('No se pudo guardar el estudiante en la nube');
@@ -788,27 +774,18 @@ const sincronizarEstudiante = async (student, method = 'POST') => {
 
 const sincronizarAsistencia = async (student, status) => {
   try {
-    const response = await fetch(API_ATTENDANCE, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id: student.id,
-        name: student.name,
-        cedula: student.cedula,
-        email: student.email,
-        phone: student.phone,
-        year: Number(selectedYear),
-        subject: selectedSubject,
-        subjectLabel: getSubjectLabel(selectedYear, selectedSubject),
-        status,
-        date: selectedDate,
-      }),
+    return await window.EstudiantesModelo.registrarAsistencia({
+      id: student.id,
+      name: student.name,
+      cedula: student.cedula,
+      email: student.email,
+      phone: student.phone,
+      year: Number(selectedYear),
+      subject: selectedSubject,
+      subjectLabel: getSubjectLabel(selectedYear, selectedSubject),
+      status,
+      date: selectedDate,
     });
-    if (!response.ok) {
-      const errorBody = await response.json().catch(() => ({}));
-      throw new Error(errorBody.error || `Error ${response.status} al guardar asistencia`);
-    }
-    return await response.json();
   } catch (error) {
     console.warn('No se pudo sincronizar la asistencia con el servidor:', error);
     showToast('No se pudo guardar la asistencia en la nube');
@@ -914,12 +891,8 @@ const renderStudentList = () => {
   let students = getCurrentStudents().filter((student) => !isRemovedStudent(student));
   (async () => {
     try {
-      const r = await fetch(`${API_STUDENTS}?year=${encodeURIComponent(selectedYear)}&date=${encodeURIComponent(selectedDate)}`, {
-        headers: { 'Cache-Control': 'no-cache' }
-      });
-
-      if (r.ok && r.status !== 304) {
-        const data = await r.json().catch(() => ([]));
+      const data = await window.EstudiantesModelo.listar({ year: selectedYear, date: selectedDate });
+      if (Array.isArray(data)) {
         if (Array.isArray(data)) {
           attendanceData.years[selectedYear] = attendanceData.years[selectedYear] || {};
           attendanceData.years[selectedYear].students = data.map((row) => {
@@ -1249,7 +1222,7 @@ const handleStudentFormSubmit = async (event) => {
   }
 };
 
-const exportCurrentToPdf = () => {
+const exportCurrentToPdf = async () => {
   const students = getCurrentStudents();
   const subjectLabel = getSubjectLabel(selectedYear, selectedSubject);
 
@@ -1258,30 +1231,31 @@ const exportCurrentToPdf = () => {
     return;
   }
 
-  if (!window.jspdf || !window.jspdf.jsPDF) {
+  try {
+    await window.loadExternalLibrary('jsPdf');
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    let y = 20;
+
+    doc.setFontSize(16);
+    doc.text(`Asistencia - Año ${selectedYear} - ${subjectLabel}`, 14, y);
+    y += 10;
+    doc.setFontSize(11);
+    doc.text(`Fecha: ${selectedDate}`, 14, y);
+    y += 10;
+
+    students.forEach((student) => {
+      const phone = canViewStudentPersonalData() ? student.phone || '-' : 'Oculto';
+      doc.text(`${student.name} - ${phone} - Status: ${student.status || 'pendiente'}`, 14, y);
+      y += 7;
+    });
+
+    doc.save(`asistencia_ano${selectedYear}_${subjectLabel}_${selectedDate}.pdf`);
+    showToast('PDF descargado correctamente');
+  } catch (error) {
+    console.error('Error generando PDF de asistencia:', error);
     showToast('No se pudo cargar la exportación PDF');
-    return;
   }
-
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  let y = 20;
-
-  doc.setFontSize(16);
-  doc.text(`Asistencia - Año ${selectedYear} - ${subjectLabel}`, 14, y);
-  y += 10;
-  doc.setFontSize(11);
-  doc.text(`Fecha: ${selectedDate}`, 14, y);
-  y += 10;
-
-  students.forEach((student) => {
-    const phone = canViewStudentPersonalData() ? student.phone || '-' : 'Oculto';
-    doc.text(`${student.name} - ${phone} - Status: ${student.status || 'pendiente'}`, 14, y);
-    y += 7;
-  });
-
-  doc.save(`asistencia_ano${selectedYear}_${subjectLabel}_${selectedDate}.pdf`);
-  showToast('PDF descargado correctamente');
 };
 
 const handleStudentListClick = (event) => {
@@ -1619,15 +1593,6 @@ const mostrarReciboPago = (student, year) => {
 
 const cerrarReciboPago = () => document.getElementById('reciboPagoModal').classList.add('hidden');
 
-const ensureHtml2Canvas = () => new Promise((resolve) => {
-  if (window.html2canvas) return resolve(true);
-  const script = document.createElement('script');
-  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-  script.onload = () => resolve(true);
-  script.onerror = () => resolve(false);
-  document.head.appendChild(script);
-});
-
 const descargarReciboPagoPDF = async () => {
   const btnDescargar = document.getElementById('btnDescargarFactura');
   const contenidoOriginal = btnDescargar ? btnDescargar.innerHTML : '';
@@ -1642,15 +1607,7 @@ const descargarReciboPagoPDF = async () => {
   }
 
   try {
-    const ready = await ensureHtml2Canvas();
-    if (!ready || !window.html2canvas) {
-      showToast('⚠️ No se pudo cargar la librería para generar la factura.');
-      return;
-    }
-    if (!window.jspdf?.jsPDF) {
-      showToast('⚠️ No se pudo cargar el generador de PDF.');
-      return;
-    }
+    await window.loadPdfLibraries();
 
     const receiptPaper = document.querySelector('#reciboPagoModal .admin-receipt-paper');
     if (!receiptPaper) {
@@ -1782,7 +1739,19 @@ const alternarEstadisticasGlobales = () => {
   if (!ocultar) renderizarGraficasAdmin();
 };
 
-const renderizarGraficasAdmin = () => {
+const renderizarGraficasAdmin = async () => {
+  const ctxPagos = document.getElementById('graficaEstadoPagosAdmin');
+  const ctxFinanzas = document.getElementById('graficaFinancieraMensualAdmin');
+  if ((ctxPagos || ctxFinanzas) && typeof window.Chart === 'undefined') {
+    try {
+      await window.loadExternalLibrary('chart');
+    } catch (error) {
+      console.error('No se pudo cargar Chart.js para el panel administrativo:', error);
+      showToast('No se pudieron cargar las gráficas administrativas');
+      return;
+    }
+  }
+
   let totalPagados = 0;
   let totalAbonados = 0;
   let totalNoPagados = 0;
@@ -1813,7 +1782,6 @@ const renderizarGraficasAdmin = () => {
     });
   }
 
-  const ctxPagos = document.getElementById('graficaEstadoPagosAdmin');
   if (ctxPagos) {
     if (chartEstadoPagosAdmin) chartEstadoPagosAdmin.destroy();
     chartEstadoPagosAdmin = new Chart(ctxPagos.getContext('2d'), {
@@ -1836,7 +1804,6 @@ const renderizarGraficasAdmin = () => {
     });
   }
 
-  const ctxFinanzas = document.getElementById('graficaFinancieraMensualAdmin');
   if (ctxFinanzas) {
     if (chartFinanzasAdmin) chartFinanzasAdmin.destroy();
     chartFinanzasAdmin = new Chart(ctxFinanzas.getContext('2d'), {
@@ -1884,7 +1851,7 @@ const cerrarReportes = () => {
   document.getElementById('contenedorPrincipal').style.display = 'block';
 };
 
-const generarGraficaYTabla = () => {
+const generarGraficaYTabla = async () => {
   const estudianteId = document.getElementById('selectorEstudianteReporte').value;
   const fechaInicio = document.getElementById('fechaInicioReporte').value;
   const fechaFin = document.getElementById('fechaFinReporte').value;
@@ -1923,6 +1890,14 @@ const generarGraficaYTabla = () => {
 
   const ctx = document.getElementById('graficaAsistencia')?.getContext('2d');
   if (ctx) {
+    try {
+      await window.loadExternalLibrary('chart');
+    } catch (error) {
+      console.error('No se pudo cargar Chart.js para el reporte de asistencia:', error);
+      showToast('No se pudo cargar la gráfica del reporte');
+      return;
+    }
+
     if (typeof miGrafica !== 'undefined' && miGrafica) {
       miGrafica.destroy();
     }

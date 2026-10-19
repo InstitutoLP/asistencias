@@ -1,8 +1,7 @@
 // CONFIGURACIÓN DE ENLACES
 const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/e/2PACX-1vR2dzgdf5bWl2KBYcGTWxjjiIk6qKQ5NWjde1eyiv0Gy0velu_8JTPdu8O8WicEJQ/pub?output=csv`;
-const API_BASE_URL = window.location.protocol === 'file:' ? 'http://localhost:3000' : window.location.origin;
-const API_SYNC_STATE = `${API_BASE_URL}/api/sync-state`; // Endpoint hacia la base de datos
-const API_STUDENTS = `${API_BASE_URL}/api/students`;
+const API_SYNC_STATE = window.APP_CONFIG.api.syncState;
+const API_STUDENTS = window.APP_CONFIG.api.students;
 const PORTAL_BASE_PATH = window.location.pathname.match(/^(.*\/portal-estudiantes\.html)(?:\/.*)?$/)?.[1] || window.location.pathname;
 const PERIODOS_PAGO = [
   { id: 'inscripcion', label: 'Inscripción' },
@@ -257,7 +256,7 @@ const renderizarGraficos = (materias, datosPrimerLapso, datosSegundoLapso, datos
 };
 
 window.descargarBoletaPDF = async () => {
-  if (!datosEstudianteActual || !window.jspdf?.jsPDF || !window.html2canvas) return;
+  if (!datosEstudianteActual) return;
 
   const boton = document.getElementById('btnDescargarBoleta');
   const textoOriginal = boton?.textContent;
@@ -267,6 +266,7 @@ window.descargarBoletaPDF = async () => {
   }
 
   try {
+    await window.loadPdfLibraries();
     const { jsPDF } = window.jspdf;
     const documento = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' });
     const boleta = document.querySelector('.boletin-paper');
@@ -291,6 +291,9 @@ window.descargarBoletaPDF = async () => {
     documento.addImage(imagenBoleta.toDataURL('image/png'), 'PNG', posicionX, posicionY, anchoFinal, altoFinal);
     const nombre = String(datosEstudianteActual.Nombre || 'estudiante').trim().replace(/\s+/g, '_');
     documento.save(`Boleta_${nombre}.pdf`);
+  } catch (error) {
+    console.error('Error generando boleta PDF:', error);
+    window.alert('No se pudo generar la boleta PDF. Verifica tu conexión e inténtalo de nuevo.');
   } finally {
     if (boton) {
       boton.disabled = false;
