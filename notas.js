@@ -162,6 +162,8 @@ const getAllowedYears = () => {
 const canManageActivities = () => currentUser?.puedeGestionarActividades === true
   || normalizeText(currentUser?.name) === 'prof: andy';
 
+const isActivityLockedForCurrentUser = (activity) => activity.locked === true && !canManageActivities();
+
 const getSubjectsForYear = (year) => {
   const subjects = SUBJECTS_BY_YEAR[Number(year)] || [];
   const allowedByYear = currentUser.allowedSubjectsByYear?.[Number(year)];
@@ -459,7 +461,19 @@ const renderActivityEditor = () => {
     removeButton.textContent = 'Quitar';
     removeButton.disabled = activities.length === 1;
     removeButton.setAttribute('aria-label', `Quitar ${activity.name || 'actividad'}`);
-    item.append(fields, removeButton);
+    const controls = document.createElement('div');
+    controls.className = 'assessment-controls';
+    const lockButton = document.createElement('button');
+    lockButton.className = 'activity-lock-button';
+    lockButton.type = 'button';
+    lockButton.textContent = activity.locked ? 'Permitir edición' : 'Bloquear edición';
+    lockButton.setAttribute('aria-pressed', String(activity.locked === true));
+    lockButton.setAttribute(
+      'aria-label',
+      `${activity.locked ? 'Permitir edición para profesores en' : 'Bloquear edición para profesores en'} ${activity.name || 'actividad'}`,
+    );
+    controls.append(lockButton, removeButton);
+    item.append(fields, controls);
     activityList.appendChild(item);
   });
   updateAssessmentTotal();
@@ -480,6 +494,11 @@ const loadGradeContext = () => {
       id: String(entry.id || createActivityId()),
       name: String(entry.name || ''),
       weight: Number(entry.weight) || 0,
+      locked: students.some((student) => {
+        const persisted = subjectGrades(student).assessments?.[period];
+        return Array.isArray(persisted)
+          && persisted.some((savedEntry) => String(savedEntry.id) === String(entry.id) && savedEntry.locked === true);
+      }),
     }));
     const totalWeight = activities.reduce((total, activity) => total + activity.weight, 0);
     if (canManageActivities() && Math.abs(totalWeight - 100) > 0) distributeActivityWeights();
@@ -591,6 +610,7 @@ const renderStudents = () => {
         input.inputMode = 'decimal';
         input.dataset.studentId = studentId;
         input.dataset.activityId = activity.id;
+        input.disabled = isActivityLockedForCurrentUser(activity);
         input.value = draftScores[studentId]?.[activity.id] || '';
         input.setAttribute('aria-label', `Nota de ${student.name || 'estudiante'} en ${activity.name || 'actividad'}`);
         gradeCell.appendChild(input);
@@ -608,6 +628,7 @@ const renderStudents = () => {
         pointsInput.inputMode = 'decimal';
         pointsInput.dataset.studentId = studentId;
         pointsInput.dataset.activityId = activity.id;
+        pointsInput.disabled = isActivityLockedForCurrentUser(activity);
         pointsInput.value = draftEarnedPoints[studentId]?.[activity.id] || '';
         pointsInput.setAttribute(
           'aria-label',
@@ -696,6 +717,81 @@ const filterStudents = () => {
   }
 };
 
+const saveActivityLock = async (activityId, locked) => {
+  const subject = currentSubject();
+  const activity = activities.find((entry) => entry.id === activityId);
+  if (!canManageActivities() || !subject || !activity) return;
+  if (!students.length) {
+    setStatus('No hay estudiantes donde guardar el bloqueo de esta actividad.', 'error');
+    return;
+  }
+
+  const button = activityList.querySelector(
+    `.assessment-item[data-activity-id="${activityId}"] .activity-lock-button`,
+  );
+  if (button) button.disabled = true;
+  setStatus(`${locked ? 'Bloqueando' : 'Habilitando'} la edición de ${activity.name || 'la actividad'}...`);
+  const errors = [];
+
+  for (const student of students) {
+    const grades = copyJson(student.grades || {});
+    const subjectGrades = { ...(grades[subject.id] || {}) };
+    const savedAssessments = { ...(subjectGrades.assessments || {}) };
+    const entries = Array.isArray(savedAssessments[periodSelect.value])
+      ? savedAssessments[periodSelect.value].map((entry) => ({ ...entry }))
+      : [];
+    const savedActivity = entries.find((entry) => String(entry.id) === activityId);
+    if (savedActivity) {
+      savedActivity.locked = locked;
+    } else {
+      const studentId = String(student.id);
+      const score = draftScores[studentId]?.[activity.id] || '';
+      const earnedPoints = draftEarnedPoints[studentId]?.[activity.id] || '';
+      entries.push({
+        id: activity.id,
+        name: activity.name.trim(),
+        weight: Number(activity.weight),
+        score: score === '' ? null : Number(score),
+        earnedPoints: earnedPoints === '' ? null : Number(earnedPoints),
+        earnedPointsManual: manualEarnedPoints[studentId]?.[activity.id] === true,
+        locked,
+      });
+    }
+    savedAssessments[periodSelect.value] = entries;
+    subjectGrades.assessments = savedAssessments;
+    grades[subject.id] = subjectGrades;
+
+    try {
+      const response = await fetch(API_STUDENTS, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: student.id, grades }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || `Error ${response.status}`);
+      student.grades = result.grades || grades;
+    } catch (error) {
+      console.error(`No se pudo actualizar el bloqueo de ${activity.name} para ${student.name}:`, error);
+      errors.push(student.name || String(student.id));
+    }
+  }
+
+  loadGradeContext();
+  if (errors.length) {
+    setStatus(
+      `No se pudo actualizar el bloqueo para: ${errors.join(', ')}. Vuelve a intentarlo para sincronizar todos los estudiantes.`,
+      'error',
+    );
+    return;
+  }
+  setStatus(
+    locked
+      ? `La edición de ${activity.name || 'la actividad'} quedó bloqueada para los profesores.`
+      : `Los profesores ya pueden editar ${activity.name || 'la actividad'}.`,
+    'success',
+  );
+};
+
 const saveGrades = async () => {
   const subject = currentSubject();
   if (!subject) {
@@ -772,23 +868,30 @@ const saveGrades = async () => {
     const existingAssessments = Array.isArray(savedAssessments[periodSelect.value])
       ? savedAssessments[periodSelect.value]
       : [];
-    const assessmentEntries = activities.map((activity) => ({
-      ...(existingAssessments.find((entry) => String(entry.id) === activity.id) || {}),
-      id: activity.id,
-      name: canManageActivities()
-        ? activity.name.trim()
-        : existingAssessments.find((entry) => String(entry.id) === activity.id)?.name ?? activity.name,
-      weight: canManageActivities()
-        ? Number(activity.weight)
-        : existingAssessments.find((entry) => String(entry.id) === activity.id)?.weight ?? activity.weight,
-      score: draftScores[String(student.id)]?.[activity.id] === ''
-        ? null
-        : Number(draftScores[String(student.id)]?.[activity.id]),
-      earnedPoints: draftEarnedPoints[String(student.id)]?.[activity.id] === ''
-        ? null
-        : Number(draftEarnedPoints[String(student.id)]?.[activity.id]),
-      earnedPointsManual: manualEarnedPoints[String(student.id)]?.[activity.id] === true,
-    }));
+    const assessmentEntries = activities.map((activity) => {
+      const existing = existingAssessments.find((entry) => String(entry.id) === activity.id) || {};
+      const canEdit = !isActivityLockedForCurrentUser(activity);
+      return {
+        ...existing,
+        id: activity.id,
+        name: canManageActivities() ? activity.name.trim() : existing.name ?? activity.name,
+        weight: canManageActivities() ? Number(activity.weight) : existing.weight ?? activity.weight,
+        score: canEdit
+          ? draftScores[String(student.id)]?.[activity.id] === ''
+            ? null
+            : Number(draftScores[String(student.id)]?.[activity.id])
+          : existing.score ?? null,
+        earnedPoints: canEdit
+          ? draftEarnedPoints[String(student.id)]?.[activity.id] === ''
+            ? null
+            : Number(draftEarnedPoints[String(student.id)]?.[activity.id])
+          : existing.earnedPoints ?? null,
+        earnedPointsManual: canEdit
+          ? manualEarnedPoints[String(student.id)]?.[activity.id] === true
+          : existing.earnedPointsManual === true,
+        locked: activity.locked === true,
+      };
+    });
     savedAssessments[periodSelect.value] = assessmentEntries;
     subjectGrades.assessments = savedAssessments;
     subjectGrades[periodSelect.value] = getWeightedGrade(String(student.id));
@@ -821,10 +924,12 @@ const saveGrades = async () => {
     activityList.querySelector('.remove-activity-button').disabled = true;
   }
   studentsBody.querySelectorAll('.grade-input').forEach((input) => {
-    input.disabled = false;
+    const activity = activities.find((entry) => entry.id === input.dataset.activityId);
+    input.disabled = activity ? isActivityLockedForCurrentUser(activity) : false;
   });
   studentsBody.querySelectorAll('.earned-points-input').forEach((input) => {
-    input.disabled = false;
+    const activity = activities.find((entry) => entry.id === input.dataset.activityId);
+    input.disabled = activity ? isActivityLockedForCurrentUser(activity) : false;
   });
   if (errors.length) {
     const missingGradesColumn = errors.some(({ message }) => /columna\s+grades|grades.*(schema cache|column)|column.*grades/i.test(message));
@@ -957,6 +1062,16 @@ const initialize = async () => {
   });
   activityList.addEventListener('click', (event) => {
     if (!canManageActivities()) return;
+    const lockButton = event.target.closest('.activity-lock-button');
+    if (lockButton) {
+      if (hasUnsavedChanges()) {
+        if (!window.confirm('Hay actividades o notas sin guardar. ¿Descartar esos cambios para actualizar el bloqueo?')) return;
+        loadGradeContext();
+      }
+      const activity = activities.find((entry) => entry.id === lockButton.closest('.assessment-item')?.dataset.activityId);
+      if (activity) void saveActivityLock(activity.id, !activity.locked);
+      return;
+    }
     const button = event.target.closest('.remove-activity-button');
     if (!button) return;
     if (!window.confirm('¿Quitar esta actividad y las notas registradas para ella?')) return;
