@@ -33,19 +33,9 @@ api/
 
 Chart.js se carga al abrir un panel que necesita gráficas. Las librerías de PDF solo se descargan cuando se solicita una exportación. No se incluye el cliente de Supabase en el navegador: las páginas consultan los endpoints del servidor.
 
+La pestaña de notas inicia en paralelo la carga de estudiantes y la hoja de calificaciones, reutiliza la hoja durante la sesión y crea un índice en memoria para relacionar estudiantes con registros de esa hoja.
+
 ## Ejecución local
 
 Instala las dependencias con `npm install` y ejecuta `npm start`. Para el envío de correo y la conexión a Supabase, configura las variables del servidor descritas en `.env.example`.
 
-## Supabase
-
-La reorganización no requiere ejecutar SQL ni modifica datos existentes. Si la carga de notas informa que falta la columna `grades`, se puede ejecutar de forma segura este SQL aditivo en el editor de Supabase:
-
-```sql
-alter table public.students
-add column if not exists grades jsonb not null default '{}'::jsonb;
-
-notify pgrst, 'reload schema';
-```
-
-No elimina ni reemplaza filas. Si la columna ya existe, no realiza cambios en ella. Para asistencia y otras columnas, revisa primero el esquema actual: `supabase-attendances.sql` también actualiza políticas de acceso aunque sus cambios de columnas sean aditivos.

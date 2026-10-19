@@ -82,6 +82,7 @@ let draftEarnedPoints = {};
 let originalEarnedPoints = {};
 let manualEarnedPoints = {};
 let originalManualEarnedPoints = {};
+let sheetRowsPromise = null;
 
 const normalizeText = (value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 const normalizeCedula = (value) => String(value || '').toUpperCase().replace(/\D/g, '');
@@ -113,19 +114,27 @@ const parseCsvLine = (line) => {
   return values;
 };
 
-const loadSheetRows = async () => {
-  const response = await fetch(`${SHEET_CSV_URL}&t=${Date.now()}`, { cache: 'no-store' });
-  if (!response.ok) throw new Error(`La hoja de notas respondió con ${response.status}.`);
-  const lines = (await response.text()).split(/\r?\n/).filter((line) => line.trim());
-  if (!lines.length) return [];
-  const headers = parseCsvLine(lines[0]).map((header) => header.replace(/^\uFEFF/, ''));
-  return lines.slice(1).map((line) => {
-    const values = parseCsvLine(line);
-    return headers.reduce((record, header, index) => {
-      record[header] = values[index] || '';
-      return record;
-    }, {});
-  });
+const loadSheetRows = () => {
+  if (!sheetRowsPromise) {
+    sheetRowsPromise = (async () => {
+      const response = await fetch(SHEET_CSV_URL, { cache: 'no-store' });
+      if (!response.ok) throw new Error(`La hoja de notas respondió con ${response.status}.`);
+      const lines = (await response.text()).split(/\r?\n/).filter((line) => line.trim());
+      if (!lines.length) return [];
+      const headers = parseCsvLine(lines[0]).map((header) => header.replace(/^\uFEFF/, ''));
+      return lines.slice(1).map((line) => {
+        const values = parseCsvLine(line);
+        return headers.reduce((record, header, index) => {
+          record[header] = values[index] || '';
+          return record;
+        }, {});
+      });
+    })().catch((error) => {
+      sheetRowsPromise = null;
+      throw error;
+    });
+  }
+  return sheetRowsPromise;
 };
 
 const getRecordValue = (record, fragments) => {
@@ -133,15 +142,36 @@ const getRecordValue = (record, fragments) => {
   return key ? record[key] : '';
 };
 
-const matchSheetRecord = (student, sheetRows) => {
+const createSheetRecordIndex = (sheetRows) => {
+  const byCedula = new Map();
+  const byName = new Map();
+
+  sheetRows.forEach((row, index) => {
+    const cedula = normalizeCedula(getRecordValue(row, ['cedula', 'identificacion']));
+    const name = normalizeText(getRecordValue(row, ['nombre', 'estudiante']));
+    const record = { row, cedula, index };
+
+    if (cedula && !byCedula.has(cedula)) byCedula.set(cedula, record);
+    if (name) {
+      if (!byName.has(name)) byName.set(name, []);
+      byName.get(name).push(record);
+    }
+  });
+
+  return { byCedula, byName };
+};
+
+const matchSheetRecord = (student, sheetIndex) => {
   const studentId = normalizeCedula(student.cedula);
   const studentName = normalizeText(student.name);
-  return sheetRows.find((row) => {
-    const rowId = normalizeCedula(getRecordValue(row, ['cedula', 'identificacion']));
-    const rowName = normalizeText(getRecordValue(row, ['nombre', 'estudiante']));
-    return (studentId && rowId && studentId === rowId)
-      || (!(studentId && rowId) && studentName && rowName === studentName);
-  });
+  const matchById = studentId ? sheetIndex.byCedula.get(studentId) : null;
+  if (!studentName) return matchById?.row;
+
+  const nameMatches = sheetIndex.byName.get(studentName) || [];
+  const nameMatch = nameMatches.find((record) => !studentId || !record.cedula);
+  if (!matchById) return nameMatch?.row;
+  if (!nameMatch) return matchById.row;
+  return matchById.index < nameMatch.index ? matchById.row : nameMatch.row;
 };
 
 const getSheetGrade = (record, subjectId, period) => {
@@ -674,29 +704,32 @@ const loadStudents = async () => {
   setStatus('');
 
   const year = yearSelect.value;
-  const response = await fetch(`${API_STUDENTS}?year=${encodeURIComponent(year)}&t=${Date.now()}`, {
-    cache: 'no-store',
-    headers: { 'Cache-Control': 'no-cache' },
-  });
-  const responseData = await response.json().catch(() => []);
-  if (!response.ok) {
-    throw new Error(responseData.error || `No se pudieron cargar los estudiantes (${response.status}).`);
-  }
-  if (!Array.isArray(responseData)) throw new Error('El servidor devolvió una lista de estudiantes inválida.');
+  const studentRequest = (async () => {
+    const response = await fetch(`${API_STUDENTS}?year=${encodeURIComponent(year)}&t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache' },
+    });
+    const responseData = await response.json().catch(() => []);
+    if (!response.ok) {
+      throw new Error(responseData.error || `No se pudieron cargar los estudiantes (${response.status}).`);
+    }
+    if (!Array.isArray(responseData)) throw new Error('El servidor devolvió una lista de estudiantes inválida.');
+    return responseData;
+  })();
 
-  let sheetRows = [];
   let sheetWarning = '';
-  try {
-    sheetRows = await loadSheetRows();
-  } catch (error) {
+  const sheetRequest = loadSheetRows().catch((error) => {
     console.error('No se pudieron leer las notas existentes desde la hoja:', error);
     sheetWarning = 'No se pudieron leer las notas actuales de Excel; se muestran las notas guardadas en el sistema.';
-  }
+    return [];
+  });
+  const [responseData, sheetRows] = await Promise.all([studentRequest, sheetRequest]);
+  const sheetIndex = createSheetRecordIndex(sheetRows);
 
   students = responseData.map((student) => ({
     ...student,
     grades: student.grades && typeof student.grades === 'object' ? student.grades : {},
-    sheetRecord: matchSheetRecord(student, sheetRows),
+    sheetRecord: matchSheetRecord(student, sheetIndex),
   }));
   loadGradeContext();
   if (sheetWarning) setStatus(sheetWarning, 'error');
