@@ -1,47 +1,7 @@
 const API_STUDENTS = window.APP_CONFIG.api.students;
 const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR2dzgdf5bWl2KBYcGTWxjjiIk6qKQ5NWjde1eyiv0Gy0velu_8JTPdu8O8WicEJQ/pub?output=csv';
 const PERIOD_LABELS = { '1er': '1er lapso', '2do': '2do lapso', '3er': '3er lapso', Final: 'Final' };
-const SUBJECTS_BY_YEAR = {
-  1: [
-    { id: 'matematicas', label: 'Matemáticas' }, { id: 'castellano', label: 'Castellano' },
-    { id: 'ingles', label: 'Inglés' }, { id: 'frances', label: 'Francés' },
-    { id: 'educacion-fisica', label: 'Educación Física' }, { id: 'arte-patrimonio', label: 'Arte y Patrimonio' },
-    { id: 'ciencias-naturales', label: 'Ciencias Naturales' }, { id: 'ghc', label: 'GHC' },
-    { id: 'orientacion-convivencia', label: 'Orientación y Convivencia' }, { id: 'crp', label: 'CRP' },
-  ],
-  2: [
-    { id: 'matematicas', label: 'Matemáticas' }, { id: 'castellano', label: 'Castellano' },
-    { id: 'ingles', label: 'Inglés' }, { id: 'frances', label: 'Francés' },
-    { id: 'educacion-fisica', label: 'Educación Física' }, { id: 'arte-patrimonio', label: 'Arte y Patrimonio' },
-    { id: 'ciencias-naturales', label: 'Ciencias Naturales' }, { id: 'ghc', label: 'GHC' },
-    { id: 'orientacion-convivencia', label: 'Orientación y Convivencia' }, { id: 'crp', label: 'CRP' },
-  ],
-  3: [
-    { id: 'castellano', label: 'Castellano' }, { id: 'ingles', label: 'Inglés' },
-    { id: 'matematica', label: 'Matemática' }, { id: 'educacion-fisica', label: 'Educación Física' },
-    { id: 'fisica', label: 'Física' }, { id: 'quimica', label: 'Química' },
-    { id: 'biologia', label: 'Biología' }, { id: 'ghc', label: 'GHC' },
-    { id: 'orientacion-convivencia', label: 'Orientación y Convivencia' },
-    { id: 'frances', label: 'Francés' }, { id: 'crp', label: 'CRP' },
-  ],
-  4: [
-    { id: 'castellano', label: 'Castellano' }, { id: 'ingles', label: 'Inglés' },
-    { id: 'matematica', label: 'Matemática' }, { id: 'educacion-fisica', label: 'Educación Física' },
-    { id: 'fisica', label: 'Física' }, { id: 'quimica', label: 'Química' },
-    { id: 'biologia', label: 'Biología' }, { id: 'ghc', label: 'GHC' },
-    { id: 'formacion-soberania', label: 'Formación para la Soberanía' },
-    { id: 'orientacion-convivencia', label: 'Orientación y Convivencia' }, { id: 'frances', label: 'Francés' },
-  ],
-  5: [
-    { id: 'castellano', label: 'Castellano' }, { id: 'ingles', label: 'Inglés' },
-    { id: 'matematica', label: 'Matemática' }, { id: 'educacion-fisica', label: 'Educación Física' },
-    { id: 'fisica', label: 'Física' }, { id: 'quimica', label: 'Química' },
-    { id: 'biologia', label: 'Biología' }, { id: 'ciencias-tierra', label: 'Ciencias de la Tierra' },
-    { id: 'ghc', label: 'GHC' }, { id: 'frances', label: 'Francés' },
-    { id: 'formacion-soberania', label: 'Formación para la Soberanía' },
-    { id: 'orientacion-convivencia', label: 'Orientación y Convivencia' }, { id: 'crp', label: 'CRP' },
-  ],
-};
+const SUBJECTS_BY_YEAR = window.GRADE_SUBJECTS_BY_YEAR;
 const SHEET_SUBJECT_ALIASES = {
   matematica: ['matematica', 'matematicas'],
   matematicas: ['matematica', 'matematicas'],
@@ -265,10 +225,8 @@ const getLapsoGrade = (student, period) => {
 };
 
 const getDefinitiveGrade = (student) => {
-  const lapsoGrades = LAPSO_PERIODS.map((period) => getLapsoGrade(student, period));
-  if (lapsoGrades.some((grade) => grade === null)) return null;
-  const exactGrade = Number((lapsoGrades.reduce((sum, grade) => sum + grade, 0) / LAPSO_PERIODS.length).toFixed(2));
-  return { exactGrade, roundedGrade: Math.round(exactGrade) };
+  const subjectId = currentSubject()?.id;
+  return subjectId ? window.calculateDefinitiveGrade(student.grades?.[subjectId]) : null;
 };
 
 const formatFinalGrade = (grade) => (grade !== null && grade < 10 ? String(grade).padStart(2, '0') : String(grade));

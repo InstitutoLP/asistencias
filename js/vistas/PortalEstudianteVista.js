@@ -23,10 +23,6 @@ let datosEstudianteActual = null;
 let chartsInstancias = {};
 let boletaAutorizadaActual = false;
 
-const materiasOficiales = [ "Castellano", "Ingles", "Matematica", "Educacion Fisica", "Arte y Patrimonio", "Ciencias Naturales", "GHC", "Orientacion y Convivencia" ];
-const codigosMaterias = { "Castellano": "CA", "Ingles": "LE", "Matematica": "MA", "Educacion Fisica": "EF", "Arte y Patrimonio": "AyP", "Ciencias Naturales": "CN", "GHC": "GHC", "Orientacion y Convivencia": "OyC", "CRP": "FRA" };
-const nombresLargoMaterias = { "Castellano": "CASTELLANO", "Ingles": "INGLÉS Y OTRAS LENGUAS EXTRANJERAS", "Matematica": "MATEMÁTICAS", "Educacion Fisica": "EDUCACIÓN FÍSICA", "Arte y Patrimonio": "ARTE Y PATRIMONIO", "Ciencias Naturales": "CIENCIAS NATURALES", "GHC": "GEOGRAFÍA, HISTORIA Y CIUDADANÍA", "Orientacion y Convivencia": "ORIENTACIÓN Y CONVIVENCIA" };
-
 const normalizarTexto = (texto) => texto ? String(texto).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : "";
 const normalizarCedula = (cedula) => String(cedula || '').trim().toUpperCase().replace(/\D/g, '') || String(cedula || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
 const normalizarMontoPago = (valor) => {
@@ -100,28 +96,45 @@ const obtenerNotasDeSheets = async () => {
     return null;
   }
 };
-const extraerValorColumna = (datos, materia, lapso) => {
+const extraerValorColumna = (datos, materia, lapso, subjectIdsOverride) => {
   const materiaNormalizada = normalizarTexto(materia).replace(/[^a-z0-9]+/g, ' ').trim();
   const idsMateria = {
     castellano: ['castellano'],
     ingles: ['ingles'],
     matematica: ['matematicas', 'matematica'],
     matematicas: ['matematicas', 'matematica'],
-    crp: ['frances', 'crp'],
+    crp: ['crp', 'frances'],
     'educacion fisica': ['educacion-fisica'],
     'arte y patrimonio': ['arte-patrimonio'],
+    'arte patrimonio': ['arte-patrimonio'],
     'ciencias naturales': ['ciencias-naturales'],
+    'ciencias tierra': ['ciencias-tierra'],
     fisica: ['fisica'],
     quimica: ['quimica'],
     biologia: ['biologia'],
     'ciencias de la tierra': ['ciencias-tierra'],
     'formacion para la soberania': ['formacion-soberania'],
+    'formacion soberania': ['formacion-soberania'],
     ghc: ['ghc'],
     'geografia historia y ciudadania': ['ghc'],
     'orientacion y convivencia': ['orientacion-convivencia'],
+    'orientacion convivencia': ['orientacion-convivencia'],
     frances: ['frances'],
   };
-  const savedGradeEntries = (idsMateria[materiaNormalizada] || [])
+  const subjectIds = subjectIdsOverride || idsMateria[materiaNormalizada] || [materiaNormalizada.replace(/\s+/g, '-')];
+  if (normalizarTexto(lapso) === 'final') {
+    const savedFinal = subjectIds
+      .map((subjectId) => datos?.grades?.[subjectId]?.Final)
+      .find((value) => value !== null && value !== undefined && value !== '');
+    if (savedFinal !== undefined) return formatReportGrade(savedFinal);
+
+    const definitiveGrade = subjectIds
+      .map((subjectId) => window.calculateDefinitiveGrade(datos?.grades?.[subjectId]))
+      .find((grade) => grade !== null);
+    if (definitiveGrade) return formatReportGrade(definitiveGrade.roundedGrade);
+  }
+
+  const savedGradeEntries = subjectIds
     .map((subjectId) => {
       const grades = datos?.grades?.[subjectId];
       const period = Object.keys(grades || {}).find((key) => normalizarTexto(key) === normalizarTexto(lapso));
@@ -133,7 +146,7 @@ const extraerValorColumna = (datos, materia, lapso) => {
   if (savedGradeEntry) {
     return savedGradeEntry.value === null || savedGradeEntry.value === ''
       ? '-'
-      : String(savedGradeEntry.value);
+      : formatReportGrade(savedGradeEntry.value);
   }
 
   const claveBuscada = normalizarTexto(`${materia}_${lapso}`).replace(/\s+/g, '');
@@ -141,7 +154,21 @@ const extraerValorColumna = (datos, materia, lapso) => {
     const nombreNormalizado = normalizarTexto(nombre).replace(/\s+/g, '');
     return nombreNormalizado === claveBuscada;
   });
-  return clave ? datos[clave] || '-' : '-';
+  return clave ? formatReportGrade(datos[clave] || '-') : '-';
+};
+
+const formatReportGrade = (value) => {
+  const grade = Number(String(value).replace(',', '.'));
+  return Number.isFinite(grade) && Number.isInteger(grade) && grade >= 0 && grade < 10
+    ? `0${grade}`
+    : String(value);
+};
+
+const getStudentYear = (student) => {
+  const yearKey = obtenerClaveEstudiante(student, 'ano');
+  const value = student?.year ?? (yearKey ? student[yearKey] : '');
+  const year = Number(String(value).match(/\d+/)?.[0]);
+  return Number.isInteger(year) && year >= 1 && year <= 5 ? year : null;
 };
 
 const actualizarTexto = (id, valor) => {
@@ -150,57 +177,75 @@ const actualizarTexto = (id, valor) => {
 };
 
 const renderizarBoletaEstudiante = (estudiante) => {
-  const materias = [
-    ['Castellano', 'CA'],
-    ['Inglés', 'LE'],
-    ['Matemáticas', 'MA'],
-    ['Educación Fisíca', 'EF'],
-    ['Arte y Patrimonio', 'AyP'],
-    ['Ciencias Naturales', 'CN'],
-    ['Geografía, historia y ciudadania', 'GHC'],
-    ['Orientación y convivencia', 'OyC'],
-  ];
-  const materiasAdicionales = [
-    ['Física', 'FI'],
-    ['Química', 'QU'],
-    ['Biología', 'BI'],
-    ['Ciencias de la Tierra', 'CT'],
-    ['Formación para la Soberanía', 'FS'],
-  ].filter(([materia]) => ['1er', '2do', '3er', 'Final']
-    .some((lapso) => extraerValorColumna(estudiante, materia, lapso) !== '-'));
-  const materiasBoleta = [...materias, ...materiasAdicionales];
+  const year = getStudentYear(estudiante) || 1;
+  const gradeSubjectIds = new Set((window.GRADE_SUBJECTS_BY_YEAR[year] || []).map(({ id }) => id));
+  const materiasBoleta = (window.REPORT_SUBJECT_IDS_BY_YEAR[year] || [])
+    .filter((id) => gradeSubjectIds.has(id))
+    .map((id) => ({
+      id,
+      ...(window.REPORT_SUBJECT_DISPLAY[id] || { label: id.toUpperCase(), code: id.toUpperCase() }),
+    }));
+  const participationSubjectIds = (window.REPORT_PARTICIPATION_IDS_BY_YEAR[year] || [])
+    .filter((id) => gradeSubjectIds.has(id));
 
   const cuerpo = document.getElementById('tablaNotasBody');
   if (cuerpo) {
-    cuerpo.innerHTML = materiasBoleta.map(([materia]) => `
-      <tr>
-        <td class="col-area">${materia.toUpperCase()}</td>
-        <td>${extraerValorColumna(estudiante, materia, '1er')}</td>
-        <td>${extraerValorColumna(estudiante, materia, '2do')}</td>
-        <td>${extraerValorColumna(estudiante, materia, '3er')}</td>
-        <td>${extraerValorColumna(estudiante, materia, 'Final')}</td>
-        <td>-</td><td>-</td><td>-</td><td>-</td>
-        <td>-</td><td>-</td><td>-</td>
-      </tr>
-    `).join('');
+    cuerpo.replaceChildren();
+    materiasBoleta.forEach(({ id, label }) => {
+      const row = document.createElement('tr');
+      const subjectCell = document.createElement('td');
+      subjectCell.className = 'col-area';
+      subjectCell.textContent = label;
+      row.appendChild(subjectCell);
+      ['1er', '2do', '3er', 'Final'].forEach((period) => {
+        const cell = document.createElement('td');
+        cell.textContent = extraerValorColumna(estudiante, id, period);
+        row.appendChild(cell);
+      });
+      for (let index = 0; index < 7; index += 1) {
+        const cell = document.createElement('td');
+        cell.textContent = '-';
+        row.appendChild(cell);
+      }
+      cuerpo.appendChild(row);
+    });
   }
 
-  actualizarTexto('prom1er', extraerValorColumna(estudiante, 'Promedio del estudiante', '1er'));
-  actualizarTexto('prom2do', extraerValorColumna(estudiante, 'Promedio del estudiante', '2do'));
-  actualizarTexto('prom3er', extraerValorColumna(estudiante, 'Promedio del estudiante', '3er'));
-  actualizarTexto('promFinal', extraerValorColumna(estudiante, 'Promedio del estudiante', 'Final'));
+  const getAverageGrade = (period) => {
+    const grades = materiasBoleta
+      .map(({ id }) => Number(String(extraerValorColumna(estudiante, id, period)).replace(',', '.')))
+      .filter(Number.isFinite);
+    if (!grades.length) return extraerValorColumna(estudiante, 'Promedio del estudiante', period);
+    return formatReportGrade(Math.round(grades.reduce((sum, grade) => sum + grade, 0) / grades.length));
+  };
+  actualizarTexto('prom1er', getAverageGrade('1er'));
+  actualizarTexto('prom2do', getAverageGrade('2do'));
+  actualizarTexto('prom3er', getAverageGrade('3er'));
+  actualizarTexto('promFinal', getAverageGrade('Final'));
 
-  const ano = estudiante[obtenerClaveEstudiante(estudiante, 'ano')];
-  const seccionKey = Object.keys(estudiante).find((key) => normalizarTexto(key).includes('seccion'));
+  const anoKey = obtenerClaveEstudiante(estudiante, 'ano');
+  const ano = estudiante.year ?? (anoKey ? estudiante[anoKey] : '');
   actualizarTexto('anoEscolarDisplay', 'AÑO ESCOLAR 2026-2027');
-  actualizarTexto('anoDisplay', ano || '-');
+  actualizarTexto('anoDisplay', ano ? (/^\d+$/.test(String(ano)) ? `${ano}º` : ano) : '-');
   actualizarTexto('seccionDisplay', 'U');
 
-  actualizarTexto('crp1er', extraerValorColumna(estudiante, 'Francés', '1er'));
-  actualizarTexto('crp2do', extraerValorColumna(estudiante, 'Francés', '2do'));
-  actualizarTexto('crp3er', extraerValorColumna(estudiante, 'Francés', '3er'));
-  actualizarTexto('crpFinal', extraerValorColumna(estudiante, 'Francés', 'Final'));
-  renderizarGraficos(materias.slice(0, 7), estudiante, estudiante, estudiante);
+  const participationSection = document.getElementById('filaSeccionCRP');
+  const participationRow = document.getElementById('filaCRP');
+  const hasParticipation = participationSubjectIds.length > 0;
+  if (participationSection) participationSection.hidden = !hasParticipation;
+  if (participationRow) participationRow.hidden = !hasParticipation;
+  const participationGrade = (period) => {
+    for (const subjectId of participationSubjectIds) {
+      const grade = extraerValorColumna(estudiante, subjectId, period, [subjectId]);
+      if (grade !== '-') return grade;
+    }
+    return '-';
+  };
+  actualizarTexto('crp1er', participationGrade('1er'));
+  actualizarTexto('crp2do', participationGrade('2do'));
+  actualizarTexto('crp3er', participationGrade('3er'));
+  actualizarTexto('crpFinal', participationGrade('Final'));
+  renderizarGraficos(materiasBoleta.map(({ id, code }) => [id, code]), estudiante, estudiante, estudiante);
 };
 
 const renderizarGraficos = (materias, datosPrimerLapso, datosSegundoLapso, datosTercerLapso) => {
@@ -439,6 +484,7 @@ document.getElementById('loginEstudianteForm').addEventListener('submit', async 
     }
 
     alumnoEncontrado.id = estudianteSupabase.id;
+    alumnoEncontrado.year = estudianteSupabase.year;
     alumnoEncontrado.grades = estudianteSupabase.grades || {};
     datosEstudianteActual = alumnoEncontrado;
     actualizarUrlEstudiante(estudianteSupabase.id);
@@ -495,6 +541,7 @@ const cargarEstudianteDesdeUrl = async () => {
     const nombreKey = obtenerClaveEstudiante(alumnoEncontrado, 'nombre');
     alumnoEncontrado.Nombre = alumnoEncontrado[nombreKey];
     alumnoEncontrado.id = estudianteSupabase.id;
+    alumnoEncontrado.year = estudianteSupabase.year;
     alumnoEncontrado.grades = estudianteSupabase.grades || {};
     datosEstudianteActual = alumnoEncontrado;
     boletaAutorizadaActual = await verificarAutorizacionBoleta(datosEstudianteActual);
