@@ -186,7 +186,10 @@ const crearFilaMateria = (estudiante, subjectId) => {
   subjectCell.textContent = display.label;
 
   ['1er', '2do', '3er', 'Final'].forEach((period) => {
-    row.insertCell().textContent = formatearNota(extraerValorColumna(estudiante, subjectId, period));
+    const value = extraerValorColumna(estudiante, subjectId, period);
+    row.insertCell().textContent = subjectId === 'crp' && period === 'Final'
+      ? window.convertCRPGrade(value)
+      : formatearNota(value);
   });
   for (let index = 0; index < 7; index += 1) row.insertCell().textContent = '-';
   return row;
@@ -219,6 +222,27 @@ const renderizarBoletaEstudiante = (estudiante) => {
   actualizarTexto('prom2do', obtenerPromedio(estudiante, materiasPlan, '2do'));
   actualizarTexto('prom3er', obtenerPromedio(estudiante, materiasPlan, '3er'));
   actualizarTexto('promFinal', obtenerPromedio(estudiante, materiasPlan, 'Final'));
+
+  const pendientesBody = document.getElementById('tablaPendientesBody');
+  if (pendientesBody) {
+    const pendientes = Array.isArray(estudiante?.pendingSubjects) ? estudiante.pendingSubjects : [];
+    pendientesBody.replaceChildren();
+    if (!pendientes.length) {
+      const row = pendientesBody.insertRow();
+      const cell = row.insertCell();
+      cell.colSpan = 5;
+      cell.textContent = 'Sin materias pendientes registradas.';
+    } else {
+      pendientes.forEach((pendingSubject) => {
+        const row = pendientesBody.insertRow();
+        row.insertCell().textContent = pendingSubject.subjectLabel || pendingSubject.subjectId || '-';
+        for (let index = 0; index < 4; index += 1) {
+          const grade = normalizarNota(pendingSubject.revisions?.[index]);
+          row.insertCell().textContent = grade === null ? '-' : formatearNota(grade);
+        }
+      });
+    }
+  }
 
   const seccionKey = Object.keys(estudiante || {}).find((key) => normalizarTexto(key).includes('seccion'));
   actualizarTexto('anoEscolarDisplay', 'AÑO ESCOLAR 2026-2027');

@@ -78,6 +78,18 @@
   window.REPORT_SUBJECT_IDS_BY_YEAR = reportSubjectIdsByYear;
   window.REPORT_PARTICIPATION_IDS_BY_YEAR = participationSubjectIdsByYear;
   window.REPORT_SUBJECT_DISPLAY = reportSubjectDisplay;
+  window.convertCRPGrade = (value) => {
+    if (value === null || value === undefined || value === '') return '-';
+    const grade = Number(value);
+    if (!Number.isFinite(grade)) return '-';
+    const roundedGrade = Math.round(grade);
+    if (roundedGrade >= 19 && roundedGrade <= 20) return 'A';
+    if (roundedGrade >= 16 && roundedGrade <= 18) return 'B';
+    if (roundedGrade >= 12 && roundedGrade <= 15) return 'C';
+    if (roundedGrade >= 10 && roundedGrade <= 11) return 'D';
+    if (roundedGrade >= 1 && roundedGrade <= 9) return 'E';
+    return '-';
+  };
   window.calculateDefinitiveGrade = (subjectGrades) => {
     const lapsoGrades = ['1er', '2do', '3er'].map((period) => {
       const value = subjectGrades?.[period];

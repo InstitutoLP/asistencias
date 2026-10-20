@@ -38,7 +38,7 @@ El pensum por año está centralizado en `js/config/grade-subjects.js` y lo comp
 
 ### Modelo de calificaciones y boleta
 
-Cada estudiante conserva su año y notas en `students.year` y `students.grades` (JSONB en Supabase; objeto en el respaldo local). Las claves de materia coinciden con los IDs del pensum:
+Cada estudiante conserva su año, notas y materias pendientes en `students.year`, `students.grades` y `students.pending_subjects` (JSONB en Supabase; objetos en el respaldo local). Las claves de materia coinciden con los IDs del pensum:
 
 ```json
 {
@@ -47,11 +47,18 @@ Cada estudiante conserva su año y notas en `students.year` y `students.grades` 
   "grades": {
     "castellano": { "1er": 16, "2do": 17, "3er": 18 },
     "matematicas": { "1er": 14, "2do": null, "3er": null }
-  }
+  },
+  "pendingSubjects": [
+    { "subjectId": "castellano", "subjectLabel": "Castellano", "revisions": [12, 15, null, null] }
+  ]
 }
 ```
 
-El portal resuelve el registro por cédula desde la API; los enlaces directos consultan `GET /api/students?id=<id>`. Usa `year` para seleccionar las materias de `REPORT_SUBJECT_IDS_BY_YEAR`, y relaciona cada ID con `grades[subjectId]`. La definitiva es el promedio de los tres lapsos (primero redondeando cada lapso, como en el módulo de notas), redondeado al entero más cercano; se muestra vacía (`-`) mientras falte algún lapso. Los promedios por período usan solo las calificaciones numéricas disponibles de las materias del plan. La respuesta sigue siendo una lista de estudiantes y conserva el mismo esquema `year`/`grades`; `grades` puede estar vacío cuando aún no hay notas.
+El panel de materias pendientes solo aparece en el módulo de notas con el perfil de Andy Suárez. Permite elegir un estudiante, materias de su año y cuatro notas de revisión enteras entre 1 y 20; los cambios se guardan en `pendingSubjects` y aparecen en la boleta.
+
+El portal resuelve el registro por cédula desde la API; los enlaces directos consultan `GET /api/students?id=<id>`. Usa `year` para seleccionar las materias de `REPORT_SUBJECT_IDS_BY_YEAR`, y relaciona cada ID con `grades[subjectId]`. La definitiva es el promedio de los tres lapsos (primero redondeando cada lapso, como en el módulo de notas), redondeado al entero más cercano; se muestra vacía (`-`) mientras falte algún lapso. La definitiva de CRP se expresa en el módulo de notas y en la boleta como A (19-20), B (16-18), C (12-15), D (10-11) o E (1-9). Los promedios por período usan solo las calificaciones numéricas disponibles de las materias del plan. La respuesta sigue siendo una lista de estudiantes y conserva el esquema `year`/`grades`; `grades` puede estar vacío cuando aún no hay notas.
+
+Antes de habilitar la edición de revisiones en Supabase, ejecuta `supabase-pending-subjects.sql` en el editor SQL para crear `students.pending_subjects`.
 
 ## Ejecución local
 

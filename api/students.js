@@ -26,10 +26,48 @@ const safeNumber = (value, fallback = 0) => {
 
 const hasGrades = (grades) => grades && typeof grades === 'object' && Object.keys(grades).length > 0;
 
+const normalizePendingSubjects = (pendingSubjects) => {
+  if (!Array.isArray(pendingSubjects)) return null;
+  const normalized = [];
+  const subjectIds = new Set();
+  for (const subject of pendingSubjects) {
+    if (!subject || typeof subject.subjectId !== 'string' || !subject.subjectId.trim()
+      || typeof subject.subjectLabel !== 'string' || !subject.subjectLabel.trim()
+      || !Array.isArray(subject.revisions) || subject.revisions.length !== 4) return null;
+    const subjectId = subject.subjectId.trim();
+    if (subjectIds.has(subjectId)) return null;
+    subjectIds.add(subjectId);
+    const revisions = [];
+    for (const revision of subject.revisions) {
+      if (revision === null || revision === '') {
+        revisions.push(null);
+        continue;
+      }
+      const grade = Number(revision);
+      if (!Number.isInteger(grade) || grade < 1 || grade > 20) return null;
+      revisions.push(grade);
+    }
+    normalized.push({
+      subjectId,
+      subjectLabel: subject.subjectLabel.trim(),
+      revisions,
+    });
+  }
+  return normalized;
+};
+
+const normalizeStudent = (student) => ({
+  ...student,
+  pendingSubjects: Array.isArray(student?.pending_subjects) ? student.pending_subjects : [],
+});
+
 const getSupabaseError = (data, fallback) => {
   const message = data.message || data.error || fallback;
   if (/grades.*(schema cache|column)|column.*grades/i.test(message)) {
     return 'Supabase aún no tiene la columna grades. Ejecuta supabase-grades.sql en el editor SQL de Supabase para habilitar el guardado de notas.';
+  }
+  if (/pending_subjects.*(schema cache|column)|column.*pending_subjects/i.test(message)) {
+    return 'Supabase aún no tiene la columna pending_subjects. Ejecuta supabase-pending-subjects.sql en el editor SQL de Supabase para habilitar las materias pendientes.';
   }
   return message;
 };
@@ -76,7 +114,7 @@ module.exports = async function handler(req, res) {
         return res.status(response.status).json({ error: data.message || data.error || 'No se pudo consultar estudiantes.' });
       }
 
-      const students = Array.isArray(data) ? data : [];
+      const students = Array.isArray(data) ? data.map(normalizeStudent) : [];
       const attendanceDate = req.query?.date;
       if (attendanceDate && students.length) {
         const attendanceResponse = await supabaseFetch(
@@ -109,11 +147,18 @@ module.exports = async function handler(req, res) {
     if (req.method === 'POST') {
       const body = await parseBody(req);
       const rawYear = body?.year ?? body?.selectedYear ?? body?.anio ?? body?.anio ?? 1;
-      const { id, name, cedula, email, phone, BoletaVisible, paymentStatus, paidAmount, payments, grades, attendance, attendanceByDate } = body || {};
+      const {
+        id, name, cedula, email, phone, BoletaVisible, paymentStatus, paidAmount, payments, grades, attendance,
+        attendanceByDate, pendingSubjects,
+      } = body || {};
       const year = Number(rawYear);
 
       if (!name || Number.isNaN(year)) {
         return res.status(400).json({ error: 'Falta nombre o el año es inválido.' });
+      }
+      const normalizedPendingSubjects = pendingSubjects === undefined ? [] : normalizePendingSubjects(pendingSubjects);
+      if (!normalizedPendingSubjects) {
+        return res.status(400).json({ error: 'Las materias pendientes o sus notas de revisión no son válidas.' });
       }
 
       const payload = {
@@ -129,6 +174,7 @@ module.exports = async function handler(req, res) {
         paid_amount: safeNumber(paidAmount, 0),
         payments: payments || {},
         ...(hasGrades(grades) ? { grades } : {}),
+        pending_subjects: normalizedPendingSubjects,
         attendance: attendance || {},
         attendance_by_date: attendanceByDate || {},
       };
@@ -147,15 +193,24 @@ module.exports = async function handler(req, res) {
       }
 
       const saved = Array.isArray(data) ? data[0] : data;
-      return res.status(201).json(saved || payload);
+      return res.status(201).json(normalizeStudent(saved || payload));
     }
 
     if (req.method === 'PATCH') {
       const body = await parseBody(req);
-      const { id, name, cedula, email, phone, year, BoletaVisible, paymentStatus, paidAmount, payments, grades, attendance, attendanceByDate } = body || {};
+      const {
+        id, name, cedula, email, phone, year, BoletaVisible, paymentStatus, paidAmount, payments, grades, attendance,
+        attendanceByDate, pendingSubjects,
+      } = body || {};
 
       if (!id) {
         return res.status(400).json({ error: 'Falta id del estudiante.' });
+      }
+      const normalizedPendingSubjects = pendingSubjects === undefined
+        ? undefined
+        : normalizePendingSubjects(pendingSubjects);
+      if (pendingSubjects !== undefined && !normalizedPendingSubjects) {
+        return res.status(400).json({ error: 'Las materias pendientes o sus notas de revisión no son válidas.' });
       }
 
       const changes = {};
@@ -169,6 +224,7 @@ module.exports = async function handler(req, res) {
       if (paidAmount !== undefined) changes.paid_amount = safeNumber(paidAmount, 0);
       if (payments !== undefined) changes.payments = payments;
       if (hasGrades(grades)) changes.grades = grades;
+      if (normalizedPendingSubjects !== undefined) changes.pending_subjects = normalizedPendingSubjects;
       if (attendance !== undefined) changes.attendance = attendance;
       if (attendanceByDate !== undefined) changes.attendance_by_date = attendanceByDate;
       if (body?.status !== undefined) changes.status = body.status;
@@ -185,7 +241,7 @@ module.exports = async function handler(req, res) {
       }
 
       const updated = Array.isArray(data) ? data[0] : data;
-      return res.status(200).json(updated || { id });
+      return res.status(200).json(normalizeStudent(updated || { id }));
     }
 
     if (req.method === 'DELETE') {
