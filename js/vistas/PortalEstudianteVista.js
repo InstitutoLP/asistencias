@@ -23,6 +23,25 @@ let datosEstudianteActual = null;
 let chartsInstancias = {};
 let boletaAutorizadaActual = false;
 
+const SHEET_SUBJECT_NAMES = {
+  castellano: ['Castellano'],
+  ingles: ['Ingles', 'Inglés'],
+  matematica: ['Matematica', 'Matemática', 'Matemáticas'],
+  matematicas: ['Matematica', 'Matemática', 'Matemáticas'],
+  'educacion-fisica': ['Educacion Fisica', 'Educación Física'],
+  'arte-patrimonio': ['Arte y Patrimonio'],
+  'ciencias-naturales': ['Ciencias Naturales'],
+  fisica: ['Fisica', 'Física'],
+  quimica: ['Quimica', 'Química'],
+  biologia: ['Biologia', 'Biología'],
+  'ciencias-tierra': ['Ciencias de la Tierra'],
+  ghc: ['Geografia, historia y ciudadania', 'GHC'],
+  'formacion-soberania': ['Formacion para la Soberania', 'Formación para la Soberanía'],
+  'orientacion-convivencia': ['Orientacion y Convivencia', 'Orientación y Convivencia'],
+  frances: ['Frances', 'Francés'],
+  crp: ['CRP'],
+};
+
 const normalizarTexto = (texto) => texto ? String(texto).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : "";
 const normalizarCedula = (cedula) => String(cedula || '').trim().toUpperCase().replace(/\D/g, '') || String(cedula || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
 const normalizarMontoPago = (valor) => {
@@ -96,79 +115,53 @@ const obtenerNotasDeSheets = async () => {
     return null;
   }
 };
-const extraerValorColumna = (datos, materia, lapso, subjectIdsOverride) => {
-  const materiaNormalizada = normalizarTexto(materia).replace(/[^a-z0-9]+/g, ' ').trim();
-  const idsMateria = {
-    castellano: ['castellano'],
-    ingles: ['ingles'],
-    matematica: ['matematicas', 'matematica'],
-    matematicas: ['matematicas', 'matematica'],
-    crp: ['crp', 'frances'],
-    'educacion fisica': ['educacion-fisica'],
-    'arte y patrimonio': ['arte-patrimonio'],
-    'arte patrimonio': ['arte-patrimonio'],
-    'ciencias naturales': ['ciencias-naturales'],
-    'ciencias tierra': ['ciencias-tierra'],
-    fisica: ['fisica'],
-    quimica: ['quimica'],
-    biologia: ['biologia'],
-    'ciencias de la tierra': ['ciencias-tierra'],
-    'formacion para la soberania': ['formacion-soberania'],
-    'formacion soberania': ['formacion-soberania'],
-    ghc: ['ghc'],
-    'geografia historia y ciudadania': ['ghc'],
-    'orientacion y convivencia': ['orientacion-convivencia'],
-    'orientacion convivencia': ['orientacion-convivencia'],
-    frances: ['frances'],
-  };
-  const subjectIds = subjectIdsOverride || idsMateria[materiaNormalizada] || [materiaNormalizada.replace(/\s+/g, '-')];
-  if (normalizarTexto(lapso) === 'final') {
-    const savedFinal = subjectIds
-      .map((subjectId) => datos?.grades?.[subjectId]?.Final)
-      .find((value) => value !== null && value !== undefined && value !== '');
-    if (savedFinal !== undefined) return formatReportGrade(savedFinal);
+const tieneNotasDelModulo = (estudiante) => (
+  estudiante?.grades && Object.keys(estudiante.grades).length > 0
+);
 
-    const definitiveGrade = subjectIds
-      .map((subjectId) => window.calculateDefinitiveGrade(datos?.grades?.[subjectId]))
-      .find((grade) => grade !== null);
-    if (definitiveGrade) return formatReportGrade(definitiveGrade.roundedGrade);
-  }
-
-  const savedGradeEntries = subjectIds
-    .map((subjectId) => {
-      const grades = datos?.grades?.[subjectId];
-      const period = Object.keys(grades || {}).find((key) => normalizarTexto(key) === normalizarTexto(lapso));
-      return period ? { value: grades[period] } : null;
-    })
-    .filter((entry) => entry !== null);
-  const savedGradeEntry = savedGradeEntries.find((entry) => entry.value !== null && entry.value !== '')
-    || savedGradeEntries[0];
-  if (savedGradeEntry) {
-    return savedGradeEntry.value === null || savedGradeEntry.value === ''
-      ? '-'
-      : formatReportGrade(savedGradeEntry.value);
-  }
-
-  const claveBuscada = normalizarTexto(`${materia}_${lapso}`).replace(/\s+/g, '');
-  const clave = Object.keys(datos || {}).find((nombre) => {
-    const nombreNormalizado = normalizarTexto(nombre).replace(/\s+/g, '');
-    return nombreNormalizado === claveBuscada;
-  });
-  return clave ? formatReportGrade(datos[clave] || '-') : '-';
+const normalizarNota = (valor) => {
+  if (valor === null || valor === undefined || valor === '') return null;
+  const nota = Number(String(valor).replace(',', '.'));
+  return Number.isFinite(nota) ? nota : null;
 };
 
-const formatReportGrade = (value) => {
-  const grade = Number(String(value).replace(',', '.'));
-  return Number.isFinite(grade) && Number.isInteger(grade) && grade >= 0 && grade < 10
-    ? `0${grade}`
-    : String(value);
+const obtenerNotaLegada = (estudiante, subjectId, lapso) => {
+  const nombres = SHEET_SUBJECT_NAMES[subjectId] || [];
+  const columnas = nombres.map((materia) => normalizarTexto(`${materia}_${lapso}`).replace(/\s+/g, ''));
+  const columna = Object.keys(estudiante || {}).find((nombre) => (
+    columnas.includes(normalizarTexto(nombre).replace(/\s+/g, ''))
+  ));
+  return columna ? estudiante[columna] || '-' : '-';
 };
 
-const getStudentYear = (student) => {
-  const yearKey = obtenerClaveEstudiante(student, 'ano');
-  const value = student?.year ?? (yearKey ? student[yearKey] : '');
-  const year = Number(String(value).match(/\d+/)?.[0]);
-  return Number.isInteger(year) && year >= 1 && year <= 5 ? year : null;
+const extraerValorColumna = (estudiante, subjectId, lapso) => {
+  const grades = estudiante?.grades?.[subjectId];
+  if (lapso === 'Final') {
+    const definitiva = window.calculateDefinitiveGrade(grades);
+    if (definitiva) return definitiva.roundedGrade;
+    const savedFinal = normalizarNota(grades?.Final);
+    if (savedFinal !== null) return savedFinal;
+    if (!tieneNotasDelModulo(estudiante)) {
+      const legacyFinal = normalizarNota(obtenerNotaLegada(estudiante, subjectId, 'Final'));
+      if (legacyFinal !== null) return legacyFinal;
+      const legacyGrades = Object.fromEntries(['1er', '2do', '3er'].map((period) => (
+        [period, normalizarNota(obtenerNotaLegada(estudiante, subjectId, period))]
+      )));
+      return window.calculateDefinitiveGrade(legacyGrades)?.roundedGrade ?? '-';
+    }
+    return '-';
+  } else if (grades && Object.prototype.hasOwnProperty.call(grades, lapso)) {
+    return normalizarNota(grades[lapso]);
+  }
+
+  return tieneNotasDelModulo(estudiante) ? '-' : obtenerNotaLegada(estudiante, subjectId, lapso);
+};
+
+const formatearNota = (valor) => {
+  const nota = normalizarNota(valor);
+  if (nota === null) return '-';
+  const texto = Number.isInteger(nota) ? String(nota) : String(Number(nota.toFixed(2)));
+  return nota < 10 ? texto.padStart(2, '0') : texto;
 };
 
 const actualizarTexto = (id, valor) => {
@@ -176,76 +169,64 @@ const actualizarTexto = (id, valor) => {
   if (elemento) elemento.textContent = valor || '-';
 };
 
-const renderizarBoletaEstudiante = (estudiante) => {
-  const year = getStudentYear(estudiante) || 1;
-  const gradeSubjectIds = new Set((window.GRADE_SUBJECTS_BY_YEAR[year] || []).map(({ id }) => id));
-  const materiasBoleta = (window.REPORT_SUBJECT_IDS_BY_YEAR[year] || [])
-    .filter((id) => gradeSubjectIds.has(id))
-    .map((id) => ({
-      id,
-      ...(window.REPORT_SUBJECT_DISPLAY[id] || { label: id.toUpperCase(), code: id.toUpperCase() }),
-    }));
-  const participationSubjectIds = (window.REPORT_PARTICIPATION_IDS_BY_YEAR[year] || [])
-    .filter((id) => gradeSubjectIds.has(id));
+const obtenerPromedio = (estudiante, materias, periodo) => {
+  const notas = materias
+    .map(({ id }) => normalizarNota(extraerValorColumna(estudiante, id, periodo)))
+    .filter((nota) => nota !== null);
+  if (!notas.length) return '-';
+  const promedio = notas.reduce((total, nota) => total + nota, 0) / notas.length;
+  return String(Number(promedio.toFixed(2)));
+};
 
+const crearFilaMateria = (estudiante, subjectId) => {
+  const display = window.REPORT_SUBJECT_DISPLAY[subjectId] || { label: subjectId.toUpperCase() };
+  const row = document.createElement('tr');
+  const subjectCell = row.insertCell();
+  subjectCell.className = 'col-area';
+  subjectCell.textContent = display.label;
+
+  ['1er', '2do', '3er', 'Final'].forEach((period) => {
+    row.insertCell().textContent = formatearNota(extraerValorColumna(estudiante, subjectId, period));
+  });
+  for (let index = 0; index < 7; index += 1) row.insertCell().textContent = '-';
+  return row;
+};
+
+const renderizarBoletaEstudiante = (estudiante) => {
+  const year = Number(estudiante?.year);
+  const materias = window.REPORT_SUBJECT_IDS_BY_YEAR[year] || [];
+  const participacion = window.REPORT_PARTICIPATION_IDS_BY_YEAR[year] || [];
   const cuerpo = document.getElementById('tablaNotasBody');
-  if (cuerpo) {
-    cuerpo.replaceChildren();
-    materiasBoleta.forEach(({ id, label }) => {
-      const row = document.createElement('tr');
-      const subjectCell = document.createElement('td');
-      subjectCell.className = 'col-area';
-      subjectCell.textContent = label;
-      row.appendChild(subjectCell);
-      ['1er', '2do', '3er', 'Final'].forEach((period) => {
-        const cell = document.createElement('td');
-        cell.textContent = extraerValorColumna(estudiante, id, period);
-        row.appendChild(cell);
-      });
-      for (let index = 0; index < 7; index += 1) {
-        const cell = document.createElement('td');
-        cell.textContent = '-';
-        row.appendChild(cell);
-      }
-      cuerpo.appendChild(row);
-    });
+  const pieTabla = document.getElementById('tablaNotasFooter');
+  const filaPromedio = pieTabla?.querySelector('.row-promedio');
+  const materiasPlan = materias.map((id) => ({ id }));
+
+  if (cuerpo) cuerpo.replaceChildren(...materias.map((subjectId) => crearFilaMateria(estudiante, subjectId)));
+  if (pieTabla && filaPromedio) {
+    const filasParticipacion = [];
+    if (participacion.length) {
+      const headerRow = document.createElement('tr');
+      headerRow.className = 'row-seccion-header';
+      const headerCell = headerRow.insertCell();
+      headerCell.colSpan = 12;
+      headerCell.textContent = 'PARTICIPACIÓN EN GRUPO DE CREACIÓN, RECREACIÓN Y PRODUCCIÓN';
+      filasParticipacion.push(headerRow, ...participacion.map((subjectId) => crearFilaMateria(estudiante, subjectId)));
+    }
+    pieTabla.replaceChildren(filaPromedio, ...filasParticipacion);
   }
 
-  const getAverageGrade = (period) => {
-    const grades = materiasBoleta
-      .map(({ id }) => Number(String(extraerValorColumna(estudiante, id, period)).replace(',', '.')))
-      .filter(Number.isFinite);
-    if (!grades.length) return extraerValorColumna(estudiante, 'Promedio del estudiante', period);
-    return formatReportGrade(Math.round(grades.reduce((sum, grade) => sum + grade, 0) / grades.length));
-  };
-  actualizarTexto('prom1er', getAverageGrade('1er'));
-  actualizarTexto('prom2do', getAverageGrade('2do'));
-  actualizarTexto('prom3er', getAverageGrade('3er'));
-  actualizarTexto('promFinal', getAverageGrade('Final'));
+  actualizarTexto('prom1er', obtenerPromedio(estudiante, materiasPlan, '1er'));
+  actualizarTexto('prom2do', obtenerPromedio(estudiante, materiasPlan, '2do'));
+  actualizarTexto('prom3er', obtenerPromedio(estudiante, materiasPlan, '3er'));
+  actualizarTexto('promFinal', obtenerPromedio(estudiante, materiasPlan, 'Final'));
 
-  const anoKey = obtenerClaveEstudiante(estudiante, 'ano');
-  const ano = estudiante.year ?? (anoKey ? estudiante[anoKey] : '');
+  const seccionKey = Object.keys(estudiante || {}).find((key) => normalizarTexto(key).includes('seccion'));
   actualizarTexto('anoEscolarDisplay', 'AÑO ESCOLAR 2026-2027');
-  actualizarTexto('anoDisplay', ano ? (/^\d+$/.test(String(ano)) ? `${ano}º` : ano) : '-');
-  actualizarTexto('seccionDisplay', 'U');
+  actualizarTexto('anoDisplay', Number.isFinite(year) ? `${year}º` : '-');
+  actualizarTexto('seccionDisplay', estudiante?.[seccionKey] || 'U');
 
-  const participationSection = document.getElementById('filaSeccionCRP');
-  const participationRow = document.getElementById('filaCRP');
-  const hasParticipation = participationSubjectIds.length > 0;
-  if (participationSection) participationSection.hidden = !hasParticipation;
-  if (participationRow) participationRow.hidden = !hasParticipation;
-  const participationGrade = (period) => {
-    for (const subjectId of participationSubjectIds) {
-      const grade = extraerValorColumna(estudiante, subjectId, period, [subjectId]);
-      if (grade !== '-') return grade;
-    }
-    return '-';
-  };
-  actualizarTexto('crp1er', participationGrade('1er'));
-  actualizarTexto('crp2do', participationGrade('2do'));
-  actualizarTexto('crp3er', participationGrade('3er'));
-  actualizarTexto('crpFinal', participationGrade('Final'));
-  renderizarGraficos(materiasBoleta.map(({ id, code }) => [id, code]), estudiante, estudiante, estudiante);
+  const materiasGrafico = materias.map((id) => [id, window.REPORT_SUBJECT_DISPLAY[id]?.code || id]);
+  renderizarGraficos(materiasGrafico, estudiante, estudiante, estudiante);
 };
 
 const renderizarGraficos = (materias, datosPrimerLapso, datosSegundoLapso, datosTercerLapso) => {
@@ -410,7 +391,7 @@ const obtenerEstudiantePagosBackend = async (estudiante) => {
     if (!response.ok) return null;
     const estudiantes = await response.json().catch(() => []);
     return Array.isArray(estudiantes)
-      ? estudiantes.find((registro) => coincideConEstudiante(registro, estudiante)) || estudiantes[0] || null
+      ? estudiantes.find((registro) => coincideConEstudiante(registro, estudiante)) || null
       : null;
   } catch (error) {
     console.warn('No se pudieron consultar los pagos del estudiante:', error);
@@ -456,36 +437,24 @@ document.getElementById('loginEstudianteForm').addEventListener('submit', async 
   msjError.style.display = 'none';
 
   try {
-    const todasLasNotas = await obtenerNotasDeSheets();
-    if (!todasLasNotas) {
-      msjError.textContent = '❌ Error conectando con la base de datos.';
-      msjError.style.display = 'block';
-      return;
-    }
-
-    const alumnoEncontrado = todasLasNotas.find((estudiante) => {
-      const cedulaKey = obtenerClaveEstudiante(estudiante, 'cedula');
-      return cedulaKey && normalizarCedula(estudiante[cedulaKey]) === normalizarCedula(cedulaIngresada);
-    });
-
-    if (!alumnoEncontrado) {
+    const estudianteSupabase = await obtenerEstudiantePagosBackend({ cedula: cedulaIngresada });
+    if (!estudianteSupabase?.id) {
       msjError.textContent = '❌ Cédula no encontrada. Verifica los datos ingresados.';
       msjError.style.display = 'block';
       return;
     }
 
-    const nombreKey = obtenerClaveEstudiante(alumnoEncontrado, 'nombre');
-    alumnoEncontrado.Nombre = alumnoEncontrado[nombreKey];
-    const estudianteSupabase = await obtenerEstudiantePagosBackend(alumnoEncontrado);
-    if (!estudianteSupabase?.id) {
-      msjError.textContent = '❌ No se encontró el registro de este estudiante en Supabase.';
-      msjError.style.display = 'block';
-      return;
+    let registroLegado = {};
+    if (!tieneNotasDelModulo(estudianteSupabase)) {
+      const notasLegadas = await obtenerNotasDeSheets();
+      registroLegado = notasLegadas?.find((registro) => coincideConEstudiante(registro, estudianteSupabase)) || {};
     }
-
-    alumnoEncontrado.id = estudianteSupabase.id;
-    alumnoEncontrado.year = estudianteSupabase.year;
-    alumnoEncontrado.grades = estudianteSupabase.grades || {};
+    const nombreKey = obtenerClaveEstudiante(registroLegado, 'nombre');
+    const alumnoEncontrado = {
+      ...registroLegado,
+      ...estudianteSupabase,
+      Nombre: estudianteSupabase.name || registroLegado[nombreKey] || '',
+    };
     datosEstudianteActual = alumnoEncontrado;
     actualizarUrlEstudiante(estudianteSupabase.id);
     boletaAutorizadaActual = await verificarAutorizacionBoleta(datosEstudianteActual);
@@ -526,23 +495,17 @@ const cargarEstudianteDesdeUrl = async () => {
       return;
     }
 
-    const todasLasNotas = await obtenerNotasDeSheets();
-    if (!todasLasNotas) {
-      mostrarError('❌ Error conectando con la base de datos.');
-      return;
+    let registroLegado = {};
+    if (!tieneNotasDelModulo(estudianteSupabase)) {
+      const notasLegadas = await obtenerNotasDeSheets();
+      registroLegado = notasLegadas?.find((registro) => coincideConEstudiante(registro, estudianteSupabase)) || {};
     }
-
-    const alumnoEncontrado = todasLasNotas.find((estudiante) => coincideConEstudiante(estudiante, estudianteSupabase));
-    if (!alumnoEncontrado) {
-      mostrarError('❌ No se encontraron las calificaciones de este estudiante.');
-      return;
-    }
-
-    const nombreKey = obtenerClaveEstudiante(alumnoEncontrado, 'nombre');
-    alumnoEncontrado.Nombre = alumnoEncontrado[nombreKey];
-    alumnoEncontrado.id = estudianteSupabase.id;
-    alumnoEncontrado.year = estudianteSupabase.year;
-    alumnoEncontrado.grades = estudianteSupabase.grades || {};
+    const nombreKey = obtenerClaveEstudiante(registroLegado, 'nombre');
+    const alumnoEncontrado = {
+      ...registroLegado,
+      ...estudianteSupabase,
+      Nombre: estudianteSupabase.name || registroLegado[nombreKey] || '',
+    };
     datosEstudianteActual = alumnoEncontrado;
     boletaAutorizadaActual = await verificarAutorizacionBoleta(datosEstudianteActual);
     mostrarDashboard();

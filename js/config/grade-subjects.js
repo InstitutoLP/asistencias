@@ -71,6 +71,7 @@
     'formacion-soberania': { label: 'FORMACIÓN PARA LA SOBERANÍA', code: 'FS' },
     'orientacion-convivencia': { label: 'ORIENTACIÓN Y CONVIVENCIA', code: 'OyC' },
     frances: { label: 'FRANCÉS', code: 'FRA' },
+    crp: { label: 'CRP', code: 'CRP' },
   };
 
   window.GRADE_SUBJECTS_BY_YEAR = subjectsByYear;

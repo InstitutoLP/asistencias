@@ -164,8 +164,11 @@ const deleteStudentFromSupabase = async (id) => {
   return result;
 };
 
-const getStudentsFromSupabase = async (year) => {
-  const query = year ? `?year=eq.${encodeURIComponent(String(year))}` : '';
+const getStudentsFromSupabase = async (year, id) => {
+  const filters = [];
+  if (year) filters.push(`year=eq.${encodeURIComponent(String(year))}`);
+  if (id) filters.push(`id=eq.${encodeURIComponent(String(id))}`);
+  const query = filters.length ? `?${filters.join('&')}` : '';
   const response = await supabaseFetch(`/students${query}`);
   const result = await response.json().catch(() => []);
   if (!response.ok) {
@@ -369,13 +372,17 @@ app.use(express.static(path.join(__dirname)));
 app.get('/api/students', async (req, res) => {
   try {
     if (IS_SUPABASE_CONFIGURED) {
-      const students = await getStudentsFromSupabase(req.query.year);
+      const students = await getStudentsFromSupabase(req.query.year, req.query.id);
       return res.json(students);
     }
 
     const data = loadAttendanceData();
     const year = req.query.year;
-    const students = Object.values(data.students).filter((student) => !year || String(student.year) === String(year));
+    const id = req.query.id;
+    const students = Object.values(data.students).filter((student) => (
+      (!year || String(student.year) === String(year))
+      && (!id || String(student.id) === String(id))
+    ));
     return res.json(students);
   } catch (error) {
     console.error('Error cargando estudiantes:', error);

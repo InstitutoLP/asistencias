@@ -225,8 +225,10 @@ const getLapsoGrade = (student, period) => {
 };
 
 const getDefinitiveGrade = (student) => {
-  const subjectId = currentSubject()?.id;
-  return subjectId ? window.calculateDefinitiveGrade(student.grades?.[subjectId]) : null;
+  const lapsoGrades = LAPSO_PERIODS.map((period) => getLapsoGrade(student, period));
+  if (lapsoGrades.some((grade) => grade === null)) return null;
+  const exactGrade = Number((lapsoGrades.reduce((sum, grade) => sum + grade, 0) / LAPSO_PERIODS.length).toFixed(2));
+  return { exactGrade, roundedGrade: Math.round(exactGrade) };
 };
 
 const formatFinalGrade = (grade) => (grade !== null && grade < 10 ? String(grade).padStart(2, '0') : String(grade));
