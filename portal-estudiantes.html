@@ -557,6 +557,8 @@
     .recibo-amount { display: table-cell !important; width: 26% !important; min-width: 0; padding-right: 8px !important; color: #8f0000 !important; font-size: 0.95rem; font-weight: 800 !important; text-align: right !important; white-space: nowrap; visibility: visible !important; }
     .recibo-total { display: flex; justify-content: space-between; align-items: center; margin: 20px 0 0; padding-top: 15px; border-top: 2px solid #0f172a; color: #0f172a !important; font-size: 1.05rem; }
     .recibo-total strong { color: #8f0000 !important; font-size: 1.35rem; }
+    .download-receipt-button { display: block; margin: 18px auto 0; padding: 11px 18px; border: 1px solid #166534; border-radius: 6px; background: #16803b; color: #ffffff; font-weight: 700; cursor: pointer; }
+    .download-receipt-button:disabled { opacity: .65; cursor: wait; }
 
     @media (max-width: 600px) {
       .recibo-datos { grid-template-columns: 1fr; }
@@ -786,7 +788,7 @@
         </div>
       </div>
 
-      <!-- SECCIoooooÓN DE FIRMAS Y SELLO -->
+      <!-- SECCIÓN DE FIRMAS Y SELLO -->
       <table class="firmas-container">
         <tr>
           <td style="width: 38%;">
@@ -836,8 +838,8 @@
         </div>
         <p class="recibo-total"><span>Total pagado</span><strong>$<span id="reciboEstudianteTotal">0.00</span></strong></p>
       </div>
-      <button id="btnDescargarReciboWord" class="primary" type="button" onclick="descargarReciboWord()" style="display: block; margin: 18px auto 0;">
-        Descargar recibo en Word
+      <button id="btnDescargarReciboPDF" class="download-receipt-button" type="button" onclick="descargarReciboPDF()">
+        Descargar recibo en PDF
       </button>
     </div>
   </main>

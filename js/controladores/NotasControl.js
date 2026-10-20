@@ -53,7 +53,7 @@ let sheetRowsPromise = null;
 let pendingStudentId = '';
 let pendingDrafts = {};
 
-const canManagePendingSubjects = () => currentUser?.name === 'Prof: Andy';
+const canManagePendingSubjects = () => ['Prof: Andy', 'Prof: Néstor', 'Prof: Nestor'].includes(currentUser?.name);
 const setPendingStatus = (message, type = '') => {
   pendingSubjectsStatus.textContent = message;
   pendingSubjectsStatus.className = `pending-status${type ? ` ${type}` : ''}`;

@@ -352,101 +352,77 @@ window.descargarBoletaPDF = async () => {
   }
 };
 
-window.descargarReciboWord = async () => {
-  if (!datosEstudianteActual) return;
+window.descargarReciboPDF = async () => {
+  const receipt = document.querySelector('.recibo-paper');
+  const button = document.getElementById('btnDescargarReciboPDF');
+  if (!receipt || !datosEstudianteActual) {
+    window.alert('No se pudo preparar el recibo. Vuelve a cargar los datos del estudiante.');
+    return;
+  }
 
-  const boton = document.getElementById('btnDescargarReciboWord');
-  const textoOriginal = boton?.textContent;
-  if (boton) {
-    boton.disabled = true;
-    boton.textContent = 'Generando documento Word...';
+  const originalText = button?.textContent;
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'Generando PDF...';
   }
 
   try {
-    await window.loadWordLibraries();
-    const recibo = document.querySelector('.recibo-paper');
-    if (!recibo) throw new Error('No se encontró el recibo para exportar.');
-
-    const imagenRecibo = await window.html2canvas(recibo, {
+    await window.loadPdfLibraries();
+    const { jsPDF } = window.jspdf;
+    const documento = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' });
+    const imagenRecibo = await window.html2canvas(receipt, {
       scale: 2,
       useCORS: true,
       allowTaint: false,
       backgroundColor: '#ffffff',
     });
-    const maxWidth = 7.5 * 914400;
-    const maxHeight = 9.5 * 914400;
-    const scale = Math.min(maxWidth / imagenRecibo.width, maxHeight / imagenRecibo.height);
-    const width = Math.round(imagenRecibo.width * scale);
-    const height = Math.round(imagenRecibo.height * scale);
-    const image = imagenRecibo.toDataURL('image/png').split(',')[1];
-    const zip = new window.JSZip();
-
-    zip.file('[Content_Types].xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
-  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
-  <Default Extension="xml" ContentType="application/xml"/>
-  <Default Extension="png" ContentType="image/png"/>
-  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
-</Types>`);
-    zip.folder('_rels').file('.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
-</Relationships>`);
-    zip.folder('word').file('document.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">
-  <w:body>
-    <w:p>
-      <w:pPr><w:jc w:val="center"/><w:spacing w:before="0" w:after="0" w:line="1" w:lineRule="exact"/></w:pPr>
-      <w:r><w:drawing>
-        <wp:inline distT="0" distB="0" distL="0" distR="0">
-          <wp:extent cx="${width}" cy="${height}"/>
-          <wp:docPr id="1" name="Recibo de pago"/>
-          <wp:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"/></wp:cNvGraphicFramePr>
-          <a:graphic>
-            <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
-              <pic:pic>
-                <pic:nvPicPr><pic:cNvPr id="0" name="recibo.png"/><pic:cNvPicPr/></pic:nvPicPr>
-                <pic:blipFill><a:blip r:embed="rId1"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>
-                <pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${width}" cy="${height}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>
-              </pic:pic>
-            </a:graphicData>
-          </a:graphic>
-        </wp:inline>
-      </w:drawing></w:r>
-    </w:p>
-    <w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="720" w:right="720" w:bottom="720" w:left="720" w:header="360" w:footer="360" w:gutter="0"/></w:sectPr>
-  </w:body>
-</w:document>`);
-    zip.folder('word').folder('_rels').file('document.xml.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/recibo.png"/>
-</Relationships>`);
-    zip.folder('word').folder('media').file('recibo.png', image, { base64: true });
-
-    const documentBlob = await zip.generateAsync({
-      type: 'blob',
-      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    });
-    const downloadUrl = URL.createObjectURL(documentBlob);
-    const downloadLink = document.createElement('a');
-    const studentName = String(datosEstudianteActual.Nombre || 'estudiante')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
+    const margen = 12;
+    const anchoPagina = documento.internal.pageSize.getWidth();
+    const altoPagina = documento.internal.pageSize.getHeight();
+    const anchoDisponible = anchoPagina - (margen * 2);
+    const altoDisponible = altoPagina - (margen * 2);
+    const escala = anchoDisponible / imagenRecibo.width;
+    const altoSegmento = Math.floor(altoDisponible / escala);
+    for (let offsetY = 0; offsetY < imagenRecibo.height; offsetY += altoSegmento) {
+      if (offsetY > 0) documento.addPage();
+      const altoActual = Math.min(altoSegmento, imagenRecibo.height - offsetY);
+      const segmento = document.createElement('canvas');
+      segmento.width = imagenRecibo.width;
+      segmento.height = altoActual;
+      const contexto = segmento.getContext('2d');
+      if (!contexto) throw new Error('No se pudo preparar una página del recibo PDF.');
+      contexto.drawImage(
+        imagenRecibo,
+        0,
+        offsetY,
+        imagenRecibo.width,
+        altoActual,
+        0,
+        0,
+        imagenRecibo.width,
+        altoActual,
+      );
+      documento.addImage(
+        segmento.toDataURL('image/png'),
+        'PNG',
+        margen,
+        margen,
+        anchoDisponible,
+        altoActual * escala,
+      );
+    }
+    const nombre = String(datosEstudianteActual.Nombre || 'estudiante')
       .trim()
-      .replace(/[^\w-]+/g, '_');
-    downloadLink.href = downloadUrl;
-    downloadLink.download = `Recibo_${studentName}.docx`;
-    document.body.appendChild(downloadLink);
-    downloadLink.click();
-    downloadLink.remove();
-    window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+      .replace(/[<>:"/\\|?*\u0000-\u001f]/g, '')
+      .replace(/\s+/g, '_') || 'Estudiante';
+    documento.save(`Recibo_${nombre}.pdf`);
   } catch (error) {
-    console.error('Error generando recibo Word:', error);
-    window.alert('No se pudo generar el recibo Word. Verifica tu conexión e inténtalo de nuevo.');
+    console.error('Error generando el recibo PDF:', error);
+    window.alert('No se pudo generar el recibo PDF. Verifica tu conexión e inténtalo de nuevo.');
   } finally {
-    if (boton) {
-      boton.disabled = false;
-      boton.textContent = textoOriginal;
+    if (button) {
+      button.disabled = false;
+      button.textContent = originalText;
     }
   }
 };

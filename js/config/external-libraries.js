@@ -13,10 +13,6 @@
       src: 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
       isReady: () => Boolean(window.jspdf?.jsPDF),
     },
-    jsZip: {
-      src: 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',
-      isReady: () => typeof window.JSZip === 'function',
-    },
   };
 
   const loadLibrary = (name) => {
@@ -53,9 +49,5 @@
   window.loadPdfLibraries = () => Promise.all([
     loadLibrary('html2canvas'),
     loadLibrary('jsPdf'),
-  ]);
-  window.loadWordLibraries = () => Promise.all([
-    loadLibrary('html2canvas'),
-    loadLibrary('jsZip'),
   ]);
 })();
