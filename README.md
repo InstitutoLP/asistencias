@@ -32,7 +32,7 @@ api/
 - `vistas/` contiene la interfaz y lógica del portal del estudiante.
 - `server.js` y `api/` permanecen en sus rutas porque las usa Express y el despliegue en Vercel.
 
-Chart.js se carga al abrir un panel que necesita gráficas. Las librerías de PDF solo se descargan cuando se solicita una exportación. No se incluye el cliente de Supabase en el navegador: las páginas consultan los endpoints del servidor.
+Chart.js se carga al abrir un panel que necesita gráficas. Las librerías de PDF y Word solo se descargan cuando se solicita una exportación. El recibo de pago se exporta como DOCX con una imagen de la composición completa para conservar fielmente el diseño. No se incluye el cliente de Supabase en el navegador: las páginas consultan los endpoints del servidor.
 
 El pensum por año está centralizado en `js/config/grade-subjects.js` y lo comparten la carga de notas y la boleta. El portal obtiene el año y las notas guardadas del estudiante desde la API, muestra las materias del plan correspondiente y calcula la definitiva y los promedios a partir de los lapsos disponibles. La hoja de calificaciones se conserva como compatibilidad para estudiantes sin notas guardadas en el módulo.
 
