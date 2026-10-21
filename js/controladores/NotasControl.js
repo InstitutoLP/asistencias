@@ -696,7 +696,7 @@ const renderPendingAssignments = () => {
   if (!student) {
     const row = pendingSubjectsBody.insertRow();
     const cell = row.insertCell();
-    cell.colSpan = 6;
+    cell.colSpan = 5;
     cell.className = 'empty';
     cell.textContent = 'No hay estudiantes para este año.';
     return;
@@ -704,7 +704,7 @@ const renderPendingAssignments = () => {
   if (!assignments.length) {
     const row = pendingSubjectsBody.insertRow();
     const cell = row.insertCell();
-    cell.colSpan = 6;
+    cell.colSpan = 5;
     cell.className = 'empty';
     cell.textContent = 'Este estudiante no tiene materias pendientes registradas.';
     return;
@@ -716,6 +716,7 @@ const renderPendingAssignments = () => {
     const row = pendingSubjectsBody.insertRow();
     row.dataset.assignmentIndex = String(assignmentIndex);
     const subjectCell = row.insertCell();
+    subjectCell.className = 'pending-subject-cell';
     subjectCell.dataset.label = 'Materia pendiente';
     const subjectSelect = document.createElement('select');
     subjectSelect.className = 'pending-subject-select';
@@ -734,6 +735,12 @@ const renderPendingAssignments = () => {
     subjectSelect.value = assignment.subjectId;
     subjectSelect.setAttribute('aria-label', `Materia pendiente ${assignmentIndex + 1}`);
     subjectCell.appendChild(subjectSelect);
+    const removeButton = document.createElement('button');
+    removeButton.type = 'button';
+    removeButton.className = 'pending-subject-remove';
+    removeButton.textContent = 'Quitar';
+    removeButton.setAttribute('aria-label', `Quitar ${assignment.subjectLabel}`);
+    subjectCell.appendChild(removeButton);
 
     for (let revisionIndex = 0; revisionIndex < 4; revisionIndex += 1) {
       const cell = row.insertCell();
@@ -750,14 +757,6 @@ const renderPendingAssignments = () => {
       input.setAttribute('aria-label', `Nota de la revisión ${revisionIndex + 1} de ${assignment.subjectLabel}`);
       cell.appendChild(input);
     }
-
-    const actionsCell = row.insertCell();
-    const removeButton = document.createElement('button');
-    removeButton.type = 'button';
-    removeButton.className = 'pending-subject-remove';
-    removeButton.textContent = 'Quitar';
-    removeButton.setAttribute('aria-label', `Quitar ${assignment.subjectLabel}`);
-    actionsCell.appendChild(removeButton);
   });
 };
 
