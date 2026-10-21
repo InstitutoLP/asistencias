@@ -198,17 +198,56 @@ const deleteStudentFromSupabase = async (id) => {
   return result;
 };
 
-const getStudentsFromSupabase = async (year, id) => {
+const getStudentsFromSupabase = async (year, id, cedula, attendanceStartDate, attendanceEndDate) => {
   const filters = [];
   if (year) filters.push(`year=eq.${encodeURIComponent(String(year))}`);
   if (id) filters.push(`id=eq.${encodeURIComponent(String(id))}`);
+  if (cedula) filters.push(`cedula=eq.${encodeURIComponent(String(cedula))}`);
   const query = filters.length ? `?${filters.join('&')}` : '';
   const response = await supabaseFetch(`/students${query}`);
   const result = await response.json().catch(() => []);
   if (!response.ok) {
     throw new Error(result.message || result.error || 'No se pudo consultar Supabase.');
   }
-  return Array.isArray(result) ? result.map((row) => normalizeStudentRecord(row, Number(year || row.year || 1))) : [];
+  const students = Array.isArray(result)
+    ? result.map((row) => normalizeStudentRecord(row, Number(year || row.year || 1)))
+    : [];
+  if ((id || cedula) && students.length) {
+    const attendanceFilters = [
+      `student_id=in.(${students.map((student) => encodeURIComponent(String(student.id))).join(',')})`,
+      'select=student_id,date,subject,status',
+      'order=date.asc',
+      'limit=1000',
+    ];
+    if (attendanceStartDate && attendanceEndDate) {
+      attendanceFilters.push(
+        `date=gte.${encodeURIComponent(attendanceStartDate)}`,
+        `date=lte.${encodeURIComponent(attendanceEndDate)}`,
+      );
+    }
+    const attendanceRows = [];
+    const pageSize = 1000;
+    for (let offset = 0; ; offset += pageSize) {
+      const attendanceResponse = await supabaseFetch(`/attendances?${attendanceFilters.join('&')}`, {
+        headers: { Range: `${offset}-${offset + pageSize - 1}` },
+      });
+      const batch = await attendanceResponse.json().catch(() => []);
+      if (!attendanceResponse.ok) {
+        throw new Error(batch.message || batch.error || 'No se pudo consultar el historial de asistencia.');
+      }
+      if (!Array.isArray(batch)) throw new Error('Supabase devolvió un historial de asistencia inválido.');
+      attendanceRows.push(...batch);
+      if (batch.length < pageSize) break;
+    }
+    const studentsById = new Map(students.map((student) => [String(student.id), student]));
+    attendanceRows.forEach((row) => {
+      const student = studentsById.get(String(row.student_id));
+      if (!student || !row.date || !row.subject) return;
+      student.attendanceByDate[row.date] = student.attendanceByDate[row.date] || {};
+      student.attendanceByDate[row.date][row.subject] = row.status;
+    });
+  }
+  return students;
 };
 
 const writeAttendanceToSupabase = async ({ id, name, cedula, email, phone, year, subject, subjectLabel, status, date }) => {
@@ -405,17 +444,31 @@ app.use(express.static(path.join(__dirname)));
 
 app.get('/api/students', async (req, res) => {
   try {
+    const { attendanceStartDate, attendanceEndDate } = req.query;
+    const isValidDate = (date) => typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date);
+    if ((attendanceStartDate && !isValidDate(attendanceStartDate))
+      || (attendanceEndDate && !isValidDate(attendanceEndDate))) {
+      return res.status(400).json({ error: 'El rango de fechas de asistencia no es válido.' });
+    }
     if (IS_SUPABASE_CONFIGURED) {
-      const students = await getStudentsFromSupabase(req.query.year, req.query.id);
+      const students = await getStudentsFromSupabase(
+        req.query.year,
+        req.query.id,
+        req.query.cedula,
+        attendanceStartDate,
+        attendanceEndDate,
+      );
       return res.json(students);
     }
 
     const data = loadAttendanceData();
     const year = req.query.year;
     const id = req.query.id;
+    const cedula = req.query.cedula;
     const students = Object.values(data.students).filter((student) => (
       (!year || String(student.year) === String(year))
       && (!id || String(student.id) === String(id))
+      && (!cedula || String(student.cedula) === String(cedula))
     ));
     return res.json(students);
   } catch (error) {

@@ -85,6 +85,33 @@ const supabaseFetch = async (path, options = {}) => {
   return fetch(url, { ...options, headers });
 };
 
+const fetchAttendanceHistory = async (studentIds, startDate, endDate) => {
+  const filters = [
+    `student_id=in.(${studentIds.map((id) => encodeURIComponent(String(id))).join(',')})`,
+    `select=student_id,date,subject,status`,
+    `order=date.asc`,
+    `limit=1000`,
+  ];
+  if (startDate && endDate) {
+    filters.push(`date=gte.${encodeURIComponent(startDate)}`, `date=lte.${encodeURIComponent(endDate)}`);
+  }
+
+  const rows = [];
+  const pageSize = 1000;
+  for (let offset = 0; ; offset += pageSize) {
+    const response = await supabaseFetch(`/attendances?${filters.join('&')}`, {
+      headers: { Range: `${offset}-${offset + pageSize - 1}` },
+    });
+    const batch = await response.json().catch(() => []);
+    if (!response.ok) {
+      throw new Error(batch.message || batch.error || 'No se pudo consultar el historial de asistencia.');
+    }
+    if (!Array.isArray(batch)) throw new Error('Supabase devolvió un historial de asistencia inválido.');
+    rows.push(...batch);
+    if (batch.length < pageSize) return rows;
+  }
+};
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS');
@@ -103,6 +130,13 @@ module.exports = async function handler(req, res) {
       const year = req.query?.year;
       const id = req.query?.id;
       const cedula = req.query?.cedula;
+      const attendanceStartDate = req.query?.attendanceStartDate;
+      const attendanceEndDate = req.query?.attendanceEndDate;
+      const isValidDate = (date) => typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date);
+      if ((attendanceStartDate && !isValidDate(attendanceStartDate))
+        || (attendanceEndDate && !isValidDate(attendanceEndDate))) {
+        return res.status(400).json({ error: 'El rango de fechas de asistencia no es válido.' });
+      }
       const filters = [];
       if (year) filters.push(`year=eq.${encodeURIComponent(String(year))}`);
       if (id) filters.push(`id=eq.${encodeURIComponent(String(id))}`);
@@ -138,6 +172,21 @@ module.exports = async function handler(req, res) {
           if (!student || row.email_sent_at) return;
           const attendanceByDate = student.attendance_by_date;
           attendanceByDate[attendanceDate][row.subject] = row.status;
+        });
+      } else if ((id || cedula) && students.length) {
+        const attendanceRows = await fetchAttendanceHistory(
+          students.map((student) => student.id),
+          attendanceStartDate,
+          attendanceEndDate,
+        );
+        const studentsById = new Map(students.map((student) => [String(student.id), student]));
+        attendanceRows.forEach((row) => {
+          const student = studentsById.get(String(row.student_id));
+          if (!student || !row.date || !row.subject) return;
+          const attendanceByDate = student.attendance_by_date || student.attendanceByDate || {};
+          attendanceByDate[row.date] = attendanceByDate[row.date] || {};
+          attendanceByDate[row.date][row.subject] = row.status;
+          student.attendance_by_date = attendanceByDate;
         });
       }
 

@@ -3,6 +3,7 @@ const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/e/2PACX-1vR2dzgdf5
 const API_SYNC_STATE = window.APP_CONFIG.api.syncState;
 const API_STUDENTS = window.APP_CONFIG.api.students;
 const PORTAL_BASE_PATH = window.location.pathname.match(/^(.*\/portal-estudiantes\.html)(?:\/.*)?$/)?.[1] || window.location.pathname;
+const SCHOOL_YEAR = { start: 2026, end: 2027 };
 const PERIODOS_PAGO = [
   { id: 'inscripcion', label: 'Inscripción' },
   { id: 'enero', label: 'Enero' },
@@ -48,6 +49,10 @@ const normalizarMontoPago = (valor) => {
   const numero = Number(valor);
   return Number.isFinite(numero) ? numero : 0;
 };
+
+const parametrosAsistenciaEscolar = () => (
+  `&attendanceStartDate=${SCHOOL_YEAR.start}-09-01&attendanceEndDate=${SCHOOL_YEAR.end}-07-31`
+);
 
 const coincideConEstudiante = (registro, estudiante) => {
   const cedulaKey = obtenerClaveEstudiante(estudiante, 'cedula');
@@ -178,7 +183,55 @@ const obtenerPromedio = (estudiante, materias, periodo) => {
   return String(Number(promedio.toFixed(2)));
 };
 
-const crearFilaMateria = (estudiante, subjectId) => {
+const obtenerLapsoDeAsistencia = (fecha) => {
+  const match = /^(\d{4})-(\d{2})-\d{2}$/.exec(fecha);
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  if (year === SCHOOL_YEAR.start && month >= 9 && month <= 12) return '1er';
+  if (year === SCHOOL_YEAR.end && month >= 1 && month <= 3) return '2do';
+  if (year === SCHOOL_YEAR.end && month >= 4 && month <= 7) return '3er';
+  return null;
+};
+
+const calcularInasistencias = (estudiante) => {
+  const totals = {
+    '1er': { absences: 0, classes: 0 },
+    '2do': { absences: 0, classes: 0 },
+    '3er': { absences: 0, classes: 0 },
+  };
+  const bySubject = {};
+  const attendanceByDate = estudiante?.attendance_by_date || estudiante?.attendanceByDate || {};
+
+  Object.entries(attendanceByDate).forEach(([date, subjects]) => {
+    const period = obtenerLapsoDeAsistencia(date);
+    if (!period) return;
+    Object.entries(subjects || {}).forEach(([subjectId, savedStatus]) => {
+      const status = typeof savedStatus === 'object' && savedStatus !== null
+        ? savedStatus.status
+        : savedStatus;
+      if (status !== 'asistente' && status !== 'inasistente') return;
+
+      totals[period].classes += 1;
+      if (status === 'inasistente') totals[period].absences += 1;
+      bySubject[subjectId] = bySubject[subjectId] || {
+        '1er': { absences: 0, classes: 0 },
+        '2do': { absences: 0, classes: 0 },
+        '3er': { absences: 0, classes: 0 },
+      };
+      bySubject[subjectId][period].classes += 1;
+      if (status === 'inasistente') bySubject[subjectId][period].absences += 1;
+    });
+  });
+
+  return { totals, bySubject };
+};
+
+const formatearPorcentajeInasistencia = ({ absences, classes }) => (
+  classes ? `${Number(((absences / classes) * 100).toFixed(1))}%` : '-'
+);
+
+const crearFilaMateria = (estudiante, subjectId, inasistenciasPorMateria) => {
   const display = window.REPORT_SUBJECT_DISPLAY[subjectId] || { label: subjectId.toUpperCase() };
   const row = document.createElement('tr');
   const subjectCell = row.insertCell();
@@ -191,7 +244,18 @@ const crearFilaMateria = (estudiante, subjectId) => {
       ? window.convertCRPGrade(value)
       : formatearNota(value);
   });
-  for (let index = 0; index < 7; index += 1) row.insertCell().textContent = '-';
+  const inasistencias = inasistenciasPorMateria[subjectId];
+  ['1er', '2do', '3er'].forEach((period) => {
+    row.insertCell().textContent = formatearPorcentajeInasistencia(
+      inasistencias?.[period] || { absences: 0, classes: 0 },
+    );
+  });
+  const totalInasistencias = ['1er', '2do', '3er'].reduce((total, period) => ({
+    absences: total.absences + (inasistencias?.[period].absences || 0),
+    classes: total.classes + (inasistencias?.[period].classes || 0),
+  }), { absences: 0, classes: 0 });
+  row.insertCell().textContent = formatearPorcentajeInasistencia(totalInasistencias);
+  for (let index = 0; index < 3; index += 1) row.insertCell().textContent = '-';
   return row;
 };
 
@@ -203,8 +267,11 @@ const renderizarBoletaEstudiante = (estudiante) => {
   const pieTabla = document.getElementById('tablaNotasFooter');
   const filaPromedio = pieTabla?.querySelector('.row-promedio');
   const materiasPlan = materias.map((id) => ({ id }));
+  const inasistencias = calcularInasistencias(estudiante);
 
-  if (cuerpo) cuerpo.replaceChildren(...materias.map((subjectId) => crearFilaMateria(estudiante, subjectId)));
+  if (cuerpo) {
+    cuerpo.replaceChildren(...materias.map((subjectId) => crearFilaMateria(estudiante, subjectId, inasistencias.bySubject)));
+  }
   if (pieTabla && filaPromedio) {
     const filasParticipacion = [];
     if (participacion.length) {
@@ -213,7 +280,10 @@ const renderizarBoletaEstudiante = (estudiante) => {
       const headerCell = headerRow.insertCell();
       headerCell.colSpan = 12;
       headerCell.textContent = 'PARTICIPACIÓN EN GRUPO DE CREACIÓN, RECREACIÓN Y PRODUCCIÓN';
-      filasParticipacion.push(headerRow, ...participacion.map((subjectId) => crearFilaMateria(estudiante, subjectId)));
+      filasParticipacion.push(
+        headerRow,
+        ...participacion.map((subjectId) => crearFilaMateria(estudiante, subjectId, inasistencias.bySubject)),
+      );
     }
     pieTabla.replaceChildren(filaPromedio, ...filasParticipacion);
   }
@@ -222,6 +292,15 @@ const renderizarBoletaEstudiante = (estudiante) => {
   actualizarTexto('prom2do', obtenerPromedio(estudiante, materiasPlan, '2do'));
   actualizarTexto('prom3er', obtenerPromedio(estudiante, materiasPlan, '3er'));
   actualizarTexto('promFinal', obtenerPromedio(estudiante, materiasPlan, 'Final'));
+
+  ['1er', '2do', '3er'].forEach((period) => {
+    actualizarTexto(`inas${period}`, formatearPorcentajeInasistencia(inasistencias.totals[period]));
+  });
+  const totalInasistencias = Object.values(inasistencias.totals).reduce((total, period) => ({
+    absences: total.absences + period.absences,
+    classes: total.classes + period.classes,
+  }), { absences: 0, classes: 0 });
+  actualizarTexto('inasTotal', formatearPorcentajeInasistencia(totalInasistencias));
 
   const pendientesBody = document.getElementById('tablaPendientesBody');
   if (pendientesBody) {
@@ -245,7 +324,7 @@ const renderizarBoletaEstudiante = (estudiante) => {
   }
 
   const seccionKey = Object.keys(estudiante || {}).find((key) => normalizarTexto(key).includes('seccion'));
-  actualizarTexto('anoEscolarDisplay', 'AÑO ESCOLAR 2026-2027');
+  actualizarTexto('anoEscolarDisplay', `AÑO ESCOLAR ${SCHOOL_YEAR.start}-${SCHOOL_YEAR.end}`);
   actualizarTexto('anoDisplay', Number.isFinite(year) ? `${year}º` : '-');
   actualizarTexto('seccionDisplay', estudiante?.[seccionKey] || 'U');
 
@@ -483,7 +562,7 @@ const obtenerEstudiantePagosBackend = async (estudiante) => {
   if (!cedula) return null;
 
   try {
-    const response = await fetch(`${API_STUDENTS}?cedula=${encodeURIComponent(cedula)}&t=${Date.now()}`, {
+    const response = await fetch(`${API_STUDENTS}?cedula=${encodeURIComponent(cedula)}&t=${Date.now()}${parametrosAsistenciaEscolar()}`, {
       cache: 'no-store',
       headers: { 'Cache-Control': 'no-cache' },
     });
@@ -500,7 +579,7 @@ const obtenerEstudiantePagosBackend = async (estudiante) => {
 
 const obtenerEstudianteSupabasePorId = async (id) => {
   try {
-    const response = await fetch(`${API_STUDENTS}?id=${encodeURIComponent(id)}&t=${Date.now()}`, {
+    const response = await fetch(`${API_STUDENTS}?id=${encodeURIComponent(id)}&t=${Date.now()}${parametrosAsistenciaEscolar()}`, {
       cache: 'no-store',
       headers: { 'Cache-Control': 'no-cache' },
     });
