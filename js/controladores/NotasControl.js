@@ -752,7 +752,6 @@ const renderPendingAssignments = () => {
     }
 
     const actionsCell = row.insertCell();
-    actionsCell.dataset.label = 'Acciones';
     const removeButton = document.createElement('button');
     removeButton.type = 'button';
     removeButton.className = 'pending-subject-remove';
