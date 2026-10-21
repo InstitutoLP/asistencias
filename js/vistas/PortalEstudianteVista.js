@@ -201,7 +201,15 @@ const calcularInasistencias = (estudiante) => {
     '3er': { absences: 0, classes: 0 },
   };
   const bySubject = {};
-  const attendanceByDate = estudiante?.attendance_by_date || estudiante?.attendanceByDate || {};
+  const attendanceByDate = {};
+  [estudiante?.attendanceByDate, estudiante?.attendance_by_date].forEach((records) => {
+    Object.entries(records || {}).forEach(([date, subjects]) => {
+      attendanceByDate[date] = {
+        ...(attendanceByDate[date] || {}),
+        ...(subjects || {}),
+      };
+    });
+  });
 
   Object.entries(attendanceByDate).forEach(([date, subjects]) => {
     const period = obtenerLapsoDeAsistencia(date);
