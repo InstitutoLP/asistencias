@@ -226,8 +226,8 @@ const crearFilaMateria = (estudiante, subjectId, inasistenciasPorMateria) => {
     );
   });
   const totalInasistencias = ['1er', '2do', '3er'].reduce((total, period) => ({
-    absences: total.absences + (inasistencias?.[period].absences || 0),
-    classes: total.classes + (inasistencias?.[period].classes || 0),
+    absences: total.absences + (inasistencias?.[period]?.absences || 0),
+    classes: total.classes + (inasistencias?.[period]?.classes || 0),
   }), { absences: 0, classes: 0 });
   row.insertCell().textContent = formatearPorcentajeInasistencia(totalInasistencias);
   for (let index = 0; index < 3; index += 1) row.insertCell().textContent = '-';
