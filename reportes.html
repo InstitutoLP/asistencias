@@ -264,6 +264,7 @@
 
   </div>
 
+  <script src="/js/config/attendance-calculations.js"></script>
   <script>
     let chartGeneral = null;
     let chartTopFaltas = null;
@@ -370,7 +371,7 @@
       const startDate = document.getElementById('startDateFilter').value;
       const endDate = document.getElementById('endDateFilter').value;
 
-      fetch('/api/students')
+      fetch('/api/students', { cache: 'no-store' })
         .then(response => response.ok ? response.json() : [])
         .then(data => {
           const rows = Array.isArray(data) ? data : [];
@@ -396,57 +397,15 @@
           const rankingFaltas = [];
 
           estudiantes.forEach(est => {
-            let asistenciasEstudiante = 0;
-            let inasistenciasEstudiante = 0;
-
-            const registrosCamelCase = est.attendanceByDate || {};
-            const registrosPorFecha = Object.keys(registrosCamelCase).length
-              ? registrosCamelCase
-              : est.attendance_by_date || registrosCamelCase;
-            Object.entries(registrosPorFecha).forEach(([fecha, materias]) => {
-              const fechaValida = (!startDate || fecha >= startDate) && (!endDate || fecha <= endDate);
-              if (!fechaValida) return;
-
-              Object.entries(materias || {}).forEach(([materia, estado]) => {
-                if (selectedSubject !== 'general' && materia !== selectedSubject) return;
-                const estadoGuardado = typeof estado === 'object' && estado !== null ? estado.status : estado;
-                if (estadoGuardado === 'asistente') { totalAsistencias++; asistenciasEstudiante++; }
-                if (estadoGuardado === 'inasistente') { totalInasistencias++; inasistenciasEstudiante++; }
-              });
+            const asistencia = window.ATTENDANCE_CALCULATIONS.calculate(est, {
+              startDate,
+              endDate,
+              subjectId: selectedSubject,
             });
-
-            const logs = est.attendanceHistory || est.attendanceLogs || [];
-
-            if (!Object.keys(registrosPorFecha).length && logs.length > 0) {
-              logs.forEach(log => {
-                const fechaValida = (!startDate || log.date >= startDate) && (!endDate || log.date <= endDate);
-                const materiaValida = (selectedSubject === 'general' || log.subject === selectedSubject);
-
-                if (fechaValida && materiaValida) {
-                  if (log.status === 'asistente') { totalAsistencias++; asistenciasEstudiante++; }
-                  if (log.status === 'inasistente') { totalInasistencias++; inasistenciasEstudiante++; }
-                }
-              });
-            } else if (!Object.keys(registrosPorFecha).length) {
-              const recordAsistencia = est.attendance || {};
-              const materiasARevisar = selectedSubject === 'general' ? Object.keys(recordAsistencia) : [selectedSubject];
-
-              materiasARevisar.forEach(materia => {
-                const registro = recordAsistencia[materia];
-                const estado = typeof registro === 'object' ? registro.status : registro;
-                const fechaReg = typeof registro === 'object' ? registro.date : null;
-
-                const fechaNormalizada = fechaReg ? String(fechaReg).slice(0, 10) : '';
-                const fechaEnRango = fechaNormalizada
-                  ? ((!startDate || fechaNormalizada >= startDate) && (!endDate || fechaNormalizada <= endDate))
-                  : (!startDate && !endDate);
-
-                if (fechaEnRango) {
-                  if (estado === 'asistente') { totalAsistencias++; asistenciasEstudiante++; }
-                  if (estado === 'inasistente') { totalInasistencias++; inasistenciasEstudiante++; }
-                }
-              });
-            }
+            const asistenciasEstudiante = asistencia.attendances;
+            const inasistenciasEstudiante = asistencia.absences;
+            totalAsistencias += asistenciasEstudiante;
+            totalInasistencias += inasistenciasEstudiante;
 
             const nombreMostrar = selectedYear === 'general'
               ? `${est.name} (${est.calculatedYear}° Año)`

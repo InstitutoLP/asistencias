@@ -3,7 +3,11 @@ const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/e/2PACX-1vR2dzgdf5
 const API_SYNC_STATE = window.APP_CONFIG.api.syncState;
 const API_STUDENTS = window.APP_CONFIG.api.students;
 const PORTAL_BASE_PATH = window.location.pathname.match(/^(.*\/portal-estudiantes\.html)(?:\/.*)?$/)?.[1] || window.location.pathname;
-const SCHOOL_YEAR = { start: 2026, end: 2027 };
+const ATTENDANCE_CALCULATIONS = window.ATTENDANCE_CALCULATIONS;
+const SCHOOL_YEAR = {
+  start: Number(ATTENDANCE_CALCULATIONS.lapses[0].start.slice(0, 4)),
+  end: Number(ATTENDANCE_CALCULATIONS.lapses[ATTENDANCE_CALCULATIONS.lapses.length - 1].end.slice(0, 4)),
+};
 const PERIODOS_PAGO = [
   { id: 'inscripcion', label: 'Inscripción' },
   { id: 'enero', label: 'Enero' },
@@ -50,9 +54,10 @@ const normalizarMontoPago = (valor) => {
   return Number.isFinite(numero) ? numero : 0;
 };
 
-const parametrosAsistenciaEscolar = () => (
-  `&attendanceStartDate=${SCHOOL_YEAR.start}-09-01&attendanceEndDate=${SCHOOL_YEAR.end}-07-31`
-);
+const parametrosAsistenciaEscolar = () => {
+  const { lapses } = ATTENDANCE_CALCULATIONS;
+  return `&attendanceStartDate=${lapses[0].start}&attendanceEndDate=${lapses[lapses.length - 1].end}`;
+};
 
 const coincideConEstudiante = (registro, estudiante) => {
   const cedulaKey = obtenerClaveEstudiante(estudiante, 'cedula');
@@ -183,55 +188,17 @@ const obtenerPromedio = (estudiante, materias, periodo) => {
   return String(Number(promedio.toFixed(2)));
 };
 
-const obtenerLapsoDeAsistencia = (fecha) => {
-  const match = /^(\d{4})-(\d{2})-\d{2}$/.exec(fecha);
-  if (!match) return null;
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-  if (year === SCHOOL_YEAR.start && month >= 9 && month <= 12) return '1er';
-  if (year === SCHOOL_YEAR.end && month >= 1 && month <= 3) return '2do';
-  if (year === SCHOOL_YEAR.end && month >= 4 && month <= 7) return '3er';
-  return null;
-};
-
 const calcularInasistencias = (estudiante) => {
-  const totals = {
-    '1er': { absences: 0, classes: 0 },
-    '2do': { absences: 0, classes: 0 },
-    '3er': { absences: 0, classes: 0 },
-  };
+  const totals = {};
   const bySubject = {};
-  const attendanceByDate = {};
-  [estudiante?.attendanceByDate, estudiante?.attendance_by_date].forEach((records) => {
-    Object.entries(records || {}).forEach(([date, subjects]) => {
-      attendanceByDate[date] = {
-        ...(attendanceByDate[date] || {}),
-        ...(subjects || {}),
-      };
+  ATTENDANCE_CALCULATIONS.lapses.forEach(({ id, start, end }) => {
+    const lapso = ATTENDANCE_CALCULATIONS.calculate(estudiante, { startDate: start, endDate: end });
+    totals[id] = { absences: lapso.absences, classes: lapso.total };
+    Object.entries(lapso.bySubject).forEach(([subjectId, counts]) => {
+      bySubject[subjectId] = bySubject[subjectId] || {};
+      bySubject[subjectId][id] = { absences: counts.absences, classes: counts.total };
     });
   });
-
-  Object.entries(attendanceByDate).forEach(([date, subjects]) => {
-    const period = obtenerLapsoDeAsistencia(date);
-    if (!period) return;
-    Object.entries(subjects || {}).forEach(([subjectId, savedStatus]) => {
-      const status = typeof savedStatus === 'object' && savedStatus !== null
-        ? savedStatus.status
-        : savedStatus;
-      if (status !== 'asistente' && status !== 'inasistente') return;
-
-      totals[period].classes += 1;
-      if (status === 'inasistente') totals[period].absences += 1;
-      bySubject[subjectId] = bySubject[subjectId] || {
-        '1er': { absences: 0, classes: 0 },
-        '2do': { absences: 0, classes: 0 },
-        '3er': { absences: 0, classes: 0 },
-      };
-      bySubject[subjectId][period].classes += 1;
-      if (status === 'inasistente') bySubject[subjectId][period].absences += 1;
-    });
-  });
-
   return { totals, bySubject };
 };
 
