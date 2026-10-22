@@ -781,6 +781,8 @@ app.post('/api/send-whatsapp', async (req, res) => {
   }
 });
 
+app.post('/api/builderbot-messages', (req, res) => require('./builderbot-handler')(req, res));
+
 app.post('/api/send-email', async (req, res) => {
   const { to, subject, message, fromName } = req.body;
 

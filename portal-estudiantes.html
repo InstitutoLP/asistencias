@@ -399,6 +399,47 @@
       margin-bottom: 25px;
     }
 
+    .builderbot-widget {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      z-index: 99999;
+      font-family: system-ui, sans-serif;
+    }
+
+    .builderbot-window {
+      display: flex;
+      flex-direction: column;
+      width: min(360px, calc(100vw - 32px));
+      height: min(520px, calc(100vh - 100px));
+      margin-bottom: 12px;
+      overflow: hidden;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      background: #fff;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, .3);
+    }
+
+    .builderbot-window[hidden] { display: none; }
+    .builderbot-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; background: #25d366; color: #fff; }
+    .builderbot-header-title { font-size: 15px; font-weight: 700; }
+    .builderbot-header-status { font-size: 11px; opacity: .9; }
+    .builderbot-close { border: 0; background: none; color: #fff; font-size: 22px; cursor: pointer; }
+    .builderbot-messages { display: flex; flex: 1; flex-direction: column; gap: 8px; overflow-y: auto; padding: 12px; background: #f8fafc; }
+    .builderbot-message { max-width: 85%; padding: 10px 14px; border-radius: 12px; font-size: 13px; overflow-wrap: anywhere; }
+    .builderbot-message-assistant { align-self: flex-start; background: #e2e8f0; color: #1e293b; }
+    .builderbot-message-user { align-self: flex-end; background: #25d366; color: #fff; }
+    .builderbot-message-error { align-self: flex-start; background: #fee2e2; color: #991b1b; }
+    .builderbot-form { display: grid; gap: 8px; padding: 10px; border-top: 1px solid #e2e8f0; background: #fff; }
+    .builderbot-form label { color: #334155; font-size: 12px; font-weight: 700; }
+    .builderbot-phone, .builderbot-input { width: 100%; min-height: 40px; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 20px; color: #0f172a; font: inherit; font-size: 13px; }
+    .builderbot-compose { display: flex; gap: 8px; }
+    .builderbot-input { min-width: 0; flex: 1; }
+    .builderbot-send, .builderbot-toggle { display: flex; align-items: center; justify-content: center; border: 0; background: #25d366; color: #fff; cursor: pointer; }
+    .builderbot-send { padding: 9px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+    .builderbot-send:disabled { opacity: .6; cursor: wait; }
+    .builderbot-toggle { float: right; width: 60px; height: 60px; border-radius: 50%; box-shadow: 0 4px 14px rgba(0, 0, 0, .25); }
+
     .grafico-box {
       width: 32%;
       text-align: center;
@@ -848,15 +889,33 @@
   <script src="/js/config/attendance-calculations.js" defer></script>
   <script src="/js/config/external-libraries.js" defer></script>
   <script src="/js/vistas/PortalEstudianteVista.js" defer></script>
-  <a href="https://wa.me/584122634172?text=Hola,%20necesito%20información"
-     target="_blank"
-     rel="noopener noreferrer"
-     aria-label="Contactar por WhatsApp"
-     title="Contactar por WhatsApp"
-     style="position: fixed; bottom: 20px; right: 20px; background-color: #25d366; color: white; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 99999; text-decoration: none;">
-    <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor" aria-hidden="true">
-      <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/>
-    </svg>
-  </a>
+  <div class="builderbot-widget">
+    <section id="builderbotWindow" class="builderbot-window" aria-label="Chat de soporte estudiantil" hidden>
+      <header class="builderbot-header">
+        <div>
+          <div class="builderbot-header-title">Soporte Estudiantil</div>
+          <div class="builderbot-header-status">Asistente automático</div>
+        </div>
+        <button id="builderbotClose" class="builderbot-close" type="button" aria-label="Cerrar chat">×</button>
+      </header>
+      <div id="builderbotMessages" class="builderbot-messages" role="log" aria-live="polite">
+        <div class="builderbot-message builderbot-message-assistant">¡Hola! Escribe tu teléfono y tu consulta para contactar al asistente.</div>
+      </div>
+      <form id="builderbotForm" class="builderbot-form">
+        <label for="builderbotPhone">Teléfono con código de país</label>
+        <input id="builderbotPhone" class="builderbot-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="Ej. 584121234567" pattern="[0-9+() -]{8,24}" required>
+        <div class="builderbot-compose">
+          <input id="builderbotInput" class="builderbot-input" type="text" maxlength="1000" placeholder="Escribe tu consulta..." autocomplete="off" required>
+          <button id="builderbotSend" class="builderbot-send" type="submit">Enviar</button>
+        </div>
+      </form>
+    </section>
+    <button id="builderbotToggle" class="builderbot-toggle" type="button" aria-label="Abrir chat de soporte" aria-expanded="false">
+      <svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor" aria-hidden="true">
+        <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/>
+      </svg>
+    </button>
+  </div>
+  <script src="/js/vistas/BuilderBotChat.js" defer></script>
 </body>
 </html>
