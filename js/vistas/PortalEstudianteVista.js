@@ -290,7 +290,7 @@ const renderizarBoletaEstudiante = (estudiante) => {
       pendientes.forEach((pendingSubject) => {
         const row = pendientesBody.insertRow();
         row.insertCell().textContent = pendingSubject.subjectLabel || pendingSubject.subjectId || '-';
-        for (let index = 0; index < 4; index += 1) {
+        for (let index = 0; index < 3; index += 1) {
           const grade = normalizarNota(pendingSubject.revisions?.[index]);
           row.insertCell().textContent = grade === null ? '-' : formatearNota(grade);
         }
