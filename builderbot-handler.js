@@ -20,7 +20,7 @@ module.exports = async function builderbotHandler(req, res) {
     return res.status(405).json({ error: 'Método no permitido.' });
   }
   if (!BOT_ID || !API_KEY) {
-    return res.status(503).json({ error: 'El chat no está configurado todavía.' });
+    return res.status(503).json({ error: 'Faltan configurar BUILDERBOT_BOT_ID y BUILDERBOT_API_KEY en el servidor.' });
   }
 
   const body = parseRequestBody(req.body);

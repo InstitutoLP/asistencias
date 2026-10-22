@@ -903,7 +903,7 @@
       </div>
       <form id="builderbotForm" class="builderbot-form">
         <label for="builderbotPhone">Teléfono con código de país</label>
-        <input id="builderbotPhone" class="builderbot-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="Ej. 584121234567" pattern="[0-9+() -]{8,24}" required>
+        <input id="builderbotPhone" class="builderbot-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="Ej. 584121234567" pattern="[\d\+\(\)\-\x20]{8,24}" required>
         <div class="builderbot-compose">
           <input id="builderbotInput" class="builderbot-input" type="text" maxlength="1000" placeholder="Escribe tu consulta..." autocomplete="off" required>
           <button id="builderbotSend" class="builderbot-send" type="submit">Enviar</button>
