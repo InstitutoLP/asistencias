@@ -696,7 +696,7 @@ const renderPendingAssignments = () => {
   if (!student) {
     const row = pendingSubjectsBody.insertRow();
     const cell = row.insertCell();
-    cell.colSpan = 4;
+    cell.colSpan = 5;
     cell.className = 'empty';
     cell.textContent = 'No hay estudiantes para este año.';
     return;
@@ -704,7 +704,7 @@ const renderPendingAssignments = () => {
   if (!assignments.length) {
     const row = pendingSubjectsBody.insertRow();
     const cell = row.insertCell();
-    cell.colSpan = 4;
+    cell.colSpan = 5;
     cell.className = 'empty';
     cell.textContent = 'Este estudiante no tiene materias pendientes registradas.';
     return;
@@ -742,9 +742,9 @@ const renderPendingAssignments = () => {
     removeButton.setAttribute('aria-label', `Quitar ${assignment.subjectLabel}`);
     subjectCell.appendChild(removeButton);
 
-    for (let revisionIndex = 0; revisionIndex < 3; revisionIndex += 1) {
+    for (let revisionIndex = 0; revisionIndex < 4; revisionIndex += 1) {
       const cell = row.insertCell();
-      cell.dataset.label = `Revisión ${revisionIndex + 1}`;
+      cell.dataset.label = `M${revisionIndex + 1}`;
       const input = document.createElement('input');
       input.className = 'pending-review-input';
       input.type = 'number';
@@ -754,7 +754,7 @@ const renderPendingAssignments = () => {
       input.inputMode = 'numeric';
       input.dataset.revisionIndex = String(revisionIndex);
       input.value = revisions[revisionIndex] ?? '';
-      input.setAttribute('aria-label', `Nota de la revisión ${revisionIndex + 1} de ${assignment.subjectLabel}`);
+      input.setAttribute('aria-label', `Nota M${revisionIndex + 1} de ${assignment.subjectLabel}`);
       cell.appendChild(input);
     }
   });
@@ -806,7 +806,7 @@ const addPendingAssignment = () => {
   assignments.push({
     subjectId: subject.id,
     subjectLabel: subject.label,
-    revisions: [null, null, null],
+    revisions: [null, null, null, null],
   });
   pendingDrafts[pendingStudentId] = assignments;
   renderPendingAssignments();
@@ -840,7 +840,7 @@ const savePendingAssignments = async () => {
     return;
   }
   if (assignments.some((assignment) => assignment.revisions.some((grade) => Number.isNaN(grade)))) {
-    setPendingStatus('Las notas de revisión deben ser números enteros entre 1 y 20.', 'error');
+    setPendingStatus('Las notas M1, M2, M3 y M4 deben ser números enteros entre 1 y 20.', 'error');
     return;
   }
 
@@ -858,7 +858,7 @@ const savePendingAssignments = async () => {
     student.pendingSubjects = savedAssignments;
     pendingDrafts[pendingStudentId] = copyJson(savedAssignments);
     renderPendingAssignments();
-    setPendingStatus('Revisiones guardadas. Ya aparecen en la boleta del estudiante.', 'success');
+    setPendingStatus('Notas M1, M2, M3 y M4 guardadas. Ya aparecen en la boleta del estudiante.', 'success');
   } catch (error) {
     console.error(`No se pudieron guardar las materias pendientes de ${student.name}:`, error);
     const migrationHint = /pending_subjects.*(column|schema cache)|column.*pending_subjects/i.test(error.message)

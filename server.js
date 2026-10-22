@@ -101,7 +101,7 @@ const normalizePendingSubjects = (pendingSubjects) => {
   for (const subject of pendingSubjects) {
     if (!subject || typeof subject.subjectId !== 'string' || !subject.subjectId.trim()
       || typeof subject.subjectLabel !== 'string' || !subject.subjectLabel.trim()
-      || !Array.isArray(subject.revisions) || subject.revisions.length !== 3) return null;
+      || !Array.isArray(subject.revisions) || subject.revisions.length !== 4) return null;
     const subjectId = subject.subjectId.trim();
     if (subjectIds.has(subjectId)) return null;
     subjectIds.add(subjectId);
