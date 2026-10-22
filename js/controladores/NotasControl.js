@@ -34,7 +34,6 @@ const pendingSubjectsPanel = document.getElementById('pendingSubjectsPanel');
 const pendingStudentSelect = document.getElementById('pendingStudentSelect');
 const pendingSubjectSelect = document.getElementById('pendingSubjectSelect');
 const pendingSubjectsBody = document.getElementById('pendingSubjectsBody');
-const pendingModulesBody = document.getElementById('pendingModulesBody');
 const pendingSubjectsStatus = document.getElementById('pendingSubjectsStatus');
 const addPendingSubjectButton = document.getElementById('addPendingSubject');
 const savePendingSubjectsButton = document.getElementById('savePendingSubjects');
@@ -692,27 +691,22 @@ const updatePendingSubjectOptions = () => {
 
 const renderPendingAssignments = () => {
   pendingSubjectsBody.replaceChildren();
-  pendingModulesBody.replaceChildren();
   const student = getPendingStudent();
   const assignments = student ? pendingDrafts[pendingStudentId] || [] : [];
   if (!student) {
-    [[pendingSubjectsBody, 4], [pendingModulesBody, 5]].forEach(([body, colSpan]) => {
-      const row = body.insertRow();
-      const cell = row.insertCell();
-      cell.colSpan = colSpan;
-      cell.className = 'empty';
-      cell.textContent = 'No hay estudiantes para este año.';
-    });
+    const row = pendingSubjectsBody.insertRow();
+    const cell = row.insertCell();
+    cell.colSpan = 5;
+    cell.className = 'empty';
+    cell.textContent = 'No hay estudiantes para este año.';
     return;
   }
   if (!assignments.length) {
-    [[pendingSubjectsBody, 4], [pendingModulesBody, 5]].forEach(([body, colSpan]) => {
-      const row = body.insertRow();
-      const cell = row.insertCell();
-      cell.colSpan = colSpan;
-      cell.className = 'empty';
-      cell.textContent = 'Este estudiante no tiene materias pendientes registradas.';
-    });
+    const row = pendingSubjectsBody.insertRow();
+    const cell = row.insertCell();
+    cell.colSpan = 5;
+    cell.className = 'empty';
+    cell.textContent = 'Este estudiante no tiene materias pendientes registradas.';
     return;
   }
 
@@ -748,9 +742,9 @@ const renderPendingAssignments = () => {
     removeButton.setAttribute('aria-label', `Quitar ${assignment.subjectLabel}`);
     subjectCell.appendChild(removeButton);
 
-    for (let revisionIndex = 0; revisionIndex < 3; revisionIndex += 1) {
+    for (let revisionIndex = 0; revisionIndex < 4; revisionIndex += 1) {
       const cell = row.insertCell();
-      cell.dataset.label = `Revisión ${revisionIndex + 1}`;
+      cell.dataset.label = `M${revisionIndex + 1}`;
       const input = document.createElement('input');
       input.className = 'pending-review-input';
       input.type = 'number';
@@ -760,30 +754,7 @@ const renderPendingAssignments = () => {
       input.inputMode = 'numeric';
       input.dataset.revisionIndex = String(revisionIndex);
       input.value = revisions[revisionIndex] ?? '';
-      input.setAttribute('aria-label', `Nota de la revisión ${revisionIndex + 1} de ${assignment.subjectLabel}`);
-      cell.appendChild(input);
-    }
-
-    const moduleRow = pendingModulesBody.insertRow();
-    moduleRow.dataset.assignmentIndex = String(assignmentIndex);
-    const moduleSubjectCell = moduleRow.insertCell();
-    moduleSubjectCell.className = 'pending-subject-cell';
-    moduleSubjectCell.dataset.label = 'Materia pendiente';
-    moduleSubjectCell.textContent = subjectSelect.selectedOptions[0]?.textContent || assignment.subjectLabel || assignment.subjectId;
-    const modules = Array.isArray(assignment.modules) ? assignment.modules : [];
-    for (let moduleIndex = 0; moduleIndex < 4; moduleIndex += 1) {
-      const cell = moduleRow.insertCell();
-      cell.dataset.label = `M${moduleIndex + 1}`;
-      const input = document.createElement('input');
-      input.className = 'pending-module-input';
-      input.type = 'number';
-      input.min = '1';
-      input.max = '20';
-      input.step = '1';
-      input.inputMode = 'numeric';
-      input.dataset.moduleIndex = String(moduleIndex);
-      input.value = modules[moduleIndex] ?? '';
-      input.setAttribute('aria-label', `Nota M${moduleIndex + 1} de ${assignment.subjectLabel}`);
+      input.setAttribute('aria-label', `Nota M${revisionIndex + 1} de ${assignment.subjectLabel}`);
       cell.appendChild(input);
     }
   });
@@ -835,8 +806,7 @@ const addPendingAssignment = () => {
   assignments.push({
     subjectId: subject.id,
     subjectLabel: subject.label,
-    revisions: [null, null, null],
-    modules: [null, null, null, null],
+    revisions: [null, null, null, null],
   });
   pendingDrafts[pendingStudentId] = assignments;
   renderPendingAssignments();
@@ -858,17 +828,10 @@ const savePendingAssignments = async () => {
       const grade = Number(input.value);
       return Number.isInteger(grade) && grade >= 1 && grade <= 20 ? grade : NaN;
     });
-    const moduleRow = pendingModulesBody.querySelector(`tr[data-assignment-index="${row.dataset.assignmentIndex}"]`);
-    const modules = Array.from(moduleRow.querySelectorAll('.pending-module-input')).map((input) => {
-      if (input.value === '') return null;
-      const grade = Number(input.value);
-      return Number.isInteger(grade) && grade >= 1 && grade <= 20 ? grade : NaN;
-    });
     return {
       subjectId: subjectSelect.value,
       subjectLabel: subject?.label || subjectSelect.selectedOptions[0]?.textContent || subjectSelect.value,
       revisions,
-      modules,
     };
   });
   const subjectIds = assignments.map((assignment) => assignment.subjectId);
@@ -877,10 +840,6 @@ const savePendingAssignments = async () => {
     return;
   }
   if (assignments.some((assignment) => assignment.revisions.some((grade) => Number.isNaN(grade)))) {
-    setPendingStatus('Las notas de revisión deben ser números enteros entre 1 y 20.', 'error');
-    return;
-  }
-  if (assignments.some((assignment) => assignment.modules.some((grade) => Number.isNaN(grade)))) {
     setPendingStatus('Las notas M1, M2, M3 y M4 deben ser números enteros entre 1 y 20.', 'error');
     return;
   }
@@ -899,7 +858,7 @@ const savePendingAssignments = async () => {
     student.pendingSubjects = savedAssignments;
     pendingDrafts[pendingStudentId] = copyJson(savedAssignments);
     renderPendingAssignments();
-    setPendingStatus('Revisiones y notas M1, M2, M3 y M4 guardadas. Ya aparecen en la boleta del estudiante.', 'success');
+    setPendingStatus('Notas M1, M2, M3 y M4 guardadas. Ya aparecen en la boleta del estudiante.', 'success');
   } catch (error) {
     console.error(`No se pudieron guardar las materias pendientes de ${student.name}:`, error);
     const migrationHint = /pending_subjects.*(column|schema cache)|column.*pending_subjects/i.test(error.message)
@@ -1400,15 +1359,6 @@ const initialize = async () => {
     const assignment = pendingDrafts[pendingStudentId]?.[Number(row.dataset.assignmentIndex)];
     if (!assignment || !event.target.matches('.pending-review-input')) return;
     assignment.revisions[Number(event.target.dataset.revisionIndex)] = event.target.value;
-  });
-  pendingModulesBody.addEventListener('input', (event) => {
-    if (!canManagePendingSubjects()) return;
-    const row = event.target.closest('tr[data-assignment-index]');
-    if (!row || !event.target.matches('.pending-module-input')) return;
-    const assignment = pendingDrafts[pendingStudentId]?.[Number(row.dataset.assignmentIndex)];
-    if (!assignment) return;
-    if (!Array.isArray(assignment.modules)) assignment.modules = [null, null, null, null];
-    assignment.modules[Number(event.target.dataset.moduleIndex)] = event.target.value;
   });
   pendingSubjectsBody.addEventListener('change', (event) => {
     if (!canManagePendingSubjects() || !event.target.matches('.pending-subject-select')) return;

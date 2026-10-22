@@ -101,14 +101,14 @@ const normalizePendingSubjects = (pendingSubjects) => {
   for (const subject of pendingSubjects) {
     if (!subject || typeof subject.subjectId !== 'string' || !subject.subjectId.trim()
       || typeof subject.subjectLabel !== 'string' || !subject.subjectLabel.trim()
-      || !Array.isArray(subject.revisions) || subject.revisions.length !== 3) return null;
-    const moduleValues = subject.modules === undefined ? [null, null, null, null] : subject.modules;
-    if (!Array.isArray(moduleValues) || moduleValues.length !== 4) return null;
+      || !Array.isArray(subject.revisions)
+      || subject.revisions.length < 3 || subject.revisions.length > 4) return null;
     const subjectId = subject.subjectId.trim();
     if (subjectIds.has(subjectId)) return null;
     subjectIds.add(subjectId);
     const revisions = [];
-    for (const revision of subject.revisions) {
+    for (let index = 0; index < 4; index += 1) {
+      const revision = subject.revisions[index] ?? null;
       if (revision === null || revision === '') {
         revisions.push(null);
         continue;
@@ -117,21 +117,10 @@ const normalizePendingSubjects = (pendingSubjects) => {
       if (!Number.isInteger(grade) || grade < 1 || grade > 20) return null;
       revisions.push(grade);
     }
-    const modules = [];
-    for (const moduleGrade of moduleValues) {
-      if (moduleGrade === null || moduleGrade === '') {
-        modules.push(null);
-        continue;
-      }
-      const grade = Number(moduleGrade);
-      if (!Number.isInteger(grade) || grade < 1 || grade > 20) return null;
-      modules.push(grade);
-    }
     normalized.push({
       subjectId,
       subjectLabel: subject.subjectLabel.trim(),
       revisions,
-      modules,
     });
   }
   return normalized;
@@ -499,7 +488,7 @@ app.post('/api/students', async (req, res) => {
   }
   const normalizedPendingSubjects = pendingSubjects === undefined ? [] : normalizePendingSubjects(pendingSubjects);
   if (!normalizedPendingSubjects) {
-    return res.status(400).json({ error: 'Las materias pendientes, revisiones o notas M1-M4 no son válidas.' });
+    return res.status(400).json({ error: 'Las materias pendientes o sus notas de revisión no son válidas.' });
   }
 
   try {
@@ -550,7 +539,7 @@ app.patch('/api/students', async (req, res) => {
     ? undefined
     : normalizePendingSubjects(pendingSubjects);
   if (pendingSubjects !== undefined && !normalizedPendingSubjects) {
-    return res.status(400).json({ error: 'Las materias pendientes, revisiones o notas M1-M4 no son válidas.' });
+    return res.status(400).json({ error: 'Las materias pendientes o sus notas de revisión no son válidas.' });
   }
 
   try {
