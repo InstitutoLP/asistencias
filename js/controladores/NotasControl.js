@@ -731,23 +731,12 @@ const renderPendingAssignments = () => {
     const subjectCell = row.insertCell();
     subjectCell.className = 'pending-subject-cell';
     subjectCell.dataset.label = 'Materia pendiente';
-    const subjectSelect = document.createElement('select');
-    subjectSelect.className = 'pending-subject-select';
-    subjects.forEach((subject) => {
-      const option = document.createElement('option');
-      option.value = subject.id;
-      option.textContent = subject.label;
-      subjectSelect.appendChild(option);
-    });
-    if (!subjects.some((subject) => subject.id === assignment.subjectId)) {
-      const option = document.createElement('option');
-      option.value = assignment.subjectId;
-      option.textContent = assignment.subjectLabel || assignment.subjectId;
-      subjectSelect.appendChild(option);
-    }
-    subjectSelect.value = assignment.subjectId;
-    subjectSelect.setAttribute('aria-label', `Materia pendiente ${assignmentIndex + 1}`);
-    subjectCell.appendChild(subjectSelect);
+    const subjectLabel = document.createElement('span');
+    subjectLabel.className = 'pending-subject-label';
+    subjectLabel.textContent = assignment.subjectLabel || subjects.find(
+      (subject) => subject.id === assignment.subjectId,
+    )?.label || assignment.subjectId;
+    subjectCell.appendChild(subjectLabel);
     const removeButton = document.createElement('button');
     removeButton.type = 'button';
     removeButton.className = 'pending-subject-remove';
@@ -834,16 +823,16 @@ const savePendingAssignments = async () => {
     return;
   }
   const assignments = Array.from(pendingSubjectsBody.querySelectorAll('tr[data-assignment-index]')).map((row) => {
-    const subjectSelect = row.querySelector('.pending-subject-select');
-    const subject = getSubjectsForYear(yearSelect.value).find((entry) => entry.id === subjectSelect.value);
+    const assignment = pendingDrafts[pendingStudentId]?.[Number(row.dataset.assignmentIndex)];
+    const subject = getSubjectsForYear(yearSelect.value).find((entry) => entry.id === assignment?.subjectId);
     const revisions = Array.from(row.querySelectorAll('.pending-review-input')).map((input) => {
       if (input.value === '') return null;
       const grade = Number(input.value);
       return Number.isInteger(grade) && grade >= 1 && grade <= 20 ? grade : NaN;
     });
     return {
-      subjectId: subjectSelect.value,
-      subjectLabel: subject?.label || subjectSelect.selectedOptions[0]?.textContent || subjectSelect.value,
+      subjectId: assignment?.subjectId || '',
+      subjectLabel: subject?.label || assignment?.subjectLabel || assignment?.subjectId || '',
       revisions,
     };
   });
@@ -1592,16 +1581,6 @@ const initialize = async () => {
     const assignment = pendingDrafts[pendingStudentId]?.[Number(row.dataset.assignmentIndex)];
     if (!assignment || !event.target.matches('.pending-review-input')) return;
     assignment.revisions[Number(event.target.dataset.revisionIndex)] = event.target.value;
-  });
-  pendingSubjectsBody.addEventListener('change', (event) => {
-    if (!canManagePendingSubjects() || !event.target.matches('.pending-subject-select')) return;
-    const row = event.target.closest('tr[data-assignment-index]');
-    const assignment = pendingDrafts[pendingStudentId]?.[Number(row?.dataset.assignmentIndex)];
-    const subject = getSubjectsForYear(yearSelect.value).find((entry) => entry.id === event.target.value);
-    if (!assignment || !subject) return;
-    assignment.subjectId = subject.id;
-    assignment.subjectLabel = subject.label;
-    renderPendingAssignments();
   });
   pendingSubjectsBody.addEventListener('click', (event) => {
     if (!canManagePendingSubjects()) return;
