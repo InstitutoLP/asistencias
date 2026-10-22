@@ -932,7 +932,7 @@ const renderPendingMatterAssignments = () => {
     subjectCell.appendChild(subjectLabel);
     const removeButton = document.createElement('button');
     removeButton.type = 'button';
-    removeButton.className = 'pending-matter-subject-remove';
+    removeButton.className = 'pending-subject-remove pending-matter-subject-remove';
     removeButton.textContent = 'Quitar';
     removeButton.setAttribute('aria-label', `Quitar ${assignment.subjectLabel}`);
     subjectCell.appendChild(removeButton);
@@ -941,7 +941,7 @@ const renderPendingMatterAssignments = () => {
       const cell = row.insertCell();
       cell.dataset.label = `M${revisionIndex + 1}`;
       const input = document.createElement('input');
-      input.className = 'pending-matter-grade-input';
+      input.className = 'pending-review-input pending-matter-grade-input';
       input.type = 'number';
       input.min = '1';
       input.max = '20';
