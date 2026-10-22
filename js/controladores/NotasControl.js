@@ -37,6 +37,13 @@ const pendingSubjectsBody = document.getElementById('pendingSubjectsBody');
 const pendingSubjectsStatus = document.getElementById('pendingSubjectsStatus');
 const addPendingSubjectButton = document.getElementById('addPendingSubject');
 const savePendingSubjectsButton = document.getElementById('savePendingSubjects');
+const pendingMatterPanel = document.getElementById('pendingMatterPanel');
+const pendingMatterStudentSelect = document.getElementById('pendingMatterStudentSelect');
+const pendingMatterSubjectSelect = document.getElementById('pendingMatterSubjectSelect');
+const pendingMatterSubjectsBody = document.getElementById('pendingMatterSubjectsBody');
+const pendingMatterStatus = document.getElementById('pendingMatterStatus');
+const addPendingMatterSubjectButton = document.getElementById('addPendingMatterSubject');
+const savePendingMatterSubjectsButton = document.getElementById('savePendingMatterSubjects');
 
 let currentUser;
 let students = [];
@@ -52,11 +59,17 @@ let originalManualEarnedPoints = {};
 let sheetRowsPromise = null;
 let pendingStudentId = '';
 let pendingDrafts = {};
+let pendingMatterStudentId = '';
+let pendingMatterDrafts = {};
 
 const canManagePendingSubjects = () => ['Prof: Andy', 'Prof: Néstor', 'Prof: Nestor'].includes(currentUser?.name);
 const setPendingStatus = (message, type = '') => {
   pendingSubjectsStatus.textContent = message;
   pendingSubjectsStatus.className = `pending-status${type ? ` ${type}` : ''}`;
+};
+const setPendingMatterStatus = (message, type = '') => {
+  pendingMatterStatus.textContent = message;
+  pendingMatterStatus.className = `pending-status${type ? ` ${type}` : ''}`;
 };
 
 const normalizeText = (value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
@@ -840,7 +853,7 @@ const savePendingAssignments = async () => {
     return;
   }
   if (assignments.some((assignment) => assignment.revisions.some((grade) => Number.isNaN(grade)))) {
-    setPendingStatus('Las notas M1, M2, M3 y M4 deben ser números enteros entre 1 y 20.', 'error');
+    setPendingStatus('Las notas de revisión deben ser números enteros entre 1 y 20.', 'error');
     return;
   }
 
@@ -867,6 +880,223 @@ const savePendingAssignments = async () => {
     setPendingStatus(`No se pudieron guardar las materias pendientes. ${error.message}${migrationHint}`, 'error');
   } finally {
     savePendingSubjectsButton.disabled = false;
+  }
+};
+
+const getPendingMatterStudent = () => students.find(
+  (student) => String(student.id) === pendingMatterStudentId,
+) || null;
+
+const updatePendingMatterSubjectOptions = () => {
+  const subjects = getSubjectsForYear(yearSelect.value);
+  pendingMatterSubjectSelect.replaceChildren();
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.textContent = subjects.length ? 'Selecciona una materia' : 'No hay materias disponibles';
+  placeholder.disabled = true;
+  placeholder.selected = true;
+  pendingMatterSubjectSelect.appendChild(placeholder);
+  subjects.forEach((subject) => {
+    const option = document.createElement('option');
+    option.value = subject.id;
+    option.textContent = subject.label;
+    pendingMatterSubjectSelect.appendChild(option);
+  });
+  pendingMatterSubjectSelect.disabled = !canManagePendingSubjects() || !students.length || !subjects.length;
+  addPendingMatterSubjectButton.disabled = pendingMatterSubjectSelect.disabled;
+};
+
+const renderPendingMatterAssignments = () => {
+  pendingMatterSubjectsBody.replaceChildren();
+  const student = getPendingMatterStudent();
+  const assignments = student ? pendingMatterDrafts[pendingMatterStudentId] || [] : [];
+  if (!student) {
+    const row = pendingMatterSubjectsBody.insertRow();
+    const cell = row.insertCell();
+    cell.colSpan = 5;
+    cell.className = 'empty';
+    cell.textContent = 'No hay estudiantes para este año.';
+    return;
+  }
+  if (!assignments.length) {
+    const row = pendingMatterSubjectsBody.insertRow();
+    const cell = row.insertCell();
+    cell.colSpan = 5;
+    cell.className = 'empty';
+    cell.textContent = 'Este estudiante no tiene materias pendientes registradas.';
+    return;
+  }
+
+  const subjects = getSubjectsForYear(yearSelect.value);
+  assignments.forEach((assignment, assignmentIndex) => {
+    const revisions = Array.isArray(assignment.revisions) ? assignment.revisions : [];
+    const row = pendingMatterSubjectsBody.insertRow();
+    row.dataset.assignmentIndex = String(assignmentIndex);
+    const subjectCell = row.insertCell();
+    subjectCell.className = 'pending-subject-cell';
+    subjectCell.dataset.label = 'Materia pendiente';
+    const subjectSelect = document.createElement('select');
+    subjectSelect.className = 'pending-matter-subject-select';
+    subjects.forEach((subject) => {
+      const option = document.createElement('option');
+      option.value = subject.id;
+      option.textContent = subject.label;
+      subjectSelect.appendChild(option);
+    });
+    if (!subjects.some((subject) => subject.id === assignment.subjectId)) {
+      const option = document.createElement('option');
+      option.value = assignment.subjectId;
+      option.textContent = assignment.subjectLabel || assignment.subjectId;
+      subjectSelect.appendChild(option);
+    }
+    subjectSelect.value = assignment.subjectId;
+    subjectSelect.setAttribute('aria-label', `Materia pendiente ${assignmentIndex + 1}`);
+    subjectCell.appendChild(subjectSelect);
+    const removeButton = document.createElement('button');
+    removeButton.type = 'button';
+    removeButton.className = 'pending-matter-subject-remove';
+    removeButton.textContent = 'Quitar';
+    removeButton.setAttribute('aria-label', `Quitar ${assignment.subjectLabel}`);
+    subjectCell.appendChild(removeButton);
+
+    for (let revisionIndex = 0; revisionIndex < 4; revisionIndex += 1) {
+      const cell = row.insertCell();
+      cell.dataset.label = `M${revisionIndex + 1}`;
+      const input = document.createElement('input');
+      input.className = 'pending-matter-grade-input';
+      input.type = 'number';
+      input.min = '1';
+      input.max = '20';
+      input.step = '1';
+      input.inputMode = 'numeric';
+      input.dataset.revisionIndex = String(revisionIndex);
+      input.value = revisions[revisionIndex] ?? '';
+      input.setAttribute('aria-label', `Nota M${revisionIndex + 1} de ${assignment.subjectLabel}`);
+      cell.appendChild(input);
+    }
+  });
+};
+
+const renderPendingMatterSubjectsEditor = () => {
+  if (!canManagePendingSubjects()) return;
+  pendingMatterStudentSelect.replaceChildren();
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.textContent = students.length ? 'Selecciona un estudiante' : 'No hay estudiantes en este año';
+  placeholder.disabled = true;
+  pendingMatterStudentSelect.appendChild(placeholder);
+  students.forEach((student) => {
+    const option = document.createElement('option');
+    option.value = String(student.id);
+    option.textContent = `${student.name || 'Estudiante sin nombre'}${student.cedula ? ` · ${student.cedula}` : ''}`;
+    pendingMatterStudentSelect.appendChild(option);
+  });
+
+  const selectedStudent = students.find((student) => String(student.id) === pendingMatterStudentId)
+    || students[0]
+    || null;
+  pendingMatterStudentId = selectedStudent ? String(selectedStudent.id) : '';
+  pendingMatterStudentSelect.value = pendingMatterStudentId;
+  pendingMatterStudentSelect.disabled = !selectedStudent;
+  if (selectedStudent && !Object.prototype.hasOwnProperty.call(pendingMatterDrafts, pendingMatterStudentId)) {
+    pendingMatterDrafts[pendingMatterStudentId] = copyJson(
+      Array.isArray(selectedStudent.matterPendingSubjects) ? selectedStudent.matterPendingSubjects : [],
+    );
+  }
+  updatePendingMatterSubjectOptions();
+  renderPendingMatterAssignments();
+};
+
+const addPendingMatterAssignment = () => {
+  if (!canManagePendingSubjects()) return;
+  const student = getPendingMatterStudent();
+  if (!student || !pendingMatterSubjectSelect.value) {
+    setPendingMatterStatus('Selecciona un estudiante y una materia.', 'error');
+    return;
+  }
+  const assignments = pendingMatterDrafts[pendingMatterStudentId] || [];
+  if (assignments.some((assignment) => assignment.subjectId === pendingMatterSubjectSelect.value)) {
+    setPendingMatterStatus('Esta materia ya está registrada como pendiente para el estudiante.', 'error');
+    return;
+  }
+  const subject = getSubjectsForYear(yearSelect.value).find(
+    (entry) => entry.id === pendingMatterSubjectSelect.value,
+  );
+  if (!subject) {
+    setPendingMatterStatus('La materia seleccionada no es válida para este año.', 'error');
+    return;
+  }
+  assignments.push({
+    subjectId: subject.id,
+    subjectLabel: subject.label,
+    revisions: [null, null, null, null],
+  });
+  pendingMatterDrafts[pendingMatterStudentId] = assignments;
+  renderPendingMatterAssignments();
+  setPendingMatterStatus('');
+};
+
+const savePendingMatterAssignments = async () => {
+  if (!canManagePendingSubjects()) return;
+  const student = getPendingMatterStudent();
+  if (!student) {
+    setPendingMatterStatus('Selecciona un estudiante antes de guardar.', 'error');
+    return;
+  }
+  const assignments = Array.from(
+    pendingMatterSubjectsBody.querySelectorAll('tr[data-assignment-index]'),
+  ).map((row) => {
+    const subjectSelect = row.querySelector('.pending-matter-subject-select');
+    const subject = getSubjectsForYear(yearSelect.value).find((entry) => entry.id === subjectSelect.value);
+    const revisions = Array.from(row.querySelectorAll('.pending-matter-grade-input')).map((input) => {
+      if (input.value === '') return null;
+      const grade = Number(input.value);
+      return Number.isInteger(grade) && grade >= 1 && grade <= 20 ? grade : NaN;
+    });
+    return {
+      subjectId: subjectSelect.value,
+      subjectLabel: subject?.label || subjectSelect.selectedOptions[0]?.textContent || subjectSelect.value,
+      revisions,
+    };
+  });
+  const subjectIds = assignments.map((assignment) => assignment.subjectId);
+  if (subjectIds.some((id) => !id) || new Set(subjectIds).size !== subjectIds.length) {
+    setPendingMatterStatus('Cada materia pendiente debe ser válida y aparecer una sola vez.', 'error');
+    return;
+  }
+  if (assignments.some((assignment) => (
+    assignment.revisions.length !== 4
+      || assignment.revisions.some((grade) => Number.isNaN(grade))
+  ))) {
+    setPendingMatterStatus('Las notas M1, M2, M3 y M4 deben ser números enteros entre 1 y 20.', 'error');
+    return;
+  }
+
+  savePendingMatterSubjectsButton.disabled = true;
+  setPendingMatterStatus('Guardando notas de Materia Pendiente...');
+  try {
+    const response = await fetch(API_STUDENTS, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: student.id, matterPendingSubjects: assignments }),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || `Error ${response.status}`);
+    const savedAssignments = Array.isArray(result.matterPendingSubjects)
+      ? result.matterPendingSubjects
+      : assignments;
+    student.matterPendingSubjects = savedAssignments;
+    pendingMatterDrafts[pendingMatterStudentId] = copyJson(savedAssignments);
+    renderPendingMatterAssignments();
+    setPendingMatterStatus('Notas M1, M2, M3 y M4 guardadas para Materia Pendiente.', 'success');
+  } catch (error) {
+    console.error(`No se pudieron guardar las notas de Materia Pendiente de ${student.name}:`, error);
+    const migrationHint = /matter_pending_subjects.*(column|schema cache)|column.*matter_pending_subjects/i.test(error.message)
+      ? ' Ejecuta supabase-matter-pending-subjects.sql en Supabase y vuelve a intentarlo.'
+      : '';
+    setPendingMatterStatus(`No se pudieron guardar las notas de Materia Pendiente. ${error.message}${migrationHint}`, 'error');
+  } finally {
+    savePendingMatterSubjectsButton.disabled = false;
   }
 };
 
@@ -912,9 +1142,11 @@ const loadStudents = async () => {
     ...student,
     grades: student.grades && typeof student.grades === 'object' ? student.grades : {},
     pendingSubjects: Array.isArray(student.pendingSubjects) ? student.pendingSubjects : [],
+    matterPendingSubjects: Array.isArray(student.matterPendingSubjects) ? student.matterPendingSubjects : [],
     sheetRecord: matchSheetRecord(student, sheetIndex),
   }));
   renderPendingSubjectsEditor();
+  renderPendingMatterSubjectsEditor();
   loadGradeContext();
   if (sheetWarning) setStatus(sheetWarning, 'error');
 };
@@ -1346,6 +1578,7 @@ const initialize = async () => {
   });
   saveButton.addEventListener('click', saveGrades);
   pendingSubjectsPanel.hidden = !canManagePendingSubjects();
+  pendingMatterPanel.hidden = !canManagePendingSubjects();
   pendingStudentSelect.addEventListener('change', () => {
     if (!canManagePendingSubjects()) return;
     pendingStudentId = pendingStudentSelect.value;
@@ -1381,6 +1614,41 @@ const initialize = async () => {
   });
   addPendingSubjectButton.addEventListener('click', addPendingAssignment);
   savePendingSubjectsButton.addEventListener('click', savePendingAssignments);
+  pendingMatterStudentSelect.addEventListener('change', () => {
+    if (!canManagePendingSubjects()) return;
+    pendingMatterStudentId = pendingMatterStudentSelect.value;
+    renderPendingMatterSubjectsEditor();
+    setPendingMatterStatus('');
+  });
+  pendingMatterSubjectsBody.addEventListener('input', (event) => {
+    if (!canManagePendingSubjects()) return;
+    const row = event.target.closest('tr[data-assignment-index]');
+    if (!row) return;
+    const assignment = pendingMatterDrafts[pendingMatterStudentId]?.[Number(row.dataset.assignmentIndex)];
+    if (!assignment || !event.target.matches('.pending-matter-grade-input')) return;
+    assignment.revisions[Number(event.target.dataset.revisionIndex)] = event.target.value;
+  });
+  pendingMatterSubjectsBody.addEventListener('change', (event) => {
+    if (!canManagePendingSubjects() || !event.target.matches('.pending-matter-subject-select')) return;
+    const row = event.target.closest('tr[data-assignment-index]');
+    const assignment = pendingMatterDrafts[pendingMatterStudentId]?.[Number(row?.dataset.assignmentIndex)];
+    const subject = getSubjectsForYear(yearSelect.value).find((entry) => entry.id === event.target.value);
+    if (!assignment || !subject) return;
+    assignment.subjectId = subject.id;
+    assignment.subjectLabel = subject.label;
+    renderPendingMatterAssignments();
+  });
+  pendingMatterSubjectsBody.addEventListener('click', (event) => {
+    if (!canManagePendingSubjects()) return;
+    const button = event.target.closest('.pending-matter-subject-remove');
+    const row = button?.closest('tr[data-assignment-index]');
+    if (!row) return;
+    pendingMatterDrafts[pendingMatterStudentId].splice(Number(row.dataset.assignmentIndex), 1);
+    renderPendingMatterAssignments();
+    setPendingMatterStatus('');
+  });
+  addPendingMatterSubjectButton.addEventListener('click', addPendingMatterAssignment);
+  savePendingMatterSubjectsButton.addEventListener('click', savePendingMatterAssignments);
 
   try {
     await loadStudents();

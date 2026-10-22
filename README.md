@@ -38,7 +38,7 @@ El pensum por año está centralizado en `js/config/grade-subjects.js` y lo comp
 
 ### Modelo de calificaciones y boleta
 
-Cada estudiante conserva su año, notas y materias pendientes en `students.year`, `students.grades` y `students.pending_subjects` (JSONB en Supabase; objetos en el respaldo local). Las claves de materia coinciden con los IDs del pensum:
+Cada estudiante conserva su año y notas en `students.year` y `students.grades`. Las evaluaciones de Reparación y Materia Pendiente se guardan por separado en `students.pending_subjects` y `students.matter_pending_subjects` (JSONB en Supabase; objetos en el respaldo local). Las claves de materia coinciden con los IDs del pensum:
 
 ```json
 {
@@ -50,15 +50,20 @@ Cada estudiante conserva su año, notas y materias pendientes en `students.year`
   },
   "pendingSubjects": [
     { "subjectId": "castellano", "subjectLabel": "Castellano", "revisions": [12, 15, null, null] }
+  ],
+  "matterPendingSubjects": [
+    { "subjectId": "matematicas", "subjectLabel": "Matemáticas", "revisions": [14, 16, null, null] }
   ]
 }
 ```
 
-El panel de materias pendientes aparece en el módulo de notas con los perfiles de Andy Suárez y Néstor Pérez. Permite elegir un estudiante, materias de su año y cuatro notas de revisión enteras entre 1 y 20; los cambios se guardan en `pendingSubjects` y aparecen en la boleta.
+Los recuadros independientes de Reparación y Materia Pendiente aparecen en el módulo de notas con los perfiles de Andy Suárez y Néstor Pérez. Cada uno permite elegir un estudiante, materias de su año y registrar cuatro notas enteras entre 1 y 20; sus datos se guardan por separado en `pendingSubjects` y `matterPendingSubjects`.
 
 El portal resuelve el registro por cédula desde la API; los enlaces directos consultan `GET /api/students?id=<id>`. Usa `year` para seleccionar las materias de `REPORT_SUBJECT_IDS_BY_YEAR`, y relaciona cada ID con `grades[subjectId]`. La definitiva es el promedio de los tres lapsos (primero redondeando cada lapso, como en el módulo de notas), redondeado al entero más cercano; se muestra vacía (`-`) mientras falte algún lapso. La definitiva de CRP se expresa en el módulo de notas y en la boleta como A (19-20), B (16-18), C (12-15), D (10-11) o E (1-9). Los promedios por período usan solo las calificaciones numéricas disponibles de las materias del plan. El módulo de reportes y la boleta comparten el cálculo de asistencia en `js/config/attendance-calculations.js`. Para el año escolar 2026-2027, los lapsos son 5 de octubre-31 de diciembre, 15 de enero-31 de marzo y 1 de abril-31 de julio. Los porcentajes se calculan como inasistencias entre clases registradas (asistencias más inasistencias), por materia y para el promedio general; solo cuentan clases marcadas. La boleta consulta el historial actualizado de `attendances` en Supabase al cargar y reportes evita la caché del navegador. La respuesta sigue siendo una lista de estudiantes y conserva el esquema `year`/`grades`; `grades` puede estar vacío cuando aún no hay notas.
 
 Antes de habilitar la edición de revisiones en Supabase, ejecuta `supabase-pending-subjects.sql` en el editor SQL para crear `students.pending_subjects`.
+
+Para habilitar el recuadro independiente de Materia Pendiente en Supabase, ejecuta `supabase-matter-pending-subjects.sql` para crear `students.matter_pending_subjects`.
 
 El recibo de pago se descarga como PDF con el diseño mostrado en pantalla, incluyendo sello, datos del estudiante, detalle de pagos y total.
 

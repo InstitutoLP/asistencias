@@ -276,13 +276,13 @@
       <p id="statusMessage" class="status" role="status" aria-live="polite"></p>
 
       <section id="pendingSubjectsPanel" class="pending-subjects-editor" aria-labelledby="pendingSubjectsTitle" hidden>
-        <h2 id="pendingSubjectsTitle">Materias pendientes</h2>
-        <p>Registra para cada estudiante la materia pendiente y sus cuatro notas M1, M2, M3 y M4.</p>
+        <h2 id="pendingSubjectsTitle">Reparación</h2>
+        <p>Registra para cada estudiante la materia en reparación y sus cuatro notas M1, M2, M3 y M4.</p>
         <div class="pending-subjects-controls">
           <label for="pendingStudentSelect">Estudiante
             <select id="pendingStudentSelect"></select>
           </label>
-          <label for="pendingSubjectSelect">Materia pendiente
+          <label for="pendingSubjectSelect">Materia a reparar
             <select id="pendingSubjectSelect"></select>
           </label>
           <button id="addPendingSubject" class="add-activity-button" type="button">Agregar materia</button>
@@ -291,7 +291,7 @@
           <table class="pending-subjects-table">
             <thead>
               <tr>
-                <th scope="col">Materia pendiente</th>
+                <th scope="col">Reparación</th>
                 <th scope="col">M1</th>
                 <th scope="col">M2</th>
                 <th scope="col">M3</th>
@@ -308,6 +308,40 @@
         </div>
         <p id="pendingSubjectsStatus" class="pending-status" role="status" aria-live="polite"></p>
       </section>
+    </section>
+
+    <section id="pendingMatterPanel" class="pending-subjects-editor" aria-labelledby="pendingMatterTitle" hidden>
+      <h2 id="pendingMatterTitle">Materia Pendiente</h2>
+      <p>Registra las notas M1, M2, M3 y M4 de las materias pendientes de cada estudiante.</p>
+      <div class="pending-subjects-controls">
+        <label for="pendingMatterStudentSelect">Estudiante
+          <select id="pendingMatterStudentSelect"></select>
+        </label>
+        <label for="pendingMatterSubjectSelect">Materia pendiente
+          <select id="pendingMatterSubjectSelect"></select>
+        </label>
+        <button id="addPendingMatterSubject" class="add-activity-button" type="button">Agregar materia</button>
+      </div>
+      <div class="table-scroll">
+        <table class="pending-subjects-table">
+          <thead>
+            <tr>
+              <th scope="col">Materia Pendiente</th>
+              <th scope="col">M1</th>
+              <th scope="col">M2</th>
+              <th scope="col">M3</th>
+              <th scope="col">M4</th>
+            </tr>
+          </thead>
+          <tbody id="pendingMatterSubjectsBody">
+            <tr><td class="empty" colspan="5">Selecciona un estudiante.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pending-subject-actions">
+        <button id="savePendingMatterSubjects" class="save-button" type="button">Guardar materias pendientes</button>
+      </div>
+      <p id="pendingMatterStatus" class="pending-status" role="status" aria-live="polite"></p>
     </section>
   </main>
 </body>

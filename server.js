@@ -81,6 +81,9 @@ const normalizeStudentRecord = (row = {}, fallbackYear = 1) => {
     pendingSubjects: Array.isArray(row.pending_subjects)
       ? row.pending_subjects
       : Array.isArray(row.pendingSubjects) ? row.pendingSubjects : [],
+    matterPendingSubjects: Array.isArray(row.matter_pending_subjects)
+      ? row.matter_pending_subjects
+      : Array.isArray(row.matterPendingSubjects) ? row.matterPendingSubjects : [],
     year,
     status: row.status || '',
     paymentStatus: row.payment_status || row.paymentStatus || 'no_pago',
@@ -94,7 +97,7 @@ const normalizeStudentRecord = (row = {}, fallbackYear = 1) => {
 
 const hasGrades = (grades) => grades && typeof grades === 'object' && Object.keys(grades).length > 0;
 
-const normalizePendingSubjects = (pendingSubjects) => {
+const normalizePendingSubjects = (pendingSubjects, expectedRevisionCount = null) => {
   if (!Array.isArray(pendingSubjects)) return null;
   const normalized = [];
   const subjectIds = new Set();
@@ -102,13 +105,14 @@ const normalizePendingSubjects = (pendingSubjects) => {
     if (!subject || typeof subject.subjectId !== 'string' || !subject.subjectId.trim()
       || typeof subject.subjectLabel !== 'string' || !subject.subjectLabel.trim()
       || !Array.isArray(subject.revisions)
-      || subject.revisions.length < 3 || subject.revisions.length > 4) return null;
+      || (expectedRevisionCount === null
+        ? subject.revisions.length < 3 || subject.revisions.length > 4
+        : subject.revisions.length !== expectedRevisionCount)) return null;
     const subjectId = subject.subjectId.trim();
     if (subjectIds.has(subjectId)) return null;
     subjectIds.add(subjectId);
     const revisions = [];
-    for (let index = 0; index < 4; index += 1) {
-      const revision = subject.revisions[index] ?? null;
+    for (const revision of subject.revisions) {
       if (revision === null || revision === '') {
         revisions.push(null);
         continue;
@@ -134,6 +138,7 @@ const toSafeStudentPayload = (student = {}, dateOverride = null) => ({
   phone: student.phone || null,
   ...(hasGrades(student.grades) ? { grades: student.grades } : {}),
   pending_subjects: Array.isArray(student.pendingSubjects) ? student.pendingSubjects : [],
+  matter_pending_subjects: Array.isArray(student.matterPendingSubjects) ? student.matterPendingSubjects : [],
   year: Number(student.year || 1),
   status: student.status || '',
   payment_status: student.paymentStatus || 'no_pago',
@@ -482,6 +487,7 @@ app.get('/api/students', async (req, res) => {
 app.post('/api/students', async (req, res) => {
   const {
     id, name, cedula, email, phone, year, BoletaVisible, paymentStatus, paidAmount, payments, grades, pendingSubjects,
+    matterPendingSubjects,
   } = req.body || {};
   if (!name || !year) {
     return res.status(400).json({ error: 'Falta nombre o año.' });
@@ -489,6 +495,12 @@ app.post('/api/students', async (req, res) => {
   const normalizedPendingSubjects = pendingSubjects === undefined ? [] : normalizePendingSubjects(pendingSubjects);
   if (!normalizedPendingSubjects) {
     return res.status(400).json({ error: 'Las materias pendientes o sus notas de revisión no son válidas.' });
+  }
+  const normalizedMatterPendingSubjects = matterPendingSubjects === undefined
+    ? []
+    : normalizePendingSubjects(matterPendingSubjects, 4);
+  if (!normalizedMatterPendingSubjects) {
+    return res.status(400).json({ error: 'Las materias pendientes o sus notas M1, M2, M3 y M4 no son válidas.' });
   }
 
   try {
@@ -505,6 +517,7 @@ app.post('/api/students', async (req, res) => {
       payments: payments || {},
       ...(hasGrades(grades) ? { grades } : {}),
       pendingSubjects: normalizedPendingSubjects,
+      matterPendingSubjects: normalizedMatterPendingSubjects,
       attendance: {},
       attendanceByDate: {},
     };
@@ -531,6 +544,7 @@ app.post('/api/students', async (req, res) => {
 app.patch('/api/students', async (req, res) => {
   const {
     id, name, cedula, email, phone, year, BoletaVisible, payments, paymentStatus, paidAmount, grades, pendingSubjects,
+    matterPendingSubjects,
   } = req.body || {};
   if (!id) {
     return res.status(400).json({ error: 'Falta id del estudiante.' });
@@ -540,6 +554,12 @@ app.patch('/api/students', async (req, res) => {
     : normalizePendingSubjects(pendingSubjects);
   if (pendingSubjects !== undefined && !normalizedPendingSubjects) {
     return res.status(400).json({ error: 'Las materias pendientes o sus notas de revisión no son válidas.' });
+  }
+  const normalizedMatterPendingSubjects = matterPendingSubjects === undefined
+    ? undefined
+    : normalizePendingSubjects(matterPendingSubjects, 4);
+  if (matterPendingSubjects !== undefined && !normalizedMatterPendingSubjects) {
+    return res.status(400).json({ error: 'Las materias pendientes o sus notas M1, M2, M3 y M4 no son válidas.' });
   }
 
   try {
@@ -553,6 +573,7 @@ app.patch('/api/students', async (req, res) => {
       payments,
       ...(hasGrades(grades) ? { grades } : {}),
       pending_subjects: normalizedPendingSubjects,
+      matter_pending_subjects: normalizedMatterPendingSubjects,
       payment_status: paymentStatus,
       paid_amount: paidAmount === undefined ? undefined : Number(paidAmount),
     };
@@ -588,6 +609,7 @@ app.patch('/api/students', async (req, res) => {
     if (payments !== undefined) student.payments = payments;
     if (hasGrades(grades)) student.grades = grades;
     if (normalizedPendingSubjects !== undefined) student.pendingSubjects = normalizedPendingSubjects;
+    if (normalizedMatterPendingSubjects !== undefined) student.matterPendingSubjects = normalizedMatterPendingSubjects;
     if (paymentStatus !== undefined) student.paymentStatus = paymentStatus;
     if (paidAmount !== undefined) student.paidAmount = paidAmount;
     data.students[id] = student;
