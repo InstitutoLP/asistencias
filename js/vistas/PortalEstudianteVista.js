@@ -236,10 +236,9 @@ const crearFilaMateria = (estudiante, subjectId, inasistenciasPorMateria, pendin
   for (let index = 0; index < 3; index += 1) {
     const cell = row.insertCell();
     const grade = normalizarNota(pendingSubject?.revisions?.[index]);
-    cell.textContent = grade === null ? '-' : formatearNota(grade);
-    if (grade === null && SUBJECTS_WITHOUT_EMPTY_REVIEW_CELLS.has(subjectId)) {
-      cell.className = 'review-cell-removed';
-    }
+    const removeEmptyCell = grade === null && SUBJECTS_WITHOUT_EMPTY_REVIEW_CELLS.has(subjectId);
+    cell.textContent = removeEmptyCell ? '' : grade === null ? '-' : formatearNota(grade);
+    if (removeEmptyCell) cell.className = 'review-cell-removed';
   }
   return row;
 };
@@ -275,7 +274,7 @@ const renderizarBoletaEstudiante = (estudiante) => {
       const headerRow = document.createElement('tr');
       headerRow.className = 'row-seccion-header';
       const headerCell = headerRow.insertCell();
-      headerCell.colSpan = 12;
+      headerCell.colSpan = 9;
       headerCell.textContent = 'PARTICIPACIÓN EN GRUPO DE CREACIÓN, RECREACIÓN Y PRODUCCIÓN';
       filasParticipacion.push(
         headerRow,
