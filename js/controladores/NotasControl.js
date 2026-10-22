@@ -858,7 +858,7 @@ const savePendingAssignments = async () => {
     student.pendingSubjects = savedAssignments;
     pendingDrafts[pendingStudentId] = copyJson(savedAssignments);
     renderPendingAssignments();
-    setPendingStatus('Materias pendientes y revisiones guardadas. Ya aparecen en la boleta del estudiante.', 'success');
+    setPendingStatus('Revisiones guardadas. Ya aparecen en la boleta del estudiante.', 'success');
   } catch (error) {
     console.error(`No se pudieron guardar las materias pendientes de ${student.name}:`, error);
     const migrationHint = /pending_subjects.*(column|schema cache)|column.*pending_subjects/i.test(error.message)

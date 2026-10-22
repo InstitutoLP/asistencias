@@ -232,13 +232,11 @@ const crearFilaMateria = (estudiante, subjectId, inasistenciasPorMateria, pendin
     classes: total.classes + (inasistencias?.[period]?.classes || 0),
   }), { absences: 0, classes: 0 });
   row.insertCell().textContent = formatearPorcentajeInasistencia(totalInasistencias);
-  const revisions = pendingSubjectsById.get(subjectId)?.revisions || [];
-  for (let index = 0; index < 3; index += 1) {
-    const cell = row.insertCell();
-    const grade = normalizarNota(revisions[index]);
-    cell.textContent = grade === null ? '-' : formatearNota(grade);
-    if (grade === null && SUBJECTS_WITHOUT_EMPTY_REVIEW_CELLS.has(subjectId)) {
-      cell.className = 'review-cell-removed';
+  const pendingSubject = pendingSubjectsById.get(subjectId);
+  if (pendingSubject || !SUBJECTS_WITHOUT_EMPTY_REVIEW_CELLS.has(subjectId)) {
+    for (let index = 0; index < 3; index += 1) {
+      const grade = normalizarNota(pendingSubject?.revisions?.[index]);
+      row.insertCell().textContent = grade === null ? '-' : formatearNota(grade);
     }
   }
   return row;
@@ -262,8 +260,8 @@ const renderizarBoletaEstudiante = (estudiante) => {
     )));
   }
   if (pieTabla && filaPromedio) {
-    const averageReviewCell = filaPromedio.lastElementChild;
-    if (averageReviewCell) averageReviewCell.classList.add('review-cell-removed');
+    const averageReviewCell = filaPromedio.querySelector('td[colspan="3"]');
+    if (averageReviewCell) averageReviewCell.remove();
     const filasParticipacion = [];
     if (participacion.length) {
       const headerRow = document.createElement('tr');
@@ -271,9 +269,6 @@ const renderizarBoletaEstudiante = (estudiante) => {
       const headerCell = headerRow.insertCell();
       headerCell.colSpan = 9;
       headerCell.textContent = 'PARTICIPACIÓN EN GRUPO DE CREACIÓN, RECREACIÓN Y PRODUCCIÓN';
-      const emptyReviewCell = headerRow.insertCell();
-      emptyReviewCell.colSpan = 3;
-      emptyReviewCell.className = 'review-cell-removed';
       filasParticipacion.push(
         headerRow,
         ...participacion.map((subjectId) => (
@@ -304,7 +299,7 @@ const renderizarBoletaEstudiante = (estudiante) => {
     if (!pendingSubjects.length) {
       const row = pendientesBody.insertRow();
       const cell = row.insertCell();
-      cell.colSpan = 4;
+      cell.colSpan = 5;
       cell.textContent = 'Sin materias pendientes registradas.';
     } else {
       pendingSubjects.forEach((pendingSubject) => {
