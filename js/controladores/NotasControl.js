@@ -709,7 +709,7 @@ const renderPendingAssignments = () => {
   if (!student) {
     const row = pendingSubjectsBody.insertRow();
     const cell = row.insertCell();
-    cell.colSpan = 5;
+    cell.colSpan = 4;
     cell.className = 'empty';
     cell.textContent = 'No hay estudiantes para este año.';
     return;
@@ -717,7 +717,7 @@ const renderPendingAssignments = () => {
   if (!assignments.length) {
     const row = pendingSubjectsBody.insertRow();
     const cell = row.insertCell();
-    cell.colSpan = 5;
+    cell.colSpan = 4;
     cell.className = 'empty';
     cell.textContent = 'Este estudiante no tiene materias pendientes registradas.';
     return;
@@ -755,7 +755,7 @@ const renderPendingAssignments = () => {
     removeButton.setAttribute('aria-label', `Quitar ${assignment.subjectLabel}`);
     subjectCell.appendChild(removeButton);
 
-    for (let revisionIndex = 0; revisionIndex < 4; revisionIndex += 1) {
+    for (let revisionIndex = 0; revisionIndex < 3; revisionIndex += 1) {
       const cell = row.insertCell();
       cell.dataset.label = `M${revisionIndex + 1}`;
       const input = document.createElement('input');
@@ -819,7 +819,7 @@ const addPendingAssignment = () => {
   assignments.push({
     subjectId: subject.id,
     subjectLabel: subject.label,
-    revisions: [null, null, null, null],
+    revisions: [null, null, null],
   });
   pendingDrafts[pendingStudentId] = assignments;
   renderPendingAssignments();
