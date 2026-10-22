@@ -304,7 +304,7 @@ const renderizarBoletaEstudiante = (estudiante) => {
     if (!pendingSubjects.length) {
       const row = pendientesBody.insertRow();
       const cell = row.insertCell();
-      cell.colSpan = 5;
+      cell.colSpan = 4;
       cell.textContent = 'Sin materias pendientes registradas.';
     } else {
       pendingSubjects.forEach((pendingSubject) => {
