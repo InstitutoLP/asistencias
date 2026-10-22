@@ -206,7 +206,9 @@ const formatearPorcentajeInasistencia = ({ absences, classes }) => (
   classes ? `${Number(((absences / classes) * 100).toFixed(1))}%` : '-'
 );
 
-const crearFilaMateria = (estudiante, subjectId, inasistenciasPorMateria) => {
+const SUBJECTS_WITHOUT_EMPTY_REVIEW_CELLS = new Set(['orientacion-convivencia', 'crp', 'frances']);
+
+const crearFilaMateria = (estudiante, subjectId, inasistenciasPorMateria, pendingSubjectsById) => {
   const display = window.REPORT_SUBJECT_DISPLAY[subjectId] || { label: subjectId.toUpperCase() };
   const row = document.createElement('tr');
   const subjectCell = row.insertCell();
@@ -230,7 +232,15 @@ const crearFilaMateria = (estudiante, subjectId, inasistenciasPorMateria) => {
     classes: total.classes + (inasistencias?.[period]?.classes || 0),
   }), { absences: 0, classes: 0 });
   row.insertCell().textContent = formatearPorcentajeInasistencia(totalInasistencias);
-  for (let index = 0; index < 3; index += 1) row.insertCell().textContent = '-';
+  const revisions = pendingSubjectsById.get(subjectId)?.revisions || [];
+  for (let index = 0; index < 3; index += 1) {
+    const cell = row.insertCell();
+    const grade = normalizarNota(revisions[index]);
+    cell.textContent = grade === null ? '-' : formatearNota(grade);
+    if (grade === null && SUBJECTS_WITHOUT_EMPTY_REVIEW_CELLS.has(subjectId)) {
+      cell.className = 'review-cell-removed';
+    }
+  }
   return row;
 };
 
@@ -243,21 +253,32 @@ const renderizarBoletaEstudiante = (estudiante) => {
   const filaPromedio = pieTabla?.querySelector('.row-promedio');
   const materiasPlan = materias.map((id) => ({ id }));
   const inasistencias = calcularInasistencias(estudiante);
+  const pendingSubjects = Array.isArray(estudiante?.pendingSubjects) ? estudiante.pendingSubjects : [];
+  const pendingSubjectsById = new Map(pendingSubjects.map((pendingSubject) => [pendingSubject.subjectId, pendingSubject]));
 
   if (cuerpo) {
-    cuerpo.replaceChildren(...materias.map((subjectId) => crearFilaMateria(estudiante, subjectId, inasistencias.bySubject)));
+    cuerpo.replaceChildren(...materias.map((subjectId) => (
+      crearFilaMateria(estudiante, subjectId, inasistencias.bySubject, pendingSubjectsById)
+    )));
   }
   if (pieTabla && filaPromedio) {
+    const averageReviewCell = filaPromedio.lastElementChild;
+    if (averageReviewCell) averageReviewCell.classList.add('review-cell-removed');
     const filasParticipacion = [];
     if (participacion.length) {
       const headerRow = document.createElement('tr');
       headerRow.className = 'row-seccion-header';
       const headerCell = headerRow.insertCell();
-      headerCell.colSpan = 12;
+      headerCell.colSpan = 9;
       headerCell.textContent = 'PARTICIPACIÓN EN GRUPO DE CREACIÓN, RECREACIÓN Y PRODUCCIÓN';
+      const emptyReviewCell = headerRow.insertCell();
+      emptyReviewCell.colSpan = 3;
+      emptyReviewCell.className = 'review-cell-removed';
       filasParticipacion.push(
         headerRow,
-        ...participacion.map((subjectId) => crearFilaMateria(estudiante, subjectId, inasistencias.bySubject)),
+        ...participacion.map((subjectId) => (
+          crearFilaMateria(estudiante, subjectId, inasistencias.bySubject, pendingSubjectsById)
+        )),
       );
     }
     pieTabla.replaceChildren(filaPromedio, ...filasParticipacion);
@@ -279,15 +300,14 @@ const renderizarBoletaEstudiante = (estudiante) => {
 
   const pendientesBody = document.getElementById('tablaPendientesBody');
   if (pendientesBody) {
-    const pendientes = Array.isArray(estudiante?.pendingSubjects) ? estudiante.pendingSubjects : [];
     pendientesBody.replaceChildren();
-    if (!pendientes.length) {
+    if (!pendingSubjects.length) {
       const row = pendientesBody.insertRow();
       const cell = row.insertCell();
       cell.colSpan = 5;
       cell.textContent = 'Sin materias pendientes registradas.';
     } else {
-      pendientes.forEach((pendingSubject) => {
+      pendingSubjects.forEach((pendingSubject) => {
         const row = pendientesBody.insertRow();
         row.insertCell().textContent = pendingSubject.subjectLabel || pendingSubject.subjectId || '-';
         for (let index = 0; index < 3; index += 1) {
