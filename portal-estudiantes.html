@@ -432,7 +432,7 @@
     .builderbot-message-error { align-self: flex-start; background: #fee2e2; color: #991b1b; }
     .builderbot-form { display: grid; gap: 8px; padding: 10px; border-top: 1px solid #e2e8f0; background: #fff; }
     .builderbot-form label { color: #334155; font-size: 12px; font-weight: 700; }
-    .builderbot-phone, .builderbot-input { width: 100%; min-height: 40px; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 20px; color: #0f172a; font: inherit; font-size: 13px; }
+    .builderbot-input { width: 100%; min-height: 40px; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 20px; color: #0f172a; font: inherit; font-size: 13px; }
     .builderbot-compose { display: flex; gap: 8px; }
     .builderbot-input { min-width: 0; flex: 1; }
     .builderbot-send, .builderbot-toggle { display: flex; align-items: center; justify-content: center; border: 0; background: #25d366; color: #fff; cursor: pointer; }
@@ -894,16 +894,14 @@
       <header class="builderbot-header">
         <div>
           <div class="builderbot-header-title">Soporte Estudiantil</div>
-          <div class="builderbot-header-status">Asistente automático</div>
+          <div class="builderbot-header-status">Demostración local • respuestas simuladas</div>
         </div>
         <button id="builderbotClose" class="builderbot-close" type="button" aria-label="Cerrar chat">×</button>
       </header>
       <div id="builderbotMessages" class="builderbot-messages" role="log" aria-live="polite">
-        <div class="builderbot-message builderbot-message-assistant">¡Hola! Escribe tu teléfono y tu consulta para contactar al asistente.</div>
+        <div class="builderbot-message builderbot-message-assistant">¡Hola! Escribe un mensaje para probar el chat. Las respuestas son simuladas.</div>
       </div>
       <form id="builderbotForm" class="builderbot-form">
-        <label for="builderbotPhone">Teléfono con código de país</label>
-        <input id="builderbotPhone" class="builderbot-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="Ej. 584121234567" pattern="[\d\+\(\)\-\x20]{8,24}" required>
         <div class="builderbot-compose">
           <input id="builderbotInput" class="builderbot-input" type="text" maxlength="1000" placeholder="Escribe tu consulta..." autocomplete="off" required>
           <button id="builderbotSend" class="builderbot-send" type="submit">Enviar</button>

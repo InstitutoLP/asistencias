@@ -4,11 +4,24 @@ document.addEventListener('DOMContentLoaded', () => {
   const closeButton = document.getElementById('builderbotClose');
   const form = document.getElementById('builderbotForm');
   const sendButton = document.getElementById('builderbotSend');
-  const phoneInput = document.getElementById('builderbotPhone');
   const messageInput = document.getElementById('builderbotInput');
   const messagesContainer = document.getElementById('builderbotMessages');
   if (!toggleButton || !chatWindow || !closeButton || !form || !sendButton
-    || !phoneInput || !messageInput || !messagesContainer) return;
+    || !messageInput || !messagesContainer) return;
+
+  const getDemoReply = (content) => {
+    const message = content.toLocaleLowerCase();
+    if (/\b(hola|buenos días|buenas tardes|buenas noches)\b/.test(message)) {
+      return '¡Hola! Gracias por escribirnos. Este chat está en modo de demostración local.';
+    }
+    if (/\b(nota|notas|calificación|calificaciones)\b/.test(message)) {
+      return 'Para consultar tus calificaciones, ingresa tu cédula en el portal estudiantil. Esta es una respuesta simulada.';
+    }
+    if (/\b(asistencia|inasistencia)\b/.test(message)) {
+      return 'Puedes consultar la información de asistencia en tu boleta del portal estudiantil. Esta es una respuesta simulada.';
+    }
+    return 'Gracias por tu mensaje. Esta es una respuesta automática de demostración; no proviene del bot real.';
+  };
 
   const setOpen = (open) => {
     chatWindow.hidden = !open;
@@ -26,31 +39,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   toggleButton.addEventListener('click', () => setOpen(chatWindow.hidden));
   closeButton.addEventListener('click', () => setOpen(false));
-  form.addEventListener('submit', async (event) => {
+  form.addEventListener('submit', (event) => {
     event.preventDefault();
     if (!form.reportValidity()) return;
 
     const content = messageInput.value.trim();
-    const number = phoneInput.value.replace(/\D/g, '');
     if (!content) return;
 
     appendMessage(content, 'user');
     messageInput.value = '';
     sendButton.disabled = true;
-    try {
-      const response = await fetch('/api/builderbot-messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ number, content }),
-      });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(result.error || `Error ${response.status}`);
-      appendMessage('Tu mensaje fue enviado al asistente.', 'assistant');
-    } catch (error) {
-      appendMessage(error.message || 'No se pudo enviar el mensaje. Intenta nuevamente.', 'error');
-    } finally {
+    setTimeout(() => {
+      appendMessage(getDemoReply(content), 'assistant');
       sendButton.disabled = false;
       messageInput.focus();
-    }
+    }, 700);
   });
 });
