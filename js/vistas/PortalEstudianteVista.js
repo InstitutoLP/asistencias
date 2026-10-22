@@ -252,6 +252,9 @@ const renderizarBoletaEstudiante = (estudiante) => {
   const materiasPlan = materias.map((id) => ({ id }));
   const inasistencias = calcularInasistencias(estudiante);
   const pendingSubjects = Array.isArray(estudiante?.pendingSubjects) ? estudiante.pendingSubjects : [];
+  const matterPendingSubjects = Array.isArray(estudiante?.matterPendingSubjects)
+    ? estudiante.matterPendingSubjects
+    : [];
   const pendingSubjectsById = new Map(pendingSubjects.map((pendingSubject) => [pendingSubject.subjectId, pendingSubject]));
 
   if (cuerpo) {
@@ -296,13 +299,13 @@ const renderizarBoletaEstudiante = (estudiante) => {
   const pendientesBody = document.getElementById('tablaPendientesBody');
   if (pendientesBody) {
     pendientesBody.replaceChildren();
-    if (!pendingSubjects.length) {
+    if (!matterPendingSubjects.length) {
       const row = pendientesBody.insertRow();
       const cell = row.insertCell();
       cell.colSpan = 5;
       cell.textContent = 'Sin materias pendientes registradas.';
     } else {
-      pendingSubjects.forEach((pendingSubject) => {
+      matterPendingSubjects.forEach((pendingSubject) => {
         const row = pendientesBody.insertRow();
         row.insertCell().textContent = pendingSubject.subjectLabel || pendingSubject.subjectId || '-';
         for (let index = 0; index < 4; index += 1) {
