@@ -206,9 +206,13 @@ const formatearPorcentajeInasistencia = ({ absences, classes }) => (
   classes ? `${Number(((absences / classes) * 100).toFixed(1))}%` : '-'
 );
 
-const SUBJECTS_WITHOUT_EMPTY_REVIEW_CELLS = new Set(['orientacion-convivencia', 'crp', 'frances']);
-
-const crearFilaMateria = (estudiante, subjectId, inasistenciasPorMateria, pendingSubjectsById) => {
+const crearFilaMateria = (
+  estudiante,
+  subjectId,
+  inasistenciasPorMateria,
+  pendingSubjectsById,
+  includeReviewCells = true,
+) => {
   const display = window.REPORT_SUBJECT_DISPLAY[subjectId] || { label: subjectId.toUpperCase() };
   const row = document.createElement('tr');
   const subjectCell = row.insertCell();
@@ -233,12 +237,11 @@ const crearFilaMateria = (estudiante, subjectId, inasistenciasPorMateria, pendin
   }), { absences: 0, classes: 0 });
   row.insertCell().textContent = formatearPorcentajeInasistencia(totalInasistencias);
   const pendingSubject = pendingSubjectsById.get(subjectId);
-  for (let index = 0; index < 3; index += 1) {
-    const cell = row.insertCell();
-    const grade = normalizarNota(pendingSubject?.revisions?.[index]);
-    const removeEmptyCell = grade === null && SUBJECTS_WITHOUT_EMPTY_REVIEW_CELLS.has(subjectId);
-    cell.textContent = removeEmptyCell ? '' : grade === null ? '-' : formatearNota(grade);
-    if (removeEmptyCell) cell.className = 'review-cell-removed';
+  if (includeReviewCells) {
+    for (let index = 0; index < 3; index += 1) {
+      const grade = normalizarNota(pendingSubject?.revisions?.[index]);
+      row.insertCell().textContent = grade === null ? '-' : formatearNota(grade);
+    }
   }
   return row;
 };
@@ -264,11 +267,6 @@ const renderizarBoletaEstudiante = (estudiante) => {
     )));
   }
   if (pieTabla && filaPromedio) {
-    filaPromedio.querySelectorAll('.review-cell-removed').forEach((cell) => cell.remove());
-    for (let index = 0; index < 3; index += 1) {
-      const cell = filaPromedio.insertCell();
-      cell.className = 'review-cell-removed';
-    }
     const filasParticipacion = [];
     if (participacion.length) {
       const headerRow = document.createElement('tr');
@@ -279,7 +277,7 @@ const renderizarBoletaEstudiante = (estudiante) => {
       filasParticipacion.push(
         headerRow,
         ...participacion.map((subjectId) => (
-          crearFilaMateria(estudiante, subjectId, inasistencias.bySubject, pendingSubjectsById)
+          crearFilaMateria(estudiante, subjectId, inasistencias.bySubject, pendingSubjectsById, false)
         )),
       );
     }
