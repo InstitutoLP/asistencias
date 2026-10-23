@@ -153,6 +153,7 @@
     .grade-summary-item strong { font-size: 1.25rem; }
     .pending-subjects-editor { margin-top: 28px; padding: 18px; background: #f3f6fa; border: 1px solid #dce4ef; border-radius: 10px; }
     .pending-subjects-editor h2 { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 0 0 12px; font-size: 1.2rem; }
+    .pending-subjects-title { display: flex; align-items: center; gap: 12px; }
     .recovery-count { color: #1668b2; font-size: .9rem; font-weight: 700; white-space: nowrap; }
     .pending-subjects-editor > p { margin: 0 0 16px; color: #4c5b70; }
     .pending-subjects-controls { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr) auto; align-items: end; gap: 12px; margin-bottom: 16px; }
@@ -313,7 +314,7 @@
       <p id="statusMessage" class="status" role="status" aria-live="polite"></p>
 
       <section id="pendingSubjectsPanel" class="pending-subjects-editor" aria-labelledby="pendingSubjectsTitle" hidden>
-        <h2 id="pendingSubjectsTitle">Recuperación <span id="recoveryStudentCount" class="recovery-count" role="status" aria-live="polite"></span></h2>
+        <h2 id="pendingSubjectsTitle"><span class="pending-subjects-title">Recuperación <span id="recoveryStudentCount" class="recovery-count" role="status" aria-live="polite"></span></span></h2>
         <div class="pending-subjects-controls">
           <label for="pendingStudentSelect">Estudiante
             <select id="pendingStudentSelect"></select>
@@ -347,7 +348,7 @@
     </section>
 
     <section id="pendingMatterPanel" class="pending-subjects-editor" aria-labelledby="pendingMatterTitle" hidden>
-      <h2 id="pendingMatterTitle">Materia Pendiente</h2>
+      <h2 id="pendingMatterTitle">Materia Pendiente <span id="matterPendingStudentCount" class="recovery-count" role="status" aria-live="polite"></span></h2>
       <p>Registra las notas M1, M2, M3 y M4. La materia pasa aquí automáticamente solo si las tres notas de revisión son menores a 10.</p>
       <div class="pending-subjects-controls">
         <label for="pendingMatterStudentSelect">Estudiante

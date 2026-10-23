@@ -38,6 +38,7 @@ const pendingSubjectsStatus = document.getElementById('pendingSubjectsStatus');
 const addPendingSubjectButton = document.getElementById('addPendingSubject');
 const savePendingSubjectsButton = document.getElementById('savePendingSubjects');
 const recoveryStudentCount = document.getElementById('recoveryStudentCount');
+const matterPendingStudentCount = document.getElementById('matterPendingStudentCount');
 const pendingMatterPanel = document.getElementById('pendingMatterPanel');
 const pendingMatterStudentSelect = document.getElementById('pendingMatterStudentSelect');
 const pendingMatterSubjectSelect = document.getElementById('pendingMatterSubjectSelect');
@@ -86,6 +87,13 @@ const updateRecoveryStudentCount = () => {
       })
   )).length;
   recoveryStudentCount.textContent = `Por hacer: ${count} estudiante${count === 1 ? '' : 's'}`;
+};
+
+const updateMatterPendingStudentCount = () => {
+  const count = students.filter((student) => (
+    Array.isArray(student.matterPendingSubjects) && student.matterPendingSubjects.length > 0
+  )).length;
+  matterPendingStudentCount.textContent = `Con materia pendiente: ${count}`;
 };
 
 const normalizeText = (value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
@@ -919,6 +927,7 @@ const savePendingAssignments = async () => {
     }
     renderPendingAssignments();
     updateRecoveryStudentCount();
+    updateMatterPendingStudentCount();
     setPendingStatus(
       automaticallyAddedMatterAssignments.length
         ? `Recuperación guardada. ${automaticallyAddedMatterAssignments.length} materia(s) con las tres revisiones menores a 10 se registraron en Materia Pendiente.`
@@ -1132,6 +1141,7 @@ const savePendingMatterAssignments = async () => {
       : assignments;
     student.matterPendingSubjects = savedAssignments;
     pendingMatterDrafts[pendingMatterStudentId] = copyJson(savedAssignments);
+    updateMatterPendingStudentCount();
     renderPendingMatterAssignments();
     setPendingMatterStatus('Notas M1, M2, M3 y M4 guardadas para Materia Pendiente.', 'success');
   } catch (error) {
@@ -1191,6 +1201,7 @@ const loadStudents = async () => {
     sheetRecord: matchSheetRecord(student, sheetIndex),
   }));
   updateRecoveryStudentCount();
+  updateMatterPendingStudentCount();
   renderPendingSubjectsEditor();
   renderPendingMatterSubjectsEditor();
   loadGradeContext();
@@ -1465,6 +1476,7 @@ const saveGrades = async () => {
     renderPendingAssignments();
   }
   updateRecoveryStudentCount();
+  updateMatterPendingStudentCount();
   if (errors.length) {
     const missingGradesColumn = errors.some(({ message }) => /columna\s+grades|grades.*(schema cache|column)|column.*grades/i.test(message));
     const missingRecoveryColumn = errors.some(({ message }) => /pending_subjects.*(schema cache|column)|column.*pending_subjects/i.test(message));
