@@ -853,7 +853,8 @@ const savePendingAssignments = async () => {
   setPendingStatus('Guardando Recuperación...');
   try {
     const failedReviews = assignments.filter((assignment) => (
-      assignment.revisions.some((grade) => Number.isFinite(grade) && grade < 10)
+      assignment.revisions.length === 3
+        && assignment.revisions.every((grade) => Number.isFinite(grade) && grade < 10)
     ));
     const savedMatterAssignments = copyJson(
       Array.isArray(student.matterPendingSubjects) ? student.matterPendingSubjects : [],
@@ -903,7 +904,7 @@ const savePendingAssignments = async () => {
     renderPendingAssignments();
     setPendingStatus(
       automaticallyAddedMatterAssignments.length
-        ? `Recuperación guardada. ${automaticallyAddedMatterAssignments.length} materia(s) con revisión menor a 10 se registraron en Materia Pendiente.`
+        ? `Recuperación guardada. ${automaticallyAddedMatterAssignments.length} materia(s) con las tres revisiones menores a 10 se registraron en Materia Pendiente.`
         : 'Recuperación y notas de revisión guardadas.',
       'success',
     );
