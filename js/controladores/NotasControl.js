@@ -630,6 +630,7 @@ const renderStudents = () => {
         });
       } else activities.forEach((activity) => {
         const gradeCell = row.insertCell();
+        gradeCell.className = 'activity-grade-value';
         gradeCell.dataset.label = `${activity.name || 'Actividad'} (nota /20)`;
         const input = document.createElement('input');
         input.className = 'grade-input';
