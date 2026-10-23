@@ -363,7 +363,7 @@ const updateTableHeaders = () => {
   activities.forEach((activity) => {
     const heading = document.createElement('th');
     heading.scope = 'col';
-    heading.className = 'assessment-column';
+    heading.className = 'assessment-column activity-header';
     heading.dataset.activityId = activity.id;
     const name = document.createElement('span');
     name.textContent = `${activity.name || 'Actividad sin nombre'} (nota /20)`;
@@ -372,9 +372,11 @@ const updateTableHeaders = () => {
 
     const weightHeading = document.createElement('th');
     weightHeading.scope = 'col';
-    weightHeading.className = 'assessment-weight-column';
+    weightHeading.className = 'assessment-weight-column activity-weight-header';
     weightHeading.dataset.activityId = activity.id;
-    weightHeading.textContent = `${Number(activity.weight) || 0}% = ${formatPoints(getActivityMaximumPoints(activity))} pts`;
+    const weight = document.createElement('span');
+    weight.textContent = `${Number(activity.weight) || 0}% = ${formatPoints(getActivityMaximumPoints(activity))} pts`;
+    weightHeading.appendChild(weight);
     row.appendChild(weightHeading);
   });
   const gradeHeading = document.createElement('th');
@@ -847,26 +849,72 @@ const savePendingAssignments = async () => {
   }
 
   savePendingSubjectsButton.disabled = true;
-  setPendingStatus('Guardando materias pendientes...');
+  setPendingStatus('Guardando Recuperación...');
   try {
+    const failedReviews = assignments.filter((assignment) => (
+      assignment.revisions.some((grade) => Number.isFinite(grade) && grade < 10)
+    ));
+    const savedMatterAssignments = copyJson(
+      Array.isArray(student.matterPendingSubjects) ? student.matterPendingSubjects : [],
+    );
+    const automaticallyAddedMatterAssignments = [];
+    failedReviews.forEach((assignment) => {
+      if (savedMatterAssignments.some((entry) => entry.subjectId === assignment.subjectId)) return;
+      const matterAssignment = {
+        subjectId: assignment.subjectId,
+        subjectLabel: assignment.subjectLabel,
+        revisions: [null, null, null, null],
+      };
+      savedMatterAssignments.push(matterAssignment);
+      automaticallyAddedMatterAssignments.push(matterAssignment);
+    });
     const response = await fetch(API_STUDENTS, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: student.id, pendingSubjects: assignments }),
+      body: JSON.stringify({
+        id: student.id,
+        pendingSubjects: assignments,
+        ...(automaticallyAddedMatterAssignments.length
+          ? { matterPendingSubjects: savedMatterAssignments }
+          : {}),
+      }),
     });
     const result = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(result.error || `Error ${response.status}`);
     const savedAssignments = Array.isArray(result.pendingSubjects) ? result.pendingSubjects : assignments;
     student.pendingSubjects = savedAssignments;
     pendingDrafts[pendingStudentId] = copyJson(savedAssignments);
+    if (automaticallyAddedMatterAssignments.length) {
+      student.matterPendingSubjects = Array.isArray(result.matterPendingSubjects)
+        ? result.matterPendingSubjects
+        : savedMatterAssignments;
+      if (!pendingMatterDrafts[pendingStudentId]) {
+        pendingMatterDrafts[pendingStudentId] = copyJson(student.matterPendingSubjects);
+      } else {
+        automaticallyAddedMatterAssignments.forEach((assignment) => {
+          if (!pendingMatterDrafts[pendingStudentId].some((entry) => entry.subjectId === assignment.subjectId)) {
+            pendingMatterDrafts[pendingStudentId].push(copyJson(assignment));
+          }
+        });
+      }
+      if (pendingMatterStudentId === pendingStudentId) renderPendingMatterAssignments();
+    }
     renderPendingAssignments();
-    setPendingStatus('Notas M1, M2, M3 y M4 guardadas. Ya aparecen en la boleta del estudiante.', 'success');
+    setPendingStatus(
+      automaticallyAddedMatterAssignments.length
+        ? `Recuperación guardada. ${automaticallyAddedMatterAssignments.length} materia(s) con revisión menor a 10 se registraron en Materia Pendiente.`
+        : 'Recuperación y notas de revisión guardadas.',
+      'success',
+    );
   } catch (error) {
     console.error(`No se pudieron guardar las materias pendientes de ${student.name}:`, error);
-    const migrationHint = /pending_subjects.*(column|schema cache)|column.*pending_subjects/i.test(error.message)
-      ? ' Ejecuta supabase-pending-subjects.sql en Supabase y vuelve a intentarlo.'
-      : '';
-    setPendingStatus(`No se pudieron guardar las materias pendientes. ${error.message}${migrationHint}`, 'error');
+    let migrationHint = '';
+    if (/matter_pending_subjects.*(column|schema cache)|column.*matter_pending_subjects/i.test(error.message)) {
+      migrationHint = ' Ejecuta supabase-matter-pending-subjects.sql en Supabase y vuelve a intentarlo.';
+    } else if (/pending_subjects.*(column|schema cache)|column.*pending_subjects/i.test(error.message)) {
+      migrationHint = ' Ejecuta supabase-pending-subjects.sql en Supabase y vuelve a intentarlo.';
+    }
+    setPendingStatus(`No se pudo guardar la Recuperación o Materia Pendiente. ${error.message}${migrationHint}`, 'error');
   } finally {
     savePendingSubjectsButton.disabled = false;
   }
@@ -1287,6 +1335,7 @@ const saveGrades = async () => {
   });
   setStatus('Guardando actividades y notas...');
   let savedCount = 0;
+  let recoveryAddedCount = 0;
   const errors = [];
   for (const student of students) {
     const grades = copyJson(student.grades || {});
@@ -1321,17 +1370,51 @@ const saveGrades = async () => {
     });
     savedAssessments[periodSelect.value] = assessmentEntries;
     subjectGrades.assessments = savedAssessments;
-    subjectGrades[periodSelect.value] = getWeightedGrade(String(student.id));
+    const weightedGrade = getWeightedGrade(String(student.id));
+    subjectGrades[periodSelect.value] = weightedGrade;
     grades[subject.id] = subjectGrades;
+    const pendingSubjects = copyJson(
+      Array.isArray(student.pendingSubjects) ? student.pendingSubjects : [],
+    );
+    const shouldAddRecovery = periodSelect.value !== 'Final'
+      && weightedGrade !== null
+      && weightedGrade < 10
+      && !pendingSubjects.some((assignment) => assignment.subjectId === subject.id);
+    if (shouldAddRecovery) {
+      pendingSubjects.push({
+        subjectId: subject.id,
+        subjectLabel: subject.label,
+        revisions: [null, null, null],
+      });
+    }
     try {
       const response = await fetch(API_STUDENTS, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: student.id, grades }),
+        body: JSON.stringify({
+          id: student.id,
+          grades,
+          ...(shouldAddRecovery ? { pendingSubjects } : {}),
+        }),
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || `Error ${response.status}`);
       student.grades = result.grades || grades;
+      if (shouldAddRecovery) {
+        student.pendingSubjects = Array.isArray(result.pendingSubjects)
+          ? result.pendingSubjects
+          : pendingSubjects;
+        recoveryAddedCount += 1;
+        if (!pendingDrafts[String(student.id)]) {
+          pendingDrafts[String(student.id)] = copyJson(student.pendingSubjects);
+        } else if (!pendingDrafts[String(student.id)].some((entry) => entry.subjectId === subject.id)) {
+          pendingDrafts[String(student.id)].push({
+            subjectId: subject.id,
+            subjectLabel: subject.label,
+            revisions: [null, null, null],
+          });
+        }
+      }
       savedCount += 1;
     } catch (error) {
       console.error(`No se pudieron guardar las notas de ${student.name}:`, error);
@@ -1358,11 +1441,17 @@ const saveGrades = async () => {
     const activity = activities.find((entry) => entry.id === input.dataset.activityId);
     input.disabled = activity ? isActivityLockedForCurrentUser(activity) : false;
   });
+  if (recoveryAddedCount && pendingStudentId && pendingDrafts[pendingStudentId]) {
+    renderPendingAssignments();
+  }
   if (errors.length) {
     const missingGradesColumn = errors.some(({ message }) => /columna\s+grades|grades.*(schema cache|column)|column.*grades/i.test(message));
+    const missingRecoveryColumn = errors.some(({ message }) => /pending_subjects.*(schema cache|column)|column.*pending_subjects/i.test(message));
     const failedStudents = errors.map(({ student }) => student).join(', ');
     const details = missingGradesColumn
       ? ' Supabase no tiene la columna grades. Ejecuta supabase-grades.sql en el editor SQL de Supabase y vuelve a intentarlo.'
+      : missingRecoveryColumn
+        ? ' Supabase no tiene la columna pending_subjects. Ejecuta supabase-pending-subjects.sql en el editor SQL de Supabase y vuelve a intentarlo.'
       : ` Detalle: ${errors[0].message}`;
     setStatus(`Falló el guardado para: ${failedStudents}.${details}`, 'error');
   } else {
@@ -1370,7 +1459,10 @@ const saveGrades = async () => {
     originalScores = copyJson(draftScores);
     originalEarnedPoints = copyJson(draftEarnedPoints);
     originalManualEarnedPoints = copyJson(manualEarnedPoints);
-    setStatus(`Actividades y notas guardadas. Nota ponderada actualizada para ${savedCount} estudiante(s).`, 'success');
+    const recoveryMessage = recoveryAddedCount
+      ? ` ${recoveryAddedCount} estudiante(s) con nota menor a 10 se registraron en Recuperación.`
+      : '';
+    setStatus(`Actividades y notas guardadas. Nota ponderada actualizada para ${savedCount} estudiante(s).${recoveryMessage}`, 'success');
   }
 };
 

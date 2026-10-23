@@ -110,6 +110,20 @@
     .grade-input:focus, .earned-points-input:focus, .activity-name-input:focus, .activity-weight-input:focus, .filters select:focus, .search input:focus { outline: 2px solid #93c5fd; border-color: #2563eb; }
     .assessment-column { min-width: 150px; text-align: center; }
     .assessment-weight-column, .assessment-weight-value { min-width: 135px; text-align: center; }
+    .activity-header, .activity-weight-header {
+      width: 56px;
+      min-width: 56px;
+      height: 180px;
+      padding: 10px 6px;
+      text-align: center;
+      vertical-align: bottom;
+    }
+    .activity-header > span, .activity-weight-header > span {
+      display: inline-block;
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      white-space: normal;
+    }
     .calculated-grade { font-weight: 700; }
     .final-grade-values { display: flex; justify-content: center; gap: 6px; }
     .final-grade-value { display: grid; gap: 2px; min-width: 68px; padding: 5px 7px; border: 1px solid #d2dbe7; border-radius: 6px; background: #f8fafc; }
@@ -276,13 +290,13 @@
       <p id="statusMessage" class="status" role="status" aria-live="polite"></p>
 
       <section id="pendingSubjectsPanel" class="pending-subjects-editor" aria-labelledby="pendingSubjectsTitle" hidden>
-        <h2 id="pendingSubjectsTitle">Reparación</h2>
-        <p></p>
+        <h2 id="pendingSubjectsTitle">Recuperación</h2>
+        <p>Los estudiantes con calificación de lapso menor a 10 se registran automáticamente aquí al guardar las notas.</p>
         <div class="pending-subjects-controls">
-          <label for="pendingStudentSelect">Registra para cada estudiante la materia en reparación.
+          <label for="pendingStudentSelect">Estudiante
             <select id="pendingStudentSelect"></select>
           </label>
-          <label for="pendingSubjectSelect">Materia a reparar
+          <label for="pendingSubjectSelect">Materia a recuperar
             <select id="pendingSubjectSelect"></select>
           </label>
           <button id="addPendingSubject" class="add-activity-button" type="button">Agregar materia</button>
@@ -291,7 +305,7 @@
           <table class="pending-subjects-table">
             <thead>
               <tr>
-                <th scope="col">Reparación</th>
+                <th scope="col">Recuperación</th>
                 <th scope="col">Revisión 1</th>
                 <th scope="col">Revisión 2</th>
                 <th scope="col">Revisión 3</th>
@@ -304,7 +318,7 @@
           </table>
         </div>
         <div class="pending-subject-actions">
-          <button id="savePendingSubjects" class="save-button" type="button">Guardar reparaciones</button>
+          <button id="savePendingSubjects" class="save-button" type="button">Guardar recuperaciones</button>
         </div>
         <p id="pendingSubjectsStatus" class="pending-status" role="status" aria-live="polite"></p>
       </section>
@@ -312,7 +326,7 @@
 
     <section id="pendingMatterPanel" class="pending-subjects-editor" aria-labelledby="pendingMatterTitle" hidden>
       <h2 id="pendingMatterTitle">Materia Pendiente</h2>
-      <p>Registra las notas M1, M2, M3 y M4 de las materias pendientes de cada estudiante.</p>
+      <p>Registra las notas M1, M2, M3 y M4. Las revisiones menores a 10 se agregan automáticamente a Materia Pendiente.</p>
       <div class="pending-subjects-controls">
         <label for="pendingMatterStudentSelect">Estudiante
           <select id="pendingMatterStudentSelect"></select>
