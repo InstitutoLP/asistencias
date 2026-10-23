@@ -37,6 +37,7 @@ const pendingSubjectsBody = document.getElementById('pendingSubjectsBody');
 const pendingSubjectsStatus = document.getElementById('pendingSubjectsStatus');
 const addPendingSubjectButton = document.getElementById('addPendingSubject');
 const savePendingSubjectsButton = document.getElementById('savePendingSubjects');
+const recoveryStudentCount = document.getElementById('recoveryStudentCount');
 const pendingMatterPanel = document.getElementById('pendingMatterPanel');
 const pendingMatterStudentSelect = document.getElementById('pendingMatterStudentSelect');
 const pendingMatterSubjectSelect = document.getElementById('pendingMatterSubjectSelect');
@@ -70,6 +71,21 @@ const setPendingStatus = (message, type = '') => {
 const setPendingMatterStatus = (message, type = '') => {
   pendingMatterStatus.textContent = message;
   pendingMatterStatus.className = `pending-status${type ? ` ${type}` : ''}`;
+};
+
+const updateRecoveryStudentCount = () => {
+  const count = students.filter((student) => (
+    Array.isArray(student.pendingSubjects)
+      && student.pendingSubjects.some((assignment) => {
+        const revisions = Array.isArray(assignment.revisions) ? assignment.revisions : [];
+        return ![0, 1, 2].every((index) => (
+          Number.isInteger(Number(revisions[index]))
+            && Number(revisions[index]) >= 1
+            && Number(revisions[index]) <= 20
+        ));
+      })
+  )).length;
+  recoveryStudentCount.textContent = `Por hacer: ${count} estudiante${count === 1 ? '' : 's'}`;
 };
 
 const normalizeText = (value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
@@ -902,6 +918,7 @@ const savePendingAssignments = async () => {
       if (pendingMatterStudentId === pendingStudentId) renderPendingMatterAssignments();
     }
     renderPendingAssignments();
+    updateRecoveryStudentCount();
     setPendingStatus(
       automaticallyAddedMatterAssignments.length
         ? `Recuperación guardada. ${automaticallyAddedMatterAssignments.length} materia(s) con las tres revisiones menores a 10 se registraron en Materia Pendiente.`
@@ -1173,6 +1190,7 @@ const loadStudents = async () => {
     matterPendingSubjects: Array.isArray(student.matterPendingSubjects) ? student.matterPendingSubjects : [],
     sheetRecord: matchSheetRecord(student, sheetIndex),
   }));
+  updateRecoveryStudentCount();
   renderPendingSubjectsEditor();
   renderPendingMatterSubjectsEditor();
   loadGradeContext();
@@ -1446,6 +1464,7 @@ const saveGrades = async () => {
   if (recoveryAddedCount && pendingStudentId && pendingDrafts[pendingStudentId]) {
     renderPendingAssignments();
   }
+  updateRecoveryStudentCount();
   if (errors.length) {
     const missingGradesColumn = errors.some(({ message }) => /columna\s+grades|grades.*(schema cache|column)|column.*grades/i.test(message));
     const missingRecoveryColumn = errors.some(({ message }) => /pending_subjects.*(schema cache|column)|column.*pending_subjects/i.test(message));
