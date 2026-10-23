@@ -74,19 +74,40 @@ const setPendingMatterStatus = (message, type = '') => {
   pendingMatterStatus.className = `pending-status${type ? ` ${type}` : ''}`;
 };
 
+const hasPendingRecovery = (student) => (
+  Array.isArray(student.pendingSubjects)
+    && student.pendingSubjects.some((assignment) => {
+      const revisions = Array.isArray(assignment.revisions) ? assignment.revisions : [];
+      return ![0, 1, 2].every((index) => {
+        const grade = revisions[index];
+        return grade !== null && grade !== '' && Number.isInteger(Number(grade))
+          && Number(grade) >= 1 && Number(grade) <= 20;
+      });
+    })
+);
+
+const updatePendingStudentIndicators = () => {
+  [
+    { select: pendingStudentSelect, hasPending: hasPendingRecovery },
+    {
+      select: pendingMatterStudentSelect,
+      hasPending: (student) => Array.isArray(student.matterPendingSubjects)
+        && student.matterPendingSubjects.length > 0,
+    },
+  ].forEach(({ select, hasPending }) => {
+    Array.from(select.options).forEach((option) => {
+      if (!option.value) return;
+      const student = students.find((entry) => String(entry.id) === option.value);
+      const label = `${student?.name || 'Estudiante sin nombre'}${student?.cedula ? ` · ${student.cedula}` : ''}`;
+      option.textContent = student && hasPending(student) ? `🔴 ${label}` : label;
+    });
+  });
+};
+
 const updateRecoveryStudentCount = () => {
-  const count = students.filter((student) => (
-    Array.isArray(student.pendingSubjects)
-      && student.pendingSubjects.some((assignment) => {
-        const revisions = Array.isArray(assignment.revisions) ? assignment.revisions : [];
-        return ![0, 1, 2].every((index) => (
-          Number.isInteger(Number(revisions[index]))
-            && Number(revisions[index]) >= 1
-            && Number(revisions[index]) <= 20
-        ));
-      })
-  )).length;
+  const count = students.filter(hasPendingRecovery).length;
   recoveryStudentCount.textContent = `Por hacer: ${count} estudiante${count === 1 ? '' : 's'}`;
+  updatePendingStudentIndicators();
 };
 
 const updateMatterPendingStudentCount = () => {
@@ -94,6 +115,7 @@ const updateMatterPendingStudentCount = () => {
     Array.isArray(student.matterPendingSubjects) && student.matterPendingSubjects.length > 0
   )).length;
   matterPendingStudentCount.textContent = `Con materia pendiente: ${count}`;
+  updatePendingStudentIndicators();
 };
 
 const normalizeText = (value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
@@ -817,6 +839,7 @@ const renderPendingSubjectsEditor = () => {
   }
   updatePendingSubjectOptions();
   renderPendingAssignments();
+  updatePendingStudentIndicators();
 };
 
 const addPendingAssignment = () => {
@@ -1059,6 +1082,7 @@ const renderPendingMatterSubjectsEditor = () => {
   }
   updatePendingMatterSubjectOptions();
   renderPendingMatterAssignments();
+  updatePendingStudentIndicators();
 };
 
 const addPendingMatterAssignment = () => {
