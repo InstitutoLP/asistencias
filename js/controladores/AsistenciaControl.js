@@ -887,8 +887,11 @@ const applyStudentNameFilter = () => {
   }
 };
 
+const canViewAttendanceTime = () => isProfessorNestor() || Boolean(currentUser?.soloAdmin);
+
 const renderStudentList = () => {
   let students = getCurrentStudents().filter((student) => !isRemovedStudent(student));
+  const showAttendanceTime = canViewAttendanceTime();
   (async () => {
     try {
       const data = await window.EstudiantesModelo.listar({ year: selectedYear, date: selectedDate });
@@ -904,7 +907,7 @@ const renderStudentList = () => {
               phone: row.phone || '',
               grades: row.grades || {},
               status: row.status || '',
-              paymentStatus: row.paymentStatus || row.payment_status || 'no_pago',
+              paymentStatus: row.paymentStatus || row.payment_status || 'no pago',
               paidAmount: row.paidAmount ?? row.paid_amount ?? 0,
               payments: parsePayments(row.payments),
               BoletaVisible: row.BoletaVisible || row.boleta_visible || 'NO',
@@ -950,12 +953,14 @@ const renderStudentList = () => {
               <th style="color: #000000; font-weight: bold;">Representante</th>
             ` : ''}
             <th style="color: #000000; font-weight: bold;">${canMarkAttendance() ? 'Asistencia' : ''}</th>
+            ${showAttendanceTime ? '<th style="color: #000000; font-weight: bold;">Hora de marca</th>' : ''}
           </tr>
         </thead>
         <tbody style="color: #000000;">
           ${students
             .map((student) => {
               const currentStatus = getAttendanceStatus(student, selectedSubject);
+              const attendanceTime = getAttendanceTime(student, selectedSubject);
               const asistClass = currentStatus === 'asistente' ? 'active' : '';
               const inasistClass = currentStatus === 'inasistente' ? 'active' : '';
               const canEditStudents = canManageStudents();
@@ -966,6 +971,7 @@ const renderStudentList = () => {
                 ${attendanceButtons}
                 ${canEditStudents ? `<button class="secondary" style="color: #000000;" data-action="edit" data-id="${student.id}">Editar</button>` : ''}
                 ${canEditStudents ? `<button class="secondary" style="color: #000000;" data-action="delete" data-id="${student.id}">Borrar</button>` : ''}`;
+              const formattedTime = attendanceTime ? formatAttendanceTime(attendanceTime) : '--';
               return `
                 <tr data-id="${student.id}" style="color: #000000;">
                   <td class="student-name-cell" style="color: #000000; font-weight: bold;">
@@ -980,6 +986,7 @@ const renderStudentList = () => {
                   <td data-label="${canMarkAttendance() ? 'Asistencia' : ''}">
                     <div class="state-buttons state-buttons--desktop">${studentActionButtons}</div>
                   </td>
+${showAttendanceTime ? `<td data-label="Hora de marca" style="color: #000000; font-size: 0.85rem;">${formattedTime}</td>` : ''}
                 </tr>
               `;
             })
@@ -1030,6 +1037,20 @@ const updateDateSelection = (event) => {
 const normalizeName = (name) => name.trim().replace(/\s+/g, ' ');
 const normalizarTexto = (texto) => String(texto || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
+const formatAttendanceTime = (isoString) => {
+  if (!isoString) return '--';
+  try {
+    const date = new Date(isoString);
+    if (Number.isNaN(date.getTime())) return '--';
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    return `${hours}:${minutes}:${seconds}`;
+  } catch {
+    return '--';
+  }
+};
+
 const findStudentById = (id) => {
   const students = getCurrentStudents();
   const match = students.find((student) => String(student.id) === String(id));
@@ -1043,7 +1064,15 @@ const findStudentById = (id) => {
 };
 
 const getAttendanceStatus = (student, subjectId) => {
-  return student.attendanceByDate?.[selectedDate]?.[subjectId] || '';
+  const entry = student.attendanceByDate?.[selectedDate]?.[subjectId];
+  if (!entry) return '';
+  return typeof entry === 'object' ? entry.status : entry;
+};
+
+const getAttendanceTime = (student, subjectId) => {
+  const entry = student.attendanceByDate?.[selectedDate]?.[subjectId];
+  if (!entry || typeof entry !== 'object' || !entry.time) return null;
+  return entry.time;
 };
 
 const updateLastEmailStatus = () => {
@@ -1101,12 +1130,15 @@ const setStudentStatus = async (id, status) => {
   student.status = status;
   student.attendanceByDate = student.attendanceByDate || {};
   student.attendanceByDate[selectedDate] = student.attendanceByDate[selectedDate] || {};
-  student.attendanceByDate[selectedDate][selectedSubject] = status;
- 
-  saveData();
+  
   const result = await sincronizarAsistencia(student, status);
+  const attendanceTime = result?.attendanceTime || new Date().toISOString();
+  
+  student.attendanceByDate[selectedDate][selectedSubject] = { status, time: attendanceTime };
+  
+  saveData();
   renderStudentList();
- 
+  
   const statusLabel = status === 'asistente' ? 'asistente' : 'inasistente';
   showAttendanceModal(result?.success
     ? `Se marcó ${statusLabel}. Se incluirá en el resumen diario por materias.`
@@ -1284,6 +1316,69 @@ const handleStudentListClick = (event) => {
   }
 };
 
+const actualizarVistaAsistenciaAdmin = () => {
+  const container = document.getElementById('adminAsistenciaContainer');
+  if (!container) return;
+
+  const fechaInput = document.getElementById('adminFechaAsistenciaInput');
+  const anioSelect = document.getElementById('adminAnioAsistenciaSelect');
+  if (!fechaInput || !anioSelect) return;
+
+  const fechaAsistencia = fechaInput.value || new Date().toISOString().slice(0, 10);
+  const anioFiltro = anioSelect.value;
+
+  let html = `<table style="width:100%; border-collapse:collapse; margin-top:10px; color: #000000;">
+    <thead>
+      <tr style="background:#f1f5f9; text-align:left; color: #000000;">
+        <th style="padding:10px; color: #000000; font-weight:bold;">Año</th>
+        <th style="padding:10px; color: #000000; font-weight:bold;">Nombre</th>
+        <th style="padding:10px; color: #000000; font-weight:bold;">Materia</th>
+        <th style="padding:10px; color: #000000; font-weight:bold;">Estado</th>
+        <th style="padding:10px; color: #000000; font-weight:bold;">Hora de marca</th>
+      </tr>
+    </thead>
+    <tbody style="color: #000000;">`;
+
+  const yearsToShow = anioFiltro ? [Number(anioFiltro)] : [1, 2, 3, 4, 5];
+  let totalRegistros = 0;
+
+  yearsToShow.forEach((year) => {
+    const list = (attendanceData.years[year]?.students || []).filter((student) => !isRemovedStudent(student));
+    list.forEach((student) => {
+      const attendanceByDate = student.attendanceByDate || {};
+      const diaRegistro = attendanceByDate[fechaAsistencia] || {};
+      Object.entries(diaRegistro).forEach(([subject, entry]) => {
+        const status = typeof entry === 'object' ? entry.status : entry;
+        const time = typeof entry === 'object' ? entry.time : null;
+        if (!status) return;
+        totalRegistros++;
+        const formattedTime = time ? formatAttendanceTime(time) : '--';
+        const subjectLabel = getSubjectLabel(year, subject);
+        html += `
+          <tr style="border-bottom:1px solid #e2e8f0; color: #000000;">
+            <td data-label="Año" style="padding:8px; color: #000000;">${year}° Año</td>
+            <td data-label="Nombre" style="padding:8px; font-weight:bold; color: #000000;">${student.name}</td>
+            <td data-label="Materia" style="padding:8px; color: #000000;">${subjectLabel}</td>
+            <td data-label="Estado" style="padding:8px;">
+              <span class="badge-pago" style="${status === 'asistente' ? 'background:#dcfce7; color:#15803d;' : 'background:#fee2e2; color:#dc2626;'}">${status === 'asistente' ? 'Asistente' : 'Inasistente'}</span>
+            </td>
+            <td data-label="Hora de marca" style="padding:8px; color: #000000; font-family: monospace; font-size: 0.85rem;">${formattedTime}</td>
+          </tr>`;
+      });
+    });
+  });
+
+  html += `</tbody></table>`;
+  if (totalRegistros === 0) {
+    html = '<p style="color: #64748b; font-style: italic;">No hay registros de asistencia para la fecha seleccionada.</p>';
+  } else {
+    html += `<p style="margin-top:12px; font-weight:bold; color:#000000;">Total registros: ${totalRegistros}</p>`;
+  }
+  container.innerHTML = html;
+};
+
+window.actualizarVistaAsistenciaAdmin = actualizarVistaAsistenciaAdmin;
+
 const abrirAdminNestor = async () => {
   const esProfNestor = currentUser && (currentUser.name.includes("Néstor") || currentUser.name.includes("Nestor"));
   const esAdminExclusivo = currentUser && currentUser.soloAdmin;
@@ -1293,14 +1388,18 @@ const abrirAdminNestor = async () => {
     return;
   }
 
-  const btnCerrar = document.getElementById('btnCerrarAdmin');
-  if (btnCerrar) {
-    btnCerrar.textContent = currentUser.soloAdmin ? '🚪 Cerrar Sesión' : '← Volver al Sistema';
+  const btnClosingAdmin = document.getElementById('btnClosingAdmin');
+  if (btnClosingAdmin) {
+    btnClosingAdmin.textContent = currentUser.soloAdmin ? '🚪 Cerrar Sesión' : '← Volver al Sistema';
   }
 
   await cargarTodosLosEstudiantesDesdeSupabase();
   configurarPeriodosPago();
   actualizarVistaAdminNestor();
+  // Inicializar la sección de asistencia
+  const adminFechaInput = document.getElementById('adminFechaAsistenciaInput');
+  if (adminFechaInput) adminFechaInput.value = new Date().toISOString().slice(0, 10);
+  actualizarVistaAsistenciaAdmin();
   showView('adminNestor');
 };
 

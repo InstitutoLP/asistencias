@@ -134,10 +134,13 @@ module.exports = async function handler(req, res) {
       });
     }
 
+    const attendanceRecord = Array.isArray(attendanceResult) ? attendanceResult[0] : attendanceResult;
+
     return res.status(200).json({
       success: true,
       student: Array.isArray(patchedStudent) ? patchedStudent[0] : patchedStudent,
-      attendance: Array.isArray(attendanceResult) ? attendanceResult[0] : attendanceResult,
+      attendance: attendanceRecord,
+      attendanceTime: attendanceRecord?.created_at || new Date().toISOString(),
       date: attendanceDate,
     });
   } catch (error) {

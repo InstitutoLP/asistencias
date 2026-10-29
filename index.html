@@ -555,6 +555,32 @@
       </div>
     </div>
 
+    <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px; padding: 20px; margin-bottom: 25px;">
+      <h3 style="margin-top: 0; color: #0f172a;">Registro de Asistencia por Fecha</h3>
+      <div style="display: flex; gap: 12px; align-items: end; flex-wrap: wrap; margin-bottom: 15px;">
+        <label style="display: flex; flex-direction: column; gap: 6px; color: #334155; font-weight: bold;">
+          Fecha
+          <input id="adminFechaAsistenciaInput" type="date" onchange="actualizarVistaAsistenciaAdmin()"
+                 style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; background: #ffffff; color: #000000;">
+        </label>
+        <label style="display: flex; flex-direction: column; gap: 6px; color: #334155; font-weight: bold;">
+          Año
+          <select id="adminAnioAsistenciaSelect" onchange="actualizarVistaAsistenciaAdmin()"
+                  style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; background: #ffffff; color: #000000;">
+            <option value="">Todos los años</option>
+            <option value="1">1° Año</option>
+            <option value="2">2° Año</option>
+            <option value="3">3° Año</option>
+            <option value="4">4° Año</option>
+            <option value="5">5° Año</option>
+          </select>
+        </label>
+      </div>
+      <div id="adminAsistenciaContainer" style="overflow-x: auto;">
+        <!-- La tabla de asistencia se llenará desde JavaScript -->
+      </div>
+    </div>
+
     <!-- Tabla Resumen y Pagos de Estudiantes -->
     <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; overflow-x: auto;">
       <h3 style="margin-top: 0; color: #0f172a;">Control de Pagos y Estudiantes Registrados <span id="periodoPagoActualLabel" style="font-size: 0.9rem; color: #64748b;"></span></h3>
@@ -638,3 +664,8 @@
   <script src="js/controladores/AsistenciaControl.js" defer></script>
 </body>
 </html>
+
+
+
+
+
