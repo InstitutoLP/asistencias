@@ -671,6 +671,12 @@
           } else {
             comparison = markedTime <= emailTime ? 'Registrada antes del envío' : 'Registrada después del envío';
           }
+        } else if (markedAt && /^\d{4}-\d{2}-\d{2}$/.test(record.date || '')) {
+          const markedTime = new Date(markedAt).getTime();
+          const scheduledSendTime = new Date(`${record.date}T16:00:00.000Z`).getTime();
+          if (Number.isFinite(markedTime) && markedTime > scheduledSendTime) {
+            comparison = 'Registrada después de la hora programada de envío (12:00 p. m.)';
+          }
         } else if (sentAt) {
           comparison = 'Correo enviado; hora del pase no disponible';
         }
