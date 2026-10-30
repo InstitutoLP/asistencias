@@ -785,6 +785,7 @@ const sincronizarAsistencia = async (student, status) => {
       subjectLabel: getSubjectLabel(selectedYear, selectedSubject),
       status,
       date: selectedDate,
+      teacherName: currentUser?.name || '',
     });
   } catch (error) {
     console.warn('No se pudo sincronizar la asistencia con el servidor:', error);
@@ -1134,7 +1135,11 @@ const setStudentStatus = async (id, status) => {
   const result = await sincronizarAsistencia(student, status);
   const attendanceTime = result?.attendanceTime || new Date().toISOString();
   
-  student.attendanceByDate[selectedDate][selectedSubject] = { status, time: attendanceTime };
+  student.attendanceByDate[selectedDate][selectedSubject] = {
+    status,
+    time: attendanceTime,
+    teacher: currentUser?.name || '',
+  };
   
   saveData();
   renderStudentList();

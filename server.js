@@ -257,7 +257,7 @@ const getStudentsFromSupabase = async (year, id, cedula, attendanceStartDate, at
   return students;
 };
 
-const writeAttendanceToSupabase = async ({ id, name, cedula, email, phone, year, subject, subjectLabel, status, date }) => {
+const writeAttendanceToSupabase = async ({ id, name, cedula, email, phone, year, subject, subjectLabel, status, date, teacherName }) => {
   const attendanceDate = date || new Date().toISOString().slice(0, 10);
   const studentPayload = {
     id,
@@ -285,7 +285,8 @@ const writeAttendanceToSupabase = async ({ id, name, cedula, email, phone, year,
   const byDate = currentStudent.attendance_by_date || {};
   attendanceMap[subject] = { status, label: subjectLabel || subject };
   byDate[attendanceDate] = byDate[attendanceDate] || {};
-  byDate[attendanceDate][subject] = status;
+  const markedAt = new Date().toISOString();
+  byDate[attendanceDate][subject] = { status, time: markedAt, teacher: teacherName || '' };
 
   await supabaseFetch(`/students?id=eq.${encodeURIComponent(id)}`, {
     method: 'PATCH',
@@ -309,6 +310,8 @@ const writeAttendanceToSupabase = async ({ id, name, cedula, email, phone, year,
     subject,
     subject_label: subjectLabel || subject,
     status,
+    marked_at: markedAt,
+    marked_by: teacherName || null,
   };
 
   if (Array.isArray(existingRows) && existingRows.length) {
@@ -668,7 +671,7 @@ app.get('/api/sync-state', async (req, res) => {
 });
 
 app.post('/api/attendance', async (req, res) => {
-  const { id, name, cedula, email, phone, year, subject, subjectLabel, status, date } = req.body || {};
+  const { id, name, cedula, email, phone, year, subject, subjectLabel, status, date, teacherName } = req.body || {};
   if (!id || !name || !email || !year || !subject || !status) {
     return res.status(400).json({ error: 'Falta id, nombre, correo, año, materia o estado.' });
   }
@@ -689,7 +692,9 @@ app.post('/api/attendance', async (req, res) => {
     };
 
     if (IS_SUPABASE_CONFIGURED) {
-      await writeAttendanceToSupabase({ id, name, cedula, email, phone, year, subject, subjectLabel, status, date: attendanceDate });
+      const attendanceRecord = await writeAttendanceToSupabase({
+        id, name, cedula, email, phone, year, subject, subjectLabel, status, date: attendanceDate, teacherName,
+      });
       const data = loadAttendanceData();
       const currentStudent = data.students[id] || { id, attendance: {}, attendanceByDate: {} };
       currentStudent.name = name;
@@ -700,11 +705,15 @@ app.post('/api/attendance', async (req, res) => {
       currentStudent.attendance[subject] = { status, label: subjectLabel || subject };
       currentStudent.attendanceByDate = currentStudent.attendanceByDate || {};
       currentStudent.attendanceByDate[attendanceDate] = currentStudent.attendanceByDate[attendanceDate] || {};
-      currentStudent.attendanceByDate[attendanceDate][subject] = status;
+      currentStudent.attendanceByDate[attendanceDate][subject] = {
+        status,
+        time: attendanceRecord?.marked_at || new Date().toISOString(),
+        teacher: teacherName || '',
+      };
       data.students[id] = currentStudent;
       saveAttendanceData(data);
 
-      return res.json({ ...currentStudent, success: true });
+      return res.json({ ...currentStudent, success: true, attendanceTime: attendanceRecord?.marked_at });
     }
 
     const data = loadAttendanceData();
@@ -718,22 +727,101 @@ app.post('/api/attendance', async (req, res) => {
     currentStudent.attendance[subject] = { status, label: subjectLabel || subject };
     currentStudent.attendanceByDate = currentStudent.attendanceByDate || {};
     currentStudent.attendanceByDate[attendanceDate] = currentStudent.attendanceByDate[attendanceDate] || {};
-    currentStudent.attendanceByDate[attendanceDate][subject] = status;
+    const attendanceTime = new Date().toISOString();
+    currentStudent.attendanceByDate[attendanceDate][subject] = {
+      status,
+      time: attendanceTime,
+      teacher: teacherName || '',
+    };
     data.students[id] = currentStudent;
     saveAttendanceData(data);
 
-    return res.json({ ...currentStudent, success: true });
+    return res.json({ ...currentStudent, success: true, attendanceTime });
   } catch (error) {
     console.error('Error guardando asistencia:', error);
     return res.status(500).json({ error: error.message || 'No se pudo guardar la asistencia.' });
   }
 });
 
-app.get('/api/attendance', (req, res) => {
-  const data = loadAttendanceData();
-  const year = req.query.year;
-  const students = Object.values(data.students).filter((student) => !year || String(student.year) === String(year));
-  res.json({ students, lastDailyEmailSentDate: data.lastDailyEmailSentDate });
+app.get('/api/attendance', async (req, res) => {
+  const { startDate, endDate } = req.query;
+  const isValidDate = (date) => typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date);
+  if ((startDate && !isValidDate(startDate)) || (endDate && !isValidDate(endDate))) {
+    return res.status(400).json({ error: 'El rango de fechas de asistencia no es válido.' });
+  }
+  if (startDate && endDate && startDate > endDate) {
+    return res.status(400).json({ error: 'La fecha inicial no puede ser posterior a la fecha final.' });
+  }
+
+  try {
+    if (IS_SUPABASE_CONFIGURED) {
+      const dateFilters = [
+        'select=student_id,date,subject,subject_label,status,marked_at,marked_by,created_at,email_sent_at,last_email_sent_at',
+        'order=date.desc,marked_at.desc',
+      ];
+      if (startDate) dateFilters.push(`date=gte.${encodeURIComponent(startDate)}`);
+      if (endDate) dateFilters.push(`date=lte.${encodeURIComponent(endDate)}`);
+      const attendanceRows = [];
+      const pageSize = 1000;
+      for (let offset = 0; ; offset += pageSize) {
+        const response = await supabaseFetch(`/attendances?${dateFilters.join('&')}`, {
+          headers: { Range: `${offset}-${offset + pageSize - 1}` },
+        });
+        const batch = await response.json().catch(() => []);
+        if (!response.ok) throw new Error(batch.message || batch.error || 'No se pudo consultar el historial de asistencia.');
+        if (!Array.isArray(batch)) throw new Error('Supabase devolvió un historial de asistencia inválido.');
+        attendanceRows.push(...batch);
+        if (batch.length < pageSize) break;
+      }
+
+      const studentsResponse = await supabaseFetch('/students?select=id,name,year');
+      const students = await studentsResponse.json().catch(() => []);
+      if (!studentsResponse.ok) throw new Error(students.message || students.error || 'No se pudieron consultar los estudiantes.');
+      if (!Array.isArray(students)) throw new Error('Supabase devolvió una lista de estudiantes inválida.');
+      const studentsById = new Map(students.map((student) => [String(student.id), student]));
+      return res.json({
+        attendances: attendanceRows.map((record) => {
+          const student = studentsById.get(String(record.student_id));
+          return {
+            ...record,
+            marked_at: record.marked_at || record.created_at || null,
+            student_name: student?.name || 'Estudiante no encontrado',
+            year: student?.year ?? null,
+          };
+        }),
+      });
+    }
+
+    const data = loadAttendanceData();
+    const attendances = Object.values(data.students).flatMap((student) => (
+      Object.entries(student.attendanceByDate || {}).flatMap(([date, subjects]) => (
+        (!startDate || date >= startDate) && (!endDate || date <= endDate)
+          ? Object.entries(subjects || {}).map(([subject, savedEntry]) => {
+            const entry = savedEntry && typeof savedEntry === 'object'
+              ? savedEntry
+              : { status: savedEntry };
+            return {
+              student_id: student.id,
+              student_name: student.name || 'Estudiante no encontrado',
+              year: student.year ?? null,
+              date,
+              subject,
+              subject_label: entry.label || subject,
+              status: entry.status,
+              marked_at: entry.time || null,
+              marked_by: entry.teacher || null,
+              email_sent_at: entry.emailSentAt || null,
+              last_email_sent_at: entry.lastEmailSentAt || null,
+            };
+          })
+          : []
+      ))
+    ));
+    return res.json({ attendances });
+  } catch (error) {
+    console.error('Error consultando historial de asistencia:', error);
+    return res.status(500).json({ error: error.message || 'No se pudo consultar el historial de asistencia.' });
+  }
 });
 
 app.post('/api/send-daily-emails', async (req, res) => {

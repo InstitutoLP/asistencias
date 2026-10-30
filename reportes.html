@@ -63,6 +63,8 @@
       box-sizing: border-box;
     }
     .search-input { width: 100%; max-width: 300px; }
+    .history-table { min-width: 980px; }
+    .history-status { font-weight: bold; }
 
     .quick-ranges { display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap; }
 
@@ -262,6 +264,41 @@
       </div>
     </div>
 
+    <div class="card">
+      <div class="table-header">
+        <div>
+          <h3 style="margin: 0;">Historial de pase de asistencia</h3>
+          <p style="margin: 6px 0 0; color: #666;">Muestra quién registró cada asistencia y si quedó guardada antes o después del último envío de correo.</p>
+        </div>
+        <input
+          type="text"
+          id="attendanceHistorySearch"
+          class="search-input"
+          placeholder="Buscar estudiante o profesor..."
+          oninput="filtrarHistorialAsistencia()"
+        >
+      </div>
+      <p id="attendanceHistoryMessage" role="status" style="color: #666;">Cargando historial...</p>
+      <div style="overflow-x: auto;">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Hora del pase</th>
+              <th>Estudiante</th>
+              <th>Año</th>
+              <th>Materia</th>
+              <th>Estado</th>
+              <th>Profesor</th>
+              <th>Hora del último correo</th>
+              <th>Comparación con el correo</th>
+            </tr>
+          </thead>
+          <tbody id="attendanceHistoryBody"></tbody>
+        </table>
+      </div>
+    </div>
+
   </div>
 
   <script src="/js/config/attendance-calculations.js"></script>
@@ -269,6 +306,8 @@
     let chartGeneral = null;
     let chartTopFaltas = null;
     let listaEstudiantesActual = [];
+    let historialAsistencia = [];
+    let historialRequestId = 0;
 
     const SUBJECTS_BY_YEAR = {
       1: [{ id: 'matematicas', label: 'Matemáticas' }, { id: 'castellano', label: 'Castellano' }, { id: 'ingles', label: 'Inglés' }, { id: 'frances', label: 'Francés' }, { id: 'educacion-fisica', label: 'Educación Física' }, { id: 'arte-patrimonio', label: 'Arte y Patrimonio' }, { id: 'ciencias-naturales', label: 'Ciencias Naturales' }, { id: 'ghc', label: 'GHC' }, { id: 'orientacion-convivencia', label: 'Orientación y Convivencia' }, { id: 'crp', label: 'CRP' }],
@@ -370,6 +409,7 @@
       const selectedSubject = document.getElementById('subjectFilter').value;
       const startDate = document.getElementById('startDateFilter').value;
       const endDate = document.getElementById('endDateFilter').value;
+      actualizarHistorialAsistencia(startDate, endDate, selectedYear, selectedSubject);
 
       fetch('/api/students', { cache: 'no-store' })
         .then(response => response.ok ? response.json() : [])
@@ -452,6 +492,124 @@
           document.getElementById('numAsistencias').textContent = '0';
           document.getElementById('numInasistencias').textContent = '0';
         });
+    }
+
+    const formatDateTimeVenezuela = (value) => {
+      if (!value) return 'Sin registro';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return 'Sin registro';
+      return new Intl.DateTimeFormat('es-VE', {
+        timeZone: 'America/Caracas',
+        dateStyle: 'short',
+        timeStyle: 'medium',
+      }).format(date);
+    };
+
+    const formatDate = (value) => {
+      if (!value) return 'Sin fecha';
+      const [year, month, day] = value.split('-');
+      return `${day}/${month}/${year}`;
+    };
+
+    function actualizarHistorialAsistencia(startDate, endDate, year, subject) {
+      const requestId = ++historialRequestId;
+      const params = new URLSearchParams();
+      if (startDate) params.set('startDate', startDate);
+      if (endDate) params.set('endDate', endDate);
+      const message = document.getElementById('attendanceHistoryMessage');
+      message.textContent = 'Cargando historial...';
+
+      fetch(`/api/attendance?${params.toString()}`, { cache: 'no-store' })
+        .then(async (response) => {
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(result.error || `Error ${response.status} al consultar el historial.`);
+          return result;
+        })
+        .then((result) => {
+          if (requestId !== historialRequestId) return;
+          if (!Array.isArray(result.attendances)) {
+            throw new Error('El servidor devolvió un historial de asistencia inválido.');
+          }
+          historialAsistencia = result.attendances
+            .filter((record) => year === 'general' || Number(record.year) === Number(year))
+            .filter((record) => subject === 'general' || record.subject === subject)
+            .sort((a, b) => {
+              const dateOrder = String(b.date || '').localeCompare(String(a.date || ''));
+              return dateOrder || String(b.marked_at || '').localeCompare(String(a.marked_at || ''));
+            });
+          renderizarHistorialAsistencia();
+        })
+        .catch((error) => {
+          if (requestId !== historialRequestId) return;
+          historialAsistencia = [];
+          document.getElementById('attendanceHistoryBody').replaceChildren();
+          message.textContent = `No se pudo cargar el historial: ${error.message}`;
+          message.style.color = 'var(--danger)';
+        });
+    }
+
+    function renderizarHistorialAsistencia() {
+      const tbody = document.getElementById('attendanceHistoryBody');
+      const message = document.getElementById('attendanceHistoryMessage');
+      const query = document.getElementById('attendanceHistorySearch').value.toLocaleLowerCase().trim();
+      const records = historialAsistencia.filter((record) => (
+        `${record.student_name || ''} ${record.marked_by || ''}`.toLocaleLowerCase().includes(query)
+      ));
+      tbody.replaceChildren();
+
+      if (!records.length) {
+        message.textContent = historialAsistencia.length
+          ? 'No hay registros que coincidan con la búsqueda.'
+          : 'No hay registros de asistencia para los filtros seleccionados.';
+        message.style.color = '#666';
+        return;
+      }
+
+      message.textContent = `${records.length} registro(s) de asistencia.`;
+      message.style.color = '#666';
+      records.forEach((record) => {
+        const markedAt = record.marked_at || record.created_at;
+        const sentAt = record.last_email_sent_at || record.email_sent_at;
+        let comparison = 'Pendiente de envío';
+        if (sentAt && markedAt) {
+          const markedTime = new Date(markedAt).getTime();
+          const emailTime = new Date(sentAt).getTime();
+          if (!Number.isFinite(markedTime) || !Number.isFinite(emailTime)) {
+            comparison = 'No se pudo comparar la hora';
+          } else {
+            comparison = markedTime <= emailTime ? 'Registrada antes del envío' : 'Registrada después del envío';
+          }
+        } else if (sentAt) {
+          comparison = 'Correo enviado; hora del pase no disponible';
+        }
+
+        const row = document.createElement('tr');
+        const values = [
+          formatDate(record.date),
+          formatDateTimeVenezuela(markedAt),
+          record.student_name || 'Estudiante no encontrado',
+          record.year ? `${record.year}°` : 'Sin año',
+          record.subject_label || record.subject || 'Sin materia',
+          record.status === 'asistente' ? 'Asistente' : record.status === 'inasistente' ? 'Inasistente' : 'Sin estado',
+          record.marked_by || 'No registrado',
+          formatDateTimeVenezuela(sentAt),
+          comparison,
+        ];
+        values.forEach((value, index) => {
+          const cell = document.createElement('td');
+          cell.textContent = value;
+          if (index === 5) {
+            cell.className = 'history-status';
+            cell.style.color = record.status === 'asistente' ? 'var(--success)' : 'var(--danger)';
+          }
+          row.appendChild(cell);
+        });
+        tbody.appendChild(row);
+      });
+    }
+
+    function filtrarHistorialAsistencia() {
+      renderizarHistorialAsistencia();
     }
 
     function renderizarTabla(estudiantes) {

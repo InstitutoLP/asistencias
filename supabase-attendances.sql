@@ -30,6 +30,24 @@ create table if not exists public.attendances (
 alter table public.attendances
 add column if not exists email_sent_at timestamptz;
 
+alter table public.attendances
+add column if not exists marked_at timestamptz;
+
+alter table public.attendances
+add column if not exists marked_by text;
+
+alter table public.attendances
+add column if not exists last_email_sent_at timestamptz;
+
+update public.attendances
+set marked_at = created_at
+where marked_at is null;
+
+update public.attendances
+set last_email_sent_at = email_sent_at
+where last_email_sent_at is null
+  and email_sent_at is not null;
+
 alter table public.students enable row level security;
 alter table public.attendances enable row level security;
 

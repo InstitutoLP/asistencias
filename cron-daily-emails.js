@@ -52,7 +52,7 @@ Aquí está el resumen diario de asistencia del estudiante ${student.name} para 
 Materias:
 ${lines.join('\n')}
 
-Este correo se envía automáticamente a las 2:15 PM, hora de Venezuela, con la asistencia registrada hasta ese momento.
+Este correo se envía automáticamente a las 12:00 PM, hora de Venezuela, con la asistencia registrada hasta ese momento.
 
 Saludos cordiales,
 Sistema de Gestión del U.E.P Instituto Libertad Sede Petare`;
@@ -83,10 +83,11 @@ const markAttendancesAsSent = async (attendances) => {
     throw new Error('No se pudieron identificar las asistencias incluidas en el correo.');
   }
 
+  const sentAt = new Date().toISOString();
   const response = await supabaseFetch(`/attendances?id=in.(${ids.join(',')})&email_sent_at=is.null`, {
     method: 'PATCH',
     headers: { Prefer: 'return=minimal' },
-    body: JSON.stringify({ email_sent_at: new Date().toISOString() }),
+    body: JSON.stringify({ email_sent_at: sentAt, last_email_sent_at: sentAt }),
   });
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
