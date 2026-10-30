@@ -774,7 +774,7 @@ app.get('/api/attendance', async (req, res) => {
         if (batch.length < pageSize) break;
       }
 
-      const studentsResponse = await supabaseFetch('/students?select=id,name,year');
+      const studentsResponse = await supabaseFetch('/students?select=id,name,year,cedula');
       const students = await studentsResponse.json().catch(() => []);
       if (!studentsResponse.ok) throw new Error(students.message || students.error || 'No se pudieron consultar los estudiantes.');
       if (!Array.isArray(students)) throw new Error('Supabase devolvió una lista de estudiantes inválida.');
@@ -787,6 +787,7 @@ app.get('/api/attendance', async (req, res) => {
             marked_at: record.marked_at || record.created_at || null,
             student_name: student?.name || 'Estudiante no encontrado',
             year: student?.year ?? null,
+            cedula: student?.cedula || '',
           };
         }),
       });
@@ -803,6 +804,7 @@ app.get('/api/attendance', async (req, res) => {
             return {
               student_id: student.id,
               student_name: student.name || 'Estudiante no encontrado',
+              cedula: student.cedula || '',
               year: student.year ?? null,
               date,
               subject,

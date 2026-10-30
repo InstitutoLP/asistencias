@@ -65,6 +65,7 @@
     .search-input { width: 100%; max-width: 300px; }
     .history-table { min-width: 980px; }
     .history-status { font-weight: bold; }
+    .history-filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
 
     .quick-ranges { display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap; }
 
@@ -130,6 +131,7 @@
       .chart-container { height: 240px; }
       .table-header { align-items: stretch; }
       .table-header h3 { font-size: 1.1rem; }
+      .history-filters { flex-direction: column; align-items: stretch; }
       .card > div[style*="overflow-x"] { overflow-x: auto; -webkit-overflow-scrolling: touch; }
       table { min-width: 620px; }
     }
@@ -274,9 +276,28 @@
           type="text"
           id="attendanceHistorySearch"
           class="search-input"
-          placeholder="Buscar estudiante o profesor..."
+          placeholder="Buscar por nombre, cédula o profesor..."
           oninput="filtrarHistorialAsistencia()"
         >
+      </div>
+      <div class="history-filters">
+        <div class="filter-group">
+          <label for="attendanceHistoryYear"><strong>Año:</strong></label>
+          <select id="attendanceHistoryYear" onchange="actualizarMateriasHistorial()">
+            <option value="general">Todos los años</option>
+            <option value="1">1° Año</option>
+            <option value="2">2° Año</option>
+            <option value="3">3° Año</option>
+            <option value="4">4° Año</option>
+            <option value="5">5° Año</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="attendanceHistorySubject"><strong>Materia:</strong></label>
+          <select id="attendanceHistorySubject" onchange="filtrarHistorialAsistencia()">
+            <option value="general">Todas las materias</option>
+          </select>
+        </div>
       </div>
       <p id="attendanceHistoryMessage" role="status" style="color: #666;">Cargando historial...</p>
       <div style="overflow-x: auto;">
@@ -297,6 +318,9 @@
           <tbody id="attendanceHistoryBody"></tbody>
         </table>
       </div>
+      <div style="text-align: center; margin-top: 14px;">
+        <button id="attendanceHistoryToggle" class="btn btn-secondary hidden" type="button" onclick="alternarHistorialAsistencia()">Ver más</button>
+      </div>
     </div>
 
   </div>
@@ -308,6 +332,8 @@
     let listaEstudiantesActual = [];
     let historialAsistencia = [];
     let historialRequestId = 0;
+    let historialExpandido = false;
+    const HISTORY_INITIAL_LIMIT = 5;
 
     const SUBJECTS_BY_YEAR = {
       1: [{ id: 'matematicas', label: 'Matemáticas' }, { id: 'castellano', label: 'Castellano' }, { id: 'ingles', label: 'Inglés' }, { id: 'frances', label: 'Francés' }, { id: 'educacion-fisica', label: 'Educación Física' }, { id: 'arte-patrimonio', label: 'Arte y Patrimonio' }, { id: 'ciencias-naturales', label: 'Ciencias Naturales' }, { id: 'ghc', label: 'GHC' }, { id: 'orientacion-convivencia', label: 'Orientación y Convivencia' }, { id: 'crp', label: 'CRP' }],
@@ -409,7 +435,7 @@
       const selectedSubject = document.getElementById('subjectFilter').value;
       const startDate = document.getElementById('startDateFilter').value;
       const endDate = document.getElementById('endDateFilter').value;
-      actualizarHistorialAsistencia(startDate, endDate, selectedYear, selectedSubject);
+      actualizarHistorialAsistencia(startDate, endDate);
 
       fetch('/api/students', { cache: 'no-store' })
         .then(response => response.ok ? response.json() : [])
@@ -511,12 +537,13 @@
       return `${day}/${month}/${year}`;
     };
 
-    function actualizarHistorialAsistencia(startDate, endDate, year, subject) {
+    function actualizarHistorialAsistencia(startDate, endDate) {
       const requestId = ++historialRequestId;
       const params = new URLSearchParams();
       if (startDate) params.set('startDate', startDate);
       if (endDate) params.set('endDate', endDate);
       const message = document.getElementById('attendanceHistoryMessage');
+      historialExpandido = false;
       message.textContent = 'Cargando historial...';
 
       fetch(`/api/attendance?${params.toString()}`, { cache: 'no-store' })
@@ -530,19 +557,18 @@
           if (!Array.isArray(result.attendances)) {
             throw new Error('El servidor devolvió un historial de asistencia inválido.');
           }
-          historialAsistencia = result.attendances
-            .filter((record) => year === 'general' || Number(record.year) === Number(year))
-            .filter((record) => subject === 'general' || record.subject === subject)
-            .sort((a, b) => {
-              const dateOrder = String(b.date || '').localeCompare(String(a.date || ''));
-              return dateOrder || String(b.marked_at || '').localeCompare(String(a.marked_at || ''));
-            });
+          historialAsistencia = result.attendances.sort((a, b) => {
+            const dateOrder = String(b.date || '').localeCompare(String(a.date || ''));
+            return dateOrder || String(b.marked_at || '').localeCompare(String(a.marked_at || ''));
+          });
+          actualizarMateriasHistorial(false);
           renderizarHistorialAsistencia();
         })
         .catch((error) => {
           if (requestId !== historialRequestId) return;
           historialAsistencia = [];
           document.getElementById('attendanceHistoryBody').replaceChildren();
+          document.getElementById('attendanceHistoryToggle').classList.add('hidden');
           message.textContent = `No se pudo cargar el historial: ${error.message}`;
           message.style.color = 'var(--danger)';
         });
@@ -552,10 +578,18 @@
       const tbody = document.getElementById('attendanceHistoryBody');
       const message = document.getElementById('attendanceHistoryMessage');
       const query = document.getElementById('attendanceHistorySearch').value.toLocaleLowerCase().trim();
-      const records = historialAsistencia.filter((record) => (
-        `${record.student_name || ''} ${record.marked_by || ''}`.toLocaleLowerCase().includes(query)
-      ));
+      const selectedYear = document.getElementById('attendanceHistoryYear').value;
+      const selectedSubject = document.getElementById('attendanceHistorySubject').value;
+      const records = historialAsistencia.filter((record) => {
+        const searchableText = `${record.student_name || ''} ${record.cedula || ''} ${record.marked_by || ''}`.toLocaleLowerCase();
+        return (selectedYear === 'general' || Number(record.year) === Number(selectedYear))
+          && (selectedSubject === 'general' || record.subject === selectedSubject)
+          && searchableText.includes(query);
+      });
       tbody.replaceChildren();
+      const toggleButton = document.getElementById('attendanceHistoryToggle');
+      toggleButton.classList.toggle('hidden', records.length <= HISTORY_INITIAL_LIMIT);
+      toggleButton.textContent = historialExpandido ? 'Ver menos' : 'Ver más';
 
       if (!records.length) {
         message.textContent = historialAsistencia.length
@@ -567,7 +601,8 @@
 
       message.textContent = `${records.length} registro(s) de asistencia.`;
       message.style.color = '#666';
-      records.forEach((record) => {
+      const recordsToShow = historialExpandido ? records : records.slice(0, HISTORY_INITIAL_LIMIT);
+      recordsToShow.forEach((record) => {
         const markedAt = record.marked_at || record.created_at;
         const sentAt = record.last_email_sent_at || record.email_sent_at;
         let comparison = 'Pendiente de envío';
@@ -609,6 +644,34 @@
     }
 
     function filtrarHistorialAsistencia() {
+      historialExpandido = false;
+      renderizarHistorialAsistencia();
+    }
+
+    function actualizarMateriasHistorial(resetSubject = true) {
+      const year = document.getElementById('attendanceHistoryYear').value;
+      const subjectSelect = document.getElementById('attendanceHistorySubject');
+      const selectedSubject = resetSubject ? 'general' : subjectSelect.value;
+      const availableSubjects = new Map();
+      historialAsistencia
+        .filter((record) => year === 'general' || Number(record.year) === Number(year))
+        .forEach((record) => {
+          if (record.subject) {
+            availableSubjects.set(record.subject, record.subject_label || record.subject);
+          }
+        });
+
+      subjectSelect.replaceChildren(new Option('Todas las materias', 'general'));
+      [...availableSubjects.entries()]
+        .sort((a, b) => a[1].localeCompare(b[1], 'es'))
+        .forEach(([id, label]) => subjectSelect.add(new Option(label, id)));
+      subjectSelect.value = availableSubjects.has(selectedSubject) ? selectedSubject : 'general';
+      historialExpandido = false;
+      renderizarHistorialAsistencia();
+    }
+
+    function alternarHistorialAsistencia() {
+      historialExpandido = !historialExpandido;
       renderizarHistorialAsistencia();
     }
 

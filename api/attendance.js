@@ -67,7 +67,7 @@ const listAttendanceHistory = async (req, res) => {
 
   if (!records.length) return res.status(200).json({ attendances: [] });
 
-  const studentsResponse = await supabaseFetch('/students?select=id,name,year');
+  const studentsResponse = await supabaseFetch('/students?select=id,name,year,cedula');
   const students = await studentsResponse.json().catch(() => []);
   if (!studentsResponse.ok) {
     throw new Error(students.message || students.error || 'No se pudieron consultar los estudiantes.');
@@ -83,6 +83,7 @@ const listAttendanceHistory = async (req, res) => {
         marked_at: record.marked_at || record.created_at || null,
         student_name: student?.name || 'Estudiante no encontrado',
         year: student?.year ?? null,
+        cedula: student?.cedula || '',
       };
     }),
   });
