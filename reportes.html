@@ -65,7 +65,37 @@
     .search-input { width: 100%; max-width: 300px; }
     .history-table { min-width: 980px; }
     .history-status { font-weight: bold; }
-    .history-filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+    .history-filters {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      gap: 14px;
+      padding: 16px;
+      margin: 4px 0 14px;
+      border: 1px solid #e1e7ef;
+      border-radius: 10px;
+      background: #f8fafc;
+    }
+    .history-filters .filter-group { min-width: 165px; }
+    .history-filters label { color: #344054; font-size: 13px; }
+    .history-filters select,
+    .history-filters input[type="date"] {
+      min-width: 165px;
+      padding: 9px 11px;
+      border: 1px solid #cbd5e1;
+      border-radius: 7px;
+      background: #fff;
+      color: #263445;
+      font: inherit;
+      box-sizing: border-box;
+    }
+    .history-filters select:focus,
+    .history-filters input[type="date"]:focus {
+      outline: 2px solid rgba(0, 123, 255, 0.18);
+      border-color: var(--primary);
+    }
+    .history-date-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .history-date-actions .btn { border-radius: 6px; }
 
     .quick-ranges { display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap; }
 
@@ -131,7 +161,11 @@
       .chart-container { height: 240px; }
       .table-header { align-items: stretch; }
       .table-header h3 { font-size: 1.1rem; }
-      .history-filters { flex-direction: column; align-items: stretch; }
+      .history-filters { flex-direction: column; align-items: stretch; gap: 12px; padding: 12px; }
+      .history-filters .filter-group,
+      .history-filters select,
+      .history-filters input[type="date"] { width: 100%; min-width: 0; }
+      .history-date-actions { display: grid; grid-template-columns: repeat(2, 1fr); }
       .card > div[style*="overflow-x"] { overflow-x: auto; -webkit-overflow-scrolling: touch; }
       table { min-width: 620px; }
     }
@@ -281,6 +315,23 @@
         >
       </div>
       <div class="history-filters">
+        <div class="filter-group">
+          <label for="attendanceHistoryStartDate"><strong>Desde:</strong></label>
+          <input type="date" id="attendanceHistoryStartDate" onchange="filtrarHistorialPorFecha()">
+        </div>
+        <div class="filter-group">
+          <label for="attendanceHistoryEndDate"><strong>Hasta:</strong></label>
+          <input type="date" id="attendanceHistoryEndDate" onchange="filtrarHistorialPorFecha()">
+        </div>
+        <div class="filter-group">
+          <label><strong>Rango rápido:</strong></label>
+          <div class="history-date-actions">
+            <button type="button" class="btn btn-secondary" onclick="setHistoryQuickRange('today')">Hoy</button>
+            <button type="button" class="btn btn-secondary" onclick="setHistoryQuickRange('week')">Esta semana</button>
+            <button type="button" class="btn btn-secondary" onclick="setHistoryQuickRange('month')">Este mes</button>
+            <button type="button" class="btn btn-secondary" onclick="setHistoryQuickRange('all')">Ver todo</button>
+          </div>
+        </div>
         <div class="filter-group">
           <label for="attendanceHistoryYear"><strong>Año:</strong></label>
           <select id="attendanceHistoryYear" onchange="actualizarMateriasHistorial()">
@@ -539,6 +590,12 @@
 
     function actualizarHistorialAsistencia(startDate, endDate) {
       const requestId = ++historialRequestId;
+      const startInput = document.getElementById('attendanceHistoryStartDate');
+      const endInput = document.getElementById('attendanceHistoryEndDate');
+      if (startDate !== undefined) startInput.value = startDate;
+      if (endDate !== undefined) endInput.value = endDate;
+      startDate = startInput.value;
+      endDate = endInput.value;
       const params = new URLSearchParams();
       if (startDate) params.set('startDate', startDate);
       if (endDate) params.set('endDate', endDate);
@@ -646,6 +703,45 @@
     function filtrarHistorialAsistencia() {
       historialExpandido = false;
       renderizarHistorialAsistencia();
+    }
+
+    function filtrarHistorialPorFecha() {
+      const startDate = document.getElementById('attendanceHistoryStartDate').value;
+      const endDate = document.getElementById('attendanceHistoryEndDate').value;
+      actualizarHistorialAsistencia(startDate, endDate);
+    }
+
+    function setHistoryQuickRange(range) {
+      const startInput = document.getElementById('attendanceHistoryStartDate');
+      const endInput = document.getElementById('attendanceHistoryEndDate');
+      const today = new Date();
+      const localDate = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+
+      if (range === 'today') {
+        startInput.value = localDate(today);
+        endInput.value = localDate(today);
+      } else if (range === 'week') {
+        const firstDay = new Date(today);
+        const dayOfWeek = (firstDay.getDay() + 6) % 7;
+        firstDay.setDate(firstDay.getDate() - dayOfWeek);
+        const lastDay = new Date(firstDay);
+        lastDay.setDate(firstDay.getDate() + 6);
+        startInput.value = localDate(firstDay);
+        endInput.value = localDate(lastDay);
+      } else if (range === 'month') {
+        startInput.value = localDate(new Date(today.getFullYear(), today.getMonth(), 1));
+        endInput.value = localDate(new Date(today.getFullYear(), today.getMonth() + 1, 0));
+      } else {
+        startInput.value = '';
+        endInput.value = '';
+      }
+
+      filtrarHistorialPorFecha();
     }
 
     function actualizarMateriasHistorial(resetSubject = true) {
