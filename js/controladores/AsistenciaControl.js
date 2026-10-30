@@ -1401,10 +1401,6 @@ const abrirAdminNestor = async () => {
   await cargarTodosLosEstudiantesDesdeSupabase();
   configurarPeriodosPago();
   actualizarVistaAdminNestor();
-  // Inicializar la sección de asistencia
-  const adminFechaInput = document.getElementById('adminFechaAsistenciaInput');
-  if (adminFechaInput) adminFechaInput.value = new Date().toISOString().slice(0, 10);
-  actualizarVistaAsistenciaAdmin();
   showView('adminNestor');
 };
 

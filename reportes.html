@@ -300,6 +300,64 @@
       </div>
     </div>
 
+    <!-- Registro de Asistencia por Fecha -->
+    <div class="card" id="seccionAsistenciaFecha">
+      <div style="margin-bottom: 16px;">
+        <h3 style="margin: 0 0 6px 0;">📋 Registro de Asistencia por Fecha</h3>
+        <p style="margin: 0; color: #666; font-size: 14px;">Consulta quién asistió y qué profesor registró la asistencia en una fecha específica.</p>
+      </div>
+      <div style="display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 16px; padding: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+        <div style="display: flex; flex-direction: column; gap: 5px;">
+          <label for="asistFechaFiltro" style="font-weight: bold; font-size: 13px; color: #334155;">Fecha</label>
+          <input type="date" id="asistFechaFiltro" onchange="renderAsistenciaFecha()"
+                 style="padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; color: #000; font-size: 14px;">
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px;">
+          <label for="asistAnioFiltro" style="font-weight: bold; font-size: 13px; color: #334155;">Año académico</label>
+          <select id="asistAnioFiltro" onchange="renderAsistenciaFecha()"
+                  style="padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; color: #000; font-size: 14px;">
+            <option value="">Todos los años</option>
+            <option value="1">1° Año</option>
+            <option value="2">2° Año</option>
+            <option value="3">3° Año</option>
+            <option value="4">4° Año</option>
+            <option value="5">5° Año</option>
+          </select>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px;">
+          <label for="asistMateriaFiltro" style="font-weight: bold; font-size: 13px; color: #334155;">Materia</label>
+          <select id="asistMateriaFiltro" onchange="renderAsistenciaFecha()"
+                  style="padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; color: #000; font-size: 14px;">
+            <option value="">Todas las materias</option>
+          </select>
+        </div>
+      </div>
+      <p id="asistFechaMsg" style="color: #666; font-size: 14px; margin: 0 0 10px 0;">Selecciona una fecha para ver los registros.</p>
+      <div style="overflow-x: auto;">
+        <table id="asistFechaTable" style="width: 100%; border-collapse: collapse; display: none;">
+          <thead>
+            <tr style="background: #f1f5f9; text-align: left;">
+              <th style="padding: 10px; font-weight: bold; color: #1e293b; white-space: nowrap;">Año</th>
+              <th style="padding: 10px; font-weight: bold; color: #1e293b;">Nombre</th>
+              <th style="padding: 10px; font-weight: bold; color: #1e293b;">Materia</th>
+              <th style="padding: 10px; font-weight: bold; color: #1e293b;">Estado</th>
+              <th style="padding: 10px; font-weight: bold; color: #1e293b; white-space: nowrap;">Hora de marca</th>
+              <th style="padding: 10px; font-weight: bold; color: #1e293b;">Profesor</th>
+            </tr>
+          </thead>
+          <tbody id="asistFechaTbody"></tbody>
+        </table>
+      </div>
+      <!-- Paginación -->
+      <div id="asistFechaPaginacion" style="display: none; align-items: center; justify-content: space-between; margin-top: 14px; gap: 12px; flex-wrap: wrap;">
+        <span id="asistFechaPaginaInfo" style="font-size: 13px; color: #64748b;"></span>
+        <div style="display: flex; gap: 8px;">
+          <button id="asistFechaBtnAnterior" type="button" class="btn btn-secondary" onclick="cambiarPaginaAsistencia(-1)" style="padding: 7px 16px;">← Anterior</button>
+          <button id="asistFechaBtnSiguiente" type="button" class="btn btn-secondary" onclick="cambiarPaginaAsistencia(1)" style="padding: 7px 16px;">Siguiente →</button>
+        </div>
+      </div>
+    </div>
+
     <div class="card">
       <div class="table-header">
         <div>
@@ -378,6 +436,143 @@
 
   <script src="/js/config/attendance-calculations.js"></script>
   <script>
+    let asistFechaRegistros = [];
+    let asistFechaPagina = 0;
+    const ASIST_POR_PAGINA = 6;
+
+    function formatHoraLocal(isoString) {
+      if (!isoString) return '--';
+      try {
+        const date = new Date(isoString);
+        if (Number.isNaN(date.getTime())) return '--';
+        return new Intl.DateTimeFormat('es-VE', {
+          timeZone: 'America/Caracas',
+          hour: '2-digit', minute: '2-digit', second: '2-digit',
+        }).format(date);
+      } catch { return '--'; }
+    }
+
+    function actualizarMateriasAsistFecha() {
+      const anio = document.getElementById('asistAnioFiltro').value;
+      const matSelect = document.getElementById('asistMateriaFiltro');
+      const prevVal = matSelect.value;
+      const materiasVistas = new Map();
+      historialAsistencia.forEach((r) => {
+        if (anio && Number(r.year) !== Number(anio)) return;
+        if (r.subject) materiasVistas.set(r.subject, r.subject_label || r.subject);
+      });
+      matSelect.replaceChildren(new Option('Todas las materias', ''));
+      [...materiasVistas.entries()]
+        .sort((a, b) => a[1].localeCompare(b[1], 'es'))
+        .forEach(([id, label]) => matSelect.add(new Option(label, id)));
+      matSelect.value = materiasVistas.has(prevVal) ? prevVal : '';
+    }
+
+    function renderAsistenciaFecha() {
+      actualizarMateriasAsistFecha();
+      const fecha = document.getElementById('asistFechaFiltro').value;
+      const anio = document.getElementById('asistAnioFiltro').value;
+      const materia = document.getElementById('asistMateriaFiltro').value;
+      const msg = document.getElementById('asistFechaMsg');
+      const table = document.getElementById('asistFechaTable');
+      const paginacion = document.getElementById('asistFechaPaginacion');
+
+      if (!fecha) {
+        msg.textContent = 'Selecciona una fecha para ver los registros.';
+        msg.style.display = '';
+        table.style.display = 'none';
+        paginacion.style.display = 'none';
+        asistFechaRegistros = [];
+        return;
+      }
+
+      asistFechaRegistros = historialAsistencia.filter((r) => {
+        const mismaFecha = (r.date || '') === fecha;
+        const mismoAnio = !anio || Number(r.year) === Number(anio);
+        const mismaMateria = !materia || r.subject === materia;
+        return mismaFecha && mismoAnio && mismaMateria;
+      });
+
+      // Ordenar: por año, luego nombre, luego materia
+      asistFechaRegistros.sort((a, b) => {
+        const anioA = Number(a.year) || 0;
+        const anioB = Number(b.year) || 0;
+        if (anioA !== anioB) return anioA - anioB;
+        const nameA = (a.student_name || '').localeCompare(b.student_name || '', 'es');
+        if (nameA !== 0) return nameA;
+        return (a.subject_label || '').localeCompare(b.subject_label || '', 'es');
+      });
+
+      asistFechaPagina = 0;
+      renderPaginaAsistencia();
+    }
+
+    function renderPaginaAsistencia() {
+      const msg = document.getElementById('asistFechaMsg');
+      const table = document.getElementById('asistFechaTable');
+      const tbody = document.getElementById('asistFechaTbody');
+      const paginacion = document.getElementById('asistFechaPaginacion');
+      const info = document.getElementById('asistFechaPaginaInfo');
+      const btnAnt = document.getElementById('asistFechaBtnAnterior');
+      const btnSig = document.getElementById('asistFechaBtnSiguiente');
+
+      if (!asistFechaRegistros.length) {
+        msg.textContent = 'No hay registros de asistencia para la fecha y filtros seleccionados.';
+        msg.style.display = '';
+        table.style.display = 'none';
+        paginacion.style.display = 'none';
+        return;
+      }
+
+      msg.style.display = 'none';
+      table.style.display = '';
+
+      const totalPaginas = Math.ceil(asistFechaRegistros.length / ASIST_POR_PAGINA);
+      const inicio = asistFechaPagina * ASIST_POR_PAGINA;
+      const fin = Math.min(inicio + ASIST_POR_PAGINA, asistFechaRegistros.length);
+      const registrosPagina = asistFechaRegistros.slice(inicio, fin);
+
+      tbody.replaceChildren();
+      registrosPagina.forEach((r) => {
+        const esAsistente = r.status === 'asistente';
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid #e2e8f0';
+        tr.innerHTML = `
+          <td style="padding: 9px 10px; white-space: nowrap; color: #334155;">${r.year ? r.year + '° Año' : '–'}</td>
+          <td style="padding: 9px 10px; font-weight: bold; color: #0f172a;">${r.student_name || 'Desconocido'}</td>
+          <td style="padding: 9px 10px; color: #475569;">${r.subject_label || r.subject || '–'}</td>
+          <td style="padding: 9px 10px;">
+            <span style="display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: bold;
+              background: ${esAsistente ? '#dcfce7' : '#fee2e2'};
+              color: ${esAsistente ? '#15803d' : '#dc2626'};">
+              ${esAsistente ? 'Asistente' : 'Inasistente'}
+            </span>
+          </td>
+          <td style="padding: 9px 10px; font-family: monospace; font-size: 13px; color: #475569; white-space: nowrap;">${formatHoraLocal(r.marked_at || r.created_at)}</td>
+          <td style="padding: 9px 10px; color: #334155;">${r.marked_by || '<span style="color:#94a3b8; font-style:italic;">No registrado</span>'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Paginación
+      if (asistFechaRegistros.length > ASIST_POR_PAGINA) {
+        paginacion.style.display = 'flex';
+        info.textContent = `Mostrando ${inicio + 1}–${fin} de ${asistFechaRegistros.length} registros`;
+        btnAnt.disabled = asistFechaPagina === 0;
+        btnAnt.style.opacity = asistFechaPagina === 0 ? '0.4' : '1';
+        btnSig.disabled = asistFechaPagina >= totalPaginas - 1;
+        btnSig.style.opacity = asistFechaPagina >= totalPaginas - 1 ? '0.4' : '1';
+      } else {
+        paginacion.style.display = 'none';
+      }
+    }
+
+    function cambiarPaginaAsistencia(delta) {
+      const totalPaginas = Math.ceil(asistFechaRegistros.length / ASIST_POR_PAGINA);
+      asistFechaPagina = Math.max(0, Math.min(asistFechaPagina + delta, totalPaginas - 1));
+      renderPaginaAsistencia();
+    }
+
     let chartGeneral = null;
     let chartTopFaltas = null;
     let listaEstudiantesActual = [];
@@ -419,6 +614,12 @@
       if (sessionUser.soloReportes) {
         document.getElementById('reportExitButton').textContent = 'Cerrar sesión';
       }
+      // Inicializar fecha de hoy en el filtro de asistencia por fecha
+      const hoy = new Date();
+      const yyyy = hoy.getFullYear();
+      const mm = String(hoy.getMonth() + 1).padStart(2, '0');
+      const dd = String(hoy.getDate()).padStart(2, '0');
+      document.getElementById('asistFechaFiltro').value = `${yyyy}-${mm}-${dd}`;
       actualizarFiltroMaterias();
     } else {
       document.getElementById('accessDenied').classList.remove('hidden');
@@ -620,6 +821,7 @@
           });
           actualizarMateriasHistorial(false);
           renderizarHistorialAsistencia();
+          renderAsistenciaFecha();
         })
         .catch((error) => {
           if (requestId !== historialRequestId) return;
