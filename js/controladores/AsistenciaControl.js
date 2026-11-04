@@ -976,13 +976,13 @@ const renderStudentList = () => {
               return `
                 <tr data-id="${student.id}" style="color: #000000;">
                   <td class="student-name-cell" style="color: #000000; font-weight: bold;">
-                    <span class="student-name">${student.name}</span>
+                    <span class="student-name">${window.escapeHTML ? window.escapeHTML(student.name) : student.name}</span>
                     <div class="state-buttons state-buttons--mobile">${studentActionButtons}</div>
                   </td>
                   ${canViewPersonalData ? `
-                    <td data-label="Cédula" style="color: #000000;">${student.cedula || 'No registrada'}</td>
-                    <td data-label="Correo" style="color: #000000;">${student.email || '-'}</td>
-                    <td data-label="Representante" style="color: #000000;">${student.phone || '-'}</td>
+                    <td data-label="Cédula" style="color: #000000;">${window.escapeHTML ? window.escapeHTML(student.cedula || 'No registrada') : (student.cedula || 'No registrada')}</td>
+                    <td data-label="Correo" style="color: #000000;">${window.escapeHTML ? window.escapeHTML(student.email || '-') : (student.email || '-')}</td>
+                    <td data-label="Representante" style="color: #000000;">${window.escapeHTML ? window.escapeHTML(student.phone || '-') : (student.phone || '-')}</td>
                   ` : ''}
                   <td data-label="${canMarkAttendance() ? 'Asistencia' : ''}">
                     <div class="state-buttons state-buttons--desktop">${studentActionButtons}</div>
@@ -1362,7 +1362,7 @@ const actualizarVistaAsistenciaAdmin = () => {
         html += `
           <tr style="border-bottom:1px solid #e2e8f0; color: #000000;">
             <td data-label="Año" style="padding:8px; color: #000000;">${year}° Año</td>
-            <td data-label="Nombre" style="padding:8px; font-weight:bold; color: #000000;">${student.name}</td>
+            <td data-label="Nombre" style="padding:8px; font-weight:bold; color: #000000;">${window.escapeHTML ? window.escapeHTML(student.name) : student.name}</td>
             <td data-label="Materia" style="padding:8px; color: #000000;">${subjectLabel}</td>
             <td data-label="Estado" style="padding:8px;">
               <span class="badge-pago" style="${status === 'asistente' ? 'background:#dcfce7; color:#15803d;' : 'background:#fee2e2; color:#dc2626;'}">${status === 'asistente' ? 'Asistente' : 'Inasistente'}</span>
@@ -1466,15 +1466,17 @@ const cambiarEstadoPago = async (studentId, year, estado) => {
 };
 
 const abrirModalAbono = (studentId, year, name) => {
-  estudianteAbonoSeleccionado = { studentId, year, name };
   const student = findStudentByYear(year, studentId) || findStudentById(studentId);
+  const studentName = name || (student ? student.name : '');
+  estudianteAbonoSeleccionado = { studentId, year, name: studentName };
   const pagoMes = student ? obtenerPagoPeriodo(student, periodoPagoActual) : null;
   const nombrePeriodo = PERIODOS_PAGO.find(p => p.id === periodoPagoActual)?.label || periodoPagoActual;
 
   const studentNameEl = document.getElementById('abonoStudentName');
   if (studentNameEl) {
     if (pagoMes && pagoMes.status === 'abono' && pagoMes.amount > 0) {
-      studentNameEl.innerHTML = `Estudiante: <strong>${name}</strong><br><span style="font-size:0.9rem; color:#b45309; font-weight:normal;">Abono actual en ${nombrePeriodo}: <strong>$${pagoMes.amount}</strong></span>`;
+      const safeAbonoName = window.escapeHTML ? window.escapeHTML(studentName || name) : (studentName || name);
+      studentNameEl.innerHTML = `Estudiante: <strong>${safeAbonoName}</strong><br><span style="font-size:0.9rem; color:#b45309; font-weight:normal;">Abono actual en ${nombrePeriodo}: <strong>$${pagoMes.amount}</strong></span>`;
       const inputEl = document.getElementById('montoAbonoInput');
       if (inputEl) inputEl.value = pagoMes.amount;
     } else {
@@ -1580,8 +1582,8 @@ const actualizarVistaAdminNestor = () => {
       html += `
         <tr style="border-bottom:1px solid #e2e8f0; color: #000000;">
           <td data-label="Año" style="padding:8px; color: #000000;">${year}° Año</td>
-          <td data-label="Cédula" style="padding:8px; color: #000000;">${canViewStudentPersonalData() ? st.cedula || 'No registrada' : 'Oculto'}</td>
-          <td data-label="Nombre" style="padding:8px; font-weight:bold; color: #000000;">${st.name}</td>
+          <td data-label="Cédula" style="padding:8px; color: #000000;">${canViewStudentPersonalData() ? (window.escapeHTML ? window.escapeHTML(st.cedula || 'No registrada') : (st.cedula || 'No registrada')) : 'Oculto'}</td>
+          <td data-label="Nombre" style="padding:8px; font-weight:bold; color: #000000;">${window.escapeHTML ? window.escapeHTML(st.name) : st.name}</td>
           <td data-label="Período" style="padding:8px; color: #000000;">${PERIODOS_PAGO.find(periodo => periodo.id === periodoPagoActual)?.label || periodoPagoActual}</td>
           <td data-label="Fecha" style="padding:8px; color: #000000;">${pago.date || 'Sin fecha'}</td>
           <td data-label="Estado Pago" style="padding:8px;">
@@ -1591,7 +1593,7 @@ const actualizarVistaAdminNestor = () => {
             <div style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap;">
               <button class="btn-pago-verde" onclick="cambiarEstadoPago('${st.id}', ${year}, 'pago')">$ Pago</button>
               <button class="btn-pago-rojo" onclick="cambiarEstadoPago('${st.id}', ${year}, 'no_pago')">No pago</button>
-              <button class="btn-pago-amarillo" onclick="abrirModalAbono('${st.id}', ${year}, '${st.name}')">$ Abono</button>
+              <button class="btn-pago-amarillo" onclick="abrirModalAbono('${st.id}', ${year})">$ Abono</button>
               ${botonBoleta}
             </div>
           </td>
@@ -1981,7 +1983,7 @@ const generarGraficaYTabla = async () => {
   if (tbody) {
     tbody.innerHTML = `
       <tr style="color: #000000;">
-        <td style="color: #000000; font-weight: bold; padding: 8px;">${estudiante.nombre || estudiante.name}</td>
+        <td style="color: #000000; font-weight: bold; padding: 8px;">${window.escapeHTML ? window.escapeHTML(estudiante.nombre || estudiante.name) : (estudiante.nombre || estudiante.name)}</td>
         <td style="color: green; font-weight: bold; padding: 8px;">${totalAsistencias}</td>
         <td style="color: red; font-weight: bold; padding: 8px;">${totalInasistencias}</td>
       </tr>

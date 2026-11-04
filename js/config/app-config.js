@@ -3,6 +3,17 @@
     ? 'http://localhost:3000'
     : window.location.origin;
 
+  // Utilidad universal para prevenir inyecciones XSS al renderizar texto dinámico en HTML
+  window.escapeHTML = (value) => {
+    if (value === null || value === undefined) return '';
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  };
+
   window.APP_CONFIG = Object.freeze({
     apiBaseUrl,
     api: Object.freeze({

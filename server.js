@@ -448,7 +448,23 @@ if (IS_SUPABASE_CONFIGURED) {
   console.log('Supabase no configurado. La app continúa con respaldo local en attendance-data.json.');
 }
 
+// Función auxiliar para sanitizar cadenas de texto (limpia espacios y caracteres peligrosos)
+const sanitizeText = (val, maxLen = 150) => {
+  if (val === null || val === undefined) return '';
+  return String(val)
+    .replace(/[<>]/g, '') // Elimina < y > para neutralizar tags HTML/JS
+    .trim()
+    .slice(0, maxLen);
+};
+
 app.use(cors());
+// Protección para evitar servir archivos ocultos como .env de forma estática
+app.use((req, res, next) => {
+  if (req.path.startsWith('/.') || req.path.includes('.env')) {
+    return res.status(403).send('Acceso denegado');
+  }
+  next();
+});
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
@@ -508,11 +524,11 @@ app.post('/api/students', async (req, res) => {
 
   try {
     const student = {
-      id: id || `student-${Date.now()}`,
-      name,
-      cedula: cedula || '',
-      email: email || '',
-      phone: phone || '',
+      id: sanitizeText(id || `student-${Date.now()}`, 60),
+      name: sanitizeText(name, 120),
+      cedula: sanitizeText(cedula || '', 25),
+      email: sanitizeText(email || '', 100),
+      phone: sanitizeText(phone || '', 30),
       year: Number(year),
       BoletaVisible: BoletaVisible === 'SI' ? 'SI' : 'NO',
       paymentStatus: paymentStatus || 'no_pago',
@@ -567,10 +583,10 @@ app.patch('/api/students', async (req, res) => {
 
   try {
     const changes = {
-      name,
-      cedula,
-      email,
-      phone,
+      name: name !== undefined ? sanitizeText(name, 120) : undefined,
+      cedula: cedula !== undefined ? sanitizeText(cedula, 25) : undefined,
+      email: email !== undefined ? sanitizeText(email, 100) : undefined,
+      phone: phone !== undefined ? sanitizeText(phone, 30) : undefined,
       year: year === undefined ? undefined : Number(year),
       BoletaVisible,
       payments,
