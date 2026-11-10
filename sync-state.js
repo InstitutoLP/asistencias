@@ -2,10 +2,22 @@ const SUPABASE_URL = (process.env.SUPABASE_URL || '')
   .replace(/\/rest\/v1\/?$/, '')
   .replace(/\/$/, '');
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
+const { authenticateRequest } = require('./auth-service');
 
 module.exports = async (req, res) => {
   if (req.method !== 'GET') {
     res.status(405).json({ error: 'Method not allowed' });
+    return;
+  }
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth.ok) {
+      res.status(auth.status).json({ error: auth.error });
+      return;
+    }
+  } catch (error) {
+    console.error('sync-state session validation error:', error);
+    res.status(500).json({ error: 'No se pudo validar la sesión.' });
     return;
   }
   if (!SUPABASE_URL || !SUPABASE_KEY) {

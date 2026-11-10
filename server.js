@@ -8,6 +8,12 @@ const fs = require('fs');
 
 dotenv.config();
 
+const {
+  handleLogin,
+  handleLogout,
+  handleRefresh,
+  requireTeacherSession,
+} = require('./auth-service');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const PHONE_NUMBER_ID = process.env.WABA_PHONE_NUMBER_ID;
@@ -466,6 +472,24 @@ app.use((req, res, next) => {
   next();
 });
 app.use(express.json());
+app.post('/api/auth/login', handleLogin);
+app.post('/api/auth/refresh', handleRefresh);
+app.post('/api/auth/logout', handleLogout);
+const cronDailyEmailsHandler = require('./cron-daily-emails');
+app.get('/api/cron-daily-emails', cronDailyEmailsHandler);
+app.post('/api/cron-daily-emails', requireTeacherSession, cronDailyEmailsHandler);
+app.use('/api/students', async (req, res, next) => {
+  const isPublicStudentLookup = req.method === 'GET' && (req.query.id || req.query.cedula);
+  if (isPublicStudentLookup && !req.headers.authorization) return next();
+  return requireTeacherSession(req, res, next);
+});
+app.use([
+  '/api/attendance',
+  '/api/sync-state',
+  '/api/send-daily-emails',
+  '/api/send-whatsapp',
+  '/api/send-email',
+], requireTeacherSession);
 app.use(express.static(path.join(__dirname)));
 
 app.get('/api/students', async (req, res) => {

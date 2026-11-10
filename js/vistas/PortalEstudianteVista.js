@@ -504,7 +504,7 @@ window.descargarReciboPDF = async () => {
 // Modificación importante: Fetch a la API en lugar de LocalStorage
 const obtenerEstadoGlobalBackend = async () => {
   try {
-    const response = await fetch(`${API_SYNC_STATE}?t=${Date.now()}`, { cache: 'no-store' });
+    const response = await window.apiFetch(`${API_SYNC_STATE}?t=${Date.now()}`, { cache: 'no-store' });
     if (response.ok) return await response.json();
   } catch (error) {
     console.error("Error al consultar la autorización desde el backend:", error);
@@ -557,7 +557,7 @@ const obtenerEstudiantePagosBackend = async (estudiante) => {
   if (!cedula) return null;
 
   try {
-    const response = await fetch(`${API_STUDENTS}?cedula=${encodeURIComponent(cedula)}&t=${Date.now()}${parametrosAsistenciaEscolar()}`, {
+    const response = await window.apiFetch(`${API_STUDENTS}?cedula=${encodeURIComponent(cedula)}&t=${Date.now()}${parametrosAsistenciaEscolar()}`, {
       cache: 'no-store',
       headers: { 'Cache-Control': 'no-cache' },
     });
@@ -574,7 +574,7 @@ const obtenerEstudiantePagosBackend = async (estudiante) => {
 
 const obtenerEstudianteSupabasePorId = async (id) => {
   try {
-    const response = await fetch(`${API_STUDENTS}?id=${encodeURIComponent(id)}&t=${Date.now()}${parametrosAsistenciaEscolar()}`, {
+    const response = await window.apiFetch(`${API_STUDENTS}?id=${encodeURIComponent(id)}&t=${Date.now()}${parametrosAsistenciaEscolar()}`, {
       cache: 'no-store',
       headers: { 'Cache-Control': 'no-cache' },
     });

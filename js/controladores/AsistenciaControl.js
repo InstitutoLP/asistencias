@@ -21,136 +21,6 @@ console.log('DOM detectado:', {
 });
 
 
-const TEACHERS = {
-  "Patricia Salinas": {
-    password: "Tita2026$$",
-    name: "Prof: Patricia",
-    allowedYears: [1, 2, 3, 4, 5],
-    puedeAgregarEstudiantes: true,
-    puedeVerDatosPersonales: true,
-    esAdmin: false
-  },
-  "Abraham Ramirez": {
-    password: "Dorado123.",
-    name: "Prof: Abrahan",
-    allowedYears: [1, 2, 3, 4, 5],
-    puedeAgregarEstudiantes: true,
-    puedeVerDatosPersonales: true,
-    esAdmin: false
-  },
-  "Sara Romero": {
-    password: "20330592",
-    name: "Administrador de Sistema",
-    puedeVerDatosPersonales: true,
-    soloAdmin: true
-  },
-  "Nestor Pérez": {
-    password: "13557016",
-    name: "Prof: Néstor",
-    allowedYears: [1, 2, 3, 4, 5],
-    puedeAgregarEstudiantes: true,
-    esAdmin: true,
-    puedeVerDatosPersonales: true,
-    puedeGestionarBoletas: true
-  },
-  "Andy Suárez": {
-    password: "14965485",
-    name: "Prof: Andy",
-    allowedYears: [1, 2, 3, 4, 5],
-    puedeAgregarEstudiantes: true,
-    puedeGestionarActividades: true,
-    puedeVerDatosPersonales: true,
-    esAdmin: false
-  },
-  "Miriam Ariza": {
-    password: "Chala2011",
-    name: "Prof: Miriam",
-    allowedYears: [1, 2, 3, 4, 5],
-    allowedSubjects: ['orientacion-convivencia'],
-    allowedSubjectsByYear: {
-      3: ['orientacion-convivencia', 'crp'],
-    },
-    puedeAgregarEstudiantes: false
-  },
-  "Tibisay Plaza": {
-    password: "tibyplaza5",
-    name: "Prof: Tibisay",
-    allowedYears: [1, 2], 
-    allowedSubjects: ['matematicas'],
-    puedeAgregarEstudiantes: false
-  },
-"Nancy Figueredo": {
-    password: "1989",
-    name: "Prof: Nancy",
-    allowedYears: [5],
-    allowedSubjects: ['biologia','ciencias-tierra'],
-    puedeAgregarEstudiantes: false
-  },
-  "Yudisay Hernández": {
-    password: "Danna.20",
-    name: "Prof: Yudisay",
-    allowedYears: [1, 2, 3, 4, 5], 
-    allowedSubjects: ['castellano'],
-    puedeAgregarEstudiantes: false
-  },
-  "Lenis Ávila": {
-    password: "beno1406",
-    name: "Prof: Lenis",
-    allowedYears: [3, 4, 5], 
-    allowedSubjects: ['ingles'],
-    puedeAgregarEstudiantes: false
-  },
-  "Johana Pedron": {
-    password: "Melanie06",
-    name: "Prof: Johana",
-    allowedYears: [1, 2, 3, 4, 5], 
-    allowedSubjects: ['frances'],
-    puedeAgregarEstudiantes: false
-  },
-  "Lidis Hernández": {
-    password: "Activo2",
-    name: "Prof: Lidis",
-    allowedYears: [1, 2], 
-    allowedSubjects: ['ingles'],
-    puedeAgregarEstudiantes: false
-  },
-  "Yoxelith Camaripano": {
-    password: "Yoxe21102009",
-    name: "Prof: Yoxelith",
-    allowedYears: [1, 2, 3, 4], 
-    allowedSubjects: ['ciencias-naturales', 'biologia'],
-    puedeAgregarEstudiantes: false
-  },
-  "Alexis Serrano": {
-    password: "AS1335",
-    name: "Prof: Alexis",
-    allowedYears: [1, 2, 3, 4, 5], 
-    allowedSubjects: ['ghc'],
-    puedeAgregarEstudiantes: false
-  },
-  "Oriana Blanco": {
-    password: "blanco488",
-    name: "Prof: Oriana",
-    allowedYears: [1, 2], 
-    allowedSubjects: ['arte-patrimonio'],
-    puedeAgregarEstudiantes: false
-  },
-  "Leidy Gonzalez": {
-    password: "gonza2026",
-    name: "Prof: Leidy",
-    allowedYears: [3, 4, 5], 
-    allowedSubjects: ['quimica'],
-    puedeAgregarEstudiantes: false
-  },
-  "Ricardo Salcedo": {
-    password: "23092024",
-    name: "Prof: Ricardo",
-    allowedYears: [1, 2, 3, 4, 5], 
-    allowedSubjects: ['educacion-fisica', 'formacion-soberania'],
-    puedeAgregarEstudiantes: false
-  },
-};
-
 const SUBJECTS_BY_YEAR = {
   1: [
     { id: 'matematicas', label: 'Matemáticas' },
@@ -239,7 +109,7 @@ const canViewStudentPersonalData = () => Boolean(currentUser?.puedeVerDatosPerso
 const canManageBoletas = () => Boolean(currentUser?.puedeGestionarBoletas);
 const canLoadStudentGrades = () => Boolean(currentUser && !currentUser.soloAdmin && !currentUser.soloReportes);
 const isProfessorNestor = () => Boolean(currentUser?.name?.includes('Néstor') || currentUser?.name?.includes('Nestor'));
-const canViewReports = () => isProfessorNestor() || currentUser?.name === 'Prof: Andy' || currentUser?.soloReportes;
+const canViewReports = () => Boolean(currentUser?.puedeVerReportes || currentUser?.soloReportes);
 const canMarkAttendance = () => !isProfessorNestor();
 
 const syncStudentManagementControls = () => {
@@ -282,16 +152,28 @@ const redirectToLoginPage = () => {
   window.location.href = 'index.html';
 };
 
-const handleLogin = (e) => {
+const handleLogin = async (e) => {
   e.preventDefault();
 
   const user = document.getElementById('loginUser').value.trim();
-  const pass = document.getElementById('loginPassword').value.trim();
+  const pass = document.getElementById('loginPassword').value;
+  const submitButton = e.currentTarget.querySelector('button[type="submit"]');
+  if (submitButton) submitButton.disabled = true;
 
-  if (TEACHERS[user] && TEACHERS[user].password === pass) {
-    currentUser = TEACHERS[user];
+  try {
+    const response = await fetch(window.APP_CONFIG.api.authLogin, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: user, password: pass }),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.user || !result.session) {
+      throw new Error(result.error || 'Usuario o contraseña incorrectos.');
+    }
+
+    window.setSupabaseAuthSession(result.session);
+    currentUser = result.user;
     syncStudentManagementControls();
-
     sessionStorage.setItem('activeUser', JSON.stringify(currentUser));
 
     if (currentUser.soloReportes) {
@@ -346,8 +228,11 @@ const handleLogin = (e) => {
     }
 
     showToast(`Bienvenido/a, ${currentUser.name}`);
-  } else {
-    showToast('Usuario o contraseña incorrectos');
+  } catch (error) {
+    console.error('No se pudo iniciar sesión:', error);
+    showToast(error.message || 'No se pudo iniciar sesión.');
+  } finally {
+    if (submitButton) submitButton.disabled = false;
   }
 };
 
@@ -495,7 +380,19 @@ const closeAddStudentView = () => {
   showView(addStudentReturnView);
 };
 
-const cerrarSesion = () => {
+const cerrarSesion = async () => {
+  try {
+    const response = await window.apiFetch(window.APP_CONFIG.api.authLogout, {
+      method: 'POST',
+    });
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({}));
+      console.error('No se pudo invalidar la sesión en Supabase:', result.error || response.status);
+    }
+  } catch (error) {
+    console.error('Error al cerrar sesión en Supabase:', error);
+  }
+  window.clearSupabaseAuthSession();
   currentUser = null;
   sessionStorage.removeItem('activeUser');
 
@@ -1094,7 +991,7 @@ const sendDailyEmailsNow = async () => {
   button.textContent = 'Enviando...';
 
   try {
-    const response = await fetch(API_SEND_DAILY_EMAILS, {
+    const response = await window.apiFetch(API_SEND_DAILY_EMAILS, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: '{}',
@@ -1406,9 +1303,7 @@ const abrirAdminNestor = async () => {
 
 const cerrarAdminNestor = () => {
   if (currentUser && currentUser.soloAdmin) {
-    currentUser = null;
-    sessionStorage.removeItem('activeUser');
-    redirectToLoginPage();
+    void cerrarSesion();
     return;
   }
   showView('main');
@@ -2027,19 +1922,22 @@ const init = () => {
   loadData();
   
   const savedUser = sessionStorage.getItem('activeUser');
-  if (savedUser) {
+  const savedSession = window.getSupabaseAuthSession();
+  if (savedUser && savedSession?.access_token && savedSession?.refresh_token) {
     try {
-      const parsedUser = JSON.parse(savedUser);
-      const currentTeacher = Object.values(TEACHERS).find(teacher => teacher.name === parsedUser.name);
-      if (currentTeacher) {
-        currentUser = currentTeacher;
-        sessionStorage.setItem('activeUser', JSON.stringify(currentTeacher));
-      } else {
-        sessionStorage.removeItem('activeUser');
-      }
+      currentUser = JSON.parse(savedUser);
     } catch (error) {
       sessionStorage.removeItem('activeUser');
+      window.clearSupabaseAuthSession();
     }
+  } else {
+    sessionStorage.removeItem('activeUser');
+    window.clearSupabaseAuthSession();
+  }
+
+  if (!currentUser && !document.getElementById('loginForm')) {
+    redirectToLoginPage();
+    return;
   }
 
   if (currentUser?.soloReportes && !window.location.pathname.toLowerCase().endsWith('reportes.html')) {

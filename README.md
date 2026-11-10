@@ -67,6 +67,12 @@ Antes de habilitar la edición de revisiones en Supabase, ejecuta `supabase-pend
 
 Para habilitar el recuadro independiente de Materia Pendiente en Supabase, ejecuta `supabase-matter-pending-subjects.sql` para crear `students.matter_pending_subjects`.
 
+### Inicio de sesión de profesores con Supabase Auth
+
+Las cuentas de profesores se crean en Supabase Authentication. Ejecuta `supabase-auth-setup.sql` en SQL Editor para asignar sus perfiles y permisos; reemplaza el UID de Nancy por el UID correcto antes de ejecutarlo, ya que cada cuenta debe tener un UID único. El formulario de la aplicación conserva el campo «Usuario»: autentica ese nombre y la contraseña contra la cuenta de correo vinculada en Supabase.
+
+Configura `SUPABASE_URL` y `SUPABASE_KEY` (clave secreta/service role solo en el servidor) en el entorno local y en Vercel. `SUPABASE_ANON_KEY` es recomendada; si no está configurada, el servidor usa `SUPABASE_KEY` para las llamadas de Auth. No pongas claves de servidor en JavaScript ni HTML. Las rutas privadas de API requieren una sesión válida de Supabase; las consultas públicas del portal del estudiante por cédula o ID siguen disponibles.
+
 El recibo de pago se descarga como PDF con el diseño mostrado en pantalla, incluyendo sello, datos del estudiante, detalle de pagos y total.
 
 ## Ejecución local

@@ -1,5 +1,6 @@
 const SUPABASE_URL = (process.env.SUPABASE_URL || '').replace(/\/rest\/v1\/?$/, '').replace(/\/$/, '');
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
+const { authenticateRequest } = require('../auth-service');
 
 const sanitizeText = (val, maxLen = 150) => {
   if (val === null || val === undefined) return '';
@@ -134,6 +135,20 @@ module.exports = async function handler(req, res) {
 
   if (req.method === 'OPTIONS') {
     return res.status(204).end();
+  }
+
+  const isPublicStudentLookup = req.method === 'GET' && (req.query?.id || req.query?.cedula);
+  if (!isPublicStudentLookup || req.headers?.authorization) {
+    try {
+      const auth = await authenticateRequest(req);
+      if (!auth.ok) {
+        return res.status(auth.status).json({ error: auth.error });
+      }
+      req.authProfile = auth.profile;
+    } catch (error) {
+      console.error('Student API session validation error:', error);
+      return res.status(500).json({ error: 'No se pudo validar la sesión.' });
+    }
   }
 
   if (!SUPABASE_URL || !SUPABASE_KEY) {

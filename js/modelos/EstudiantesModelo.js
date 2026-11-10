@@ -1,6 +1,6 @@
 (() => {
   const request = async (url, options = {}) => {
-    const response = await fetch(url, options);
+    const response = await window.apiFetch(url, options);
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {

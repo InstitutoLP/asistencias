@@ -1,5 +1,6 @@
 const SUPABASE_URL = (process.env.SUPABASE_URL || '').replace(/\/rest\/v1\/?$/, '').replace(/\/$/, '');
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
+const { authenticateRequest } = require('../auth-service');
 
 const parseBody = async (req) => {
   if (req.body && typeof req.body === 'object') return req.body;
@@ -96,6 +97,17 @@ module.exports = async function handler(req, res) {
 
   if (req.method === 'OPTIONS') {
     return res.status(204).end();
+  }
+
+  try {
+    const auth = await authenticateRequest(req);
+    if (!auth.ok) {
+      return res.status(auth.status).json({ error: auth.error });
+    }
+    req.authProfile = auth.profile;
+  } catch (error) {
+    console.error('Attendance API session validation error:', error);
+    return res.status(500).json({ error: 'No se pudo validar la sesión.' });
   }
 
   if (req.method === 'GET') {

@@ -64,7 +64,7 @@ let pendingDrafts = {};
 let pendingMatterStudentId = '';
 let pendingMatterDrafts = {};
 
-const canManagePendingSubjects = () => ['Prof: Andy', 'Prof: Néstor', 'Prof: Nestor'].includes(currentUser?.name);
+const canManagePendingSubjects = () => currentUser?.puedeGestionarPendientes === true;
 const setPendingStatus = (message, type = '') => {
   pendingSubjectsStatus.textContent = message;
   pendingSubjectsStatus.className = `pending-status${type ? ` ${type}` : ''}`;
@@ -917,7 +917,7 @@ const savePendingAssignments = async () => {
       savedMatterAssignments.push(matterAssignment);
       automaticallyAddedMatterAssignments.push(matterAssignment);
     });
-    const response = await fetch(API_STUDENTS, {
+    const response = await window.apiFetch(API_STUDENTS, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1153,7 +1153,7 @@ const savePendingMatterAssignments = async () => {
   savePendingMatterSubjectsButton.disabled = true;
   setPendingMatterStatus('Guardando notas de Materia Pendiente...');
   try {
-    const response = await fetch(API_STUDENTS, {
+    const response = await window.apiFetch(API_STUDENTS, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: student.id, matterPendingSubjects: assignments }),
@@ -1196,7 +1196,7 @@ const loadStudents = async () => {
 
   const year = yearSelect.value;
   const studentRequest = (async () => {
-    const response = await fetch(`${API_STUDENTS}?year=${encodeURIComponent(year)}&t=${Date.now()}`, {
+    const response = await window.apiFetch(`${API_STUDENTS}?year=${encodeURIComponent(year)}&t=${Date.now()}`, {
       cache: 'no-store',
       headers: { 'Cache-Control': 'no-cache' },
     });
@@ -1292,7 +1292,7 @@ const saveActivityLock = async (activityId, locked) => {
     grades[subject.id] = subjectGrades;
 
     try {
-      const response = await fetch(API_STUDENTS, {
+      const response = await window.apiFetch(API_STUDENTS, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: student.id, grades }),
@@ -1443,7 +1443,7 @@ const saveGrades = async () => {
       });
     }
     try {
-      const response = await fetch(API_STUDENTS, {
+      const response = await window.apiFetch(API_STUDENTS, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
