@@ -249,6 +249,7 @@
         <div class="value" id="kpiTotalFaltas">0%</div>
       </div>
     </div>
+    <p id="dashboardStatus" role="status" class="hidden" style="color: var(--danger);"></p>
 
     <!-- Gráficos -->
     <div class="charts-grid">
@@ -434,6 +435,7 @@
 
   </div>
 
+  <script src="/js/config/app-config.js"></script>
   <script src="/js/config/attendance-calculations.js"></script>
   <script>
     let asistFechaRegistros = [];
@@ -593,7 +595,8 @@
     const deletedStudentIds = new Set();
     const estudianteEliminado = (student) => deletedStudentIds.has(String(student.id));
 
-    const puedeVerReportes = sessionUser.name === 'Prof: Andy'
+    const puedeVerReportes = sessionUser.puedeVerReportes
+      || sessionUser.name === 'Prof: Andy'
       || sessionUser.name === 'Prof: Néstor'
       || sessionUser.name === 'Prof: Nestor'
       || sessionUser.name === 'Prof: Patricia'
@@ -689,10 +692,20 @@
       const endDate = document.getElementById('endDateFilter').value;
       actualizarHistorialAsistencia(startDate, endDate);
 
-      fetch('/api/students', { cache: 'no-store' })
-        .then(response => response.ok ? response.json() : [])
+      window.apiFetch('/api/students', { cache: 'no-store' })
+        .then(async (response) => {
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error(data.error || `Error ${response.status} al consultar estudiantes.`);
+          }
+          if (!Array.isArray(data)) {
+            throw new Error('El servidor devolvió una lista de estudiantes inválida.');
+          }
+          return data;
+        })
         .then(data => {
-          const rows = Array.isArray(data) ? data : [];
+          document.getElementById('dashboardStatus').classList.add('hidden');
+          const rows = data;
           let estudiantes = [];
 
           if (selectedYear === 'general') {
@@ -763,12 +776,17 @@
           document.getElementById('studentSearchInput').value = '';
           renderizarTabla(listaEstudiantesActual);
         })
-        .catch(() => {
-          document.getElementById('kpiTotalEstudiantes').textContent = '0';
-          document.getElementById('kpiTasaAsistencia').textContent = '0%';
-          document.getElementById('kpiTotalFaltas').textContent = '0%';
-          document.getElementById('numAsistencias').textContent = '0';
-          document.getElementById('numInasistencias').textContent = '0';
+        .catch((error) => {
+          console.error('No se pudo actualizar el dashboard de asistencia:', error);
+          document.getElementById('dashboardStatus').textContent = `No se pudieron cargar las estadísticas: ${error.message}`;
+          document.getElementById('dashboardStatus').classList.remove('hidden');
+          document.getElementById('kpiTotalEstudiantes').textContent = '—';
+          document.getElementById('kpiTasaAsistencia').textContent = '—';
+          document.getElementById('kpiTotalFaltas').textContent = '—';
+          document.getElementById('numAsistencias').textContent = '—';
+          document.getElementById('numInasistencias').textContent = '—';
+          listaEstudiantesActual = [];
+          renderizarTabla([]);
         });
     }
 
@@ -804,7 +822,7 @@
       historialExpandido = false;
       message.textContent = 'Cargando historial...';
 
-      fetch(`/api/attendance?${params.toString()}`, { cache: 'no-store' })
+      window.apiFetch(`/api/attendance?${params.toString()}`, { cache: 'no-store' })
         .then(async (response) => {
           const result = await response.json().catch(() => ({}));
           if (!response.ok) throw new Error(result.error || `Error ${response.status} al consultar el historial.`);
