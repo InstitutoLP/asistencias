@@ -109,6 +109,15 @@ const canViewStudentPersonalData = () => Boolean(currentUser?.puedeVerDatosPerso
 const canManageBoletas = () => Boolean(currentUser?.puedeGestionarBoletas);
 const canLoadStudentGrades = () => Boolean(currentUser && !currentUser.soloAdmin && !currentUser.soloReportes);
 const isProfessorNestor = () => Boolean(currentUser?.name?.includes('Néstor') || currentUser?.name?.includes('Nestor'));
+const normalizePersonName = (name) => String(name || '')
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .toLowerCase();
+const canManageAcademicMaterial = () => {
+  const name = normalizePersonName(`${currentUser?.name || ''} ${currentUser?.username || ''}`);
+  return (name.includes('nestor') && name.includes('perez'))
+    || (name.includes('andy') && name.includes('suarez'));
+};
 const canViewReports = () => Boolean(currentUser?.puedeVerReportes || currentUser?.soloReportes);
 const canMarkAttendance = () => !isProfessorNestor();
 
@@ -119,12 +128,14 @@ const syncStudentManagementControls = () => {
   const btnAdminNestor = document.getElementById('btnModuloAdminNestor');
   const reportsBtn = document.getElementById('btnVerReportes');
   const gradesBtn = document.getElementById('btnCargarNotas');
+  const materialBtn = document.getElementById('btnGestionMaterial');
 
   if (mainBtn) mainBtn.style.display = canManageStudents() ? 'inline-block' : 'none';
   if (sendDailyEmailsBtn) sendDailyEmailsBtn.style.display = canManageStudents() ? 'inline-block' : 'none';
   if (landingBtn) landingBtn.style.display = canManageStudents() ? 'inline-block' : 'none';
   if (reportsBtn) reportsBtn.style.display = canViewReports() ? 'inline-block' : '';
   if (gradesBtn) gradesBtn.style.display = canLoadStudentGrades() ? 'inline-block' : 'none';
+  if (materialBtn) materialBtn.classList.toggle('hidden', !canManageAcademicMaterial());
   
   if (btnAdminNestor) {
     const esProfNestor = currentUser && (currentUser.name.includes("Néstor") || currentUser.name.includes("Nestor"));

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gestión de Material Académico</title>
+  <link rel="icon" type="image/png" href="sello.png">
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .material-manager {
+      max-width: 1050px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .material-manager header,
+    .material-card {
+      padding: 22px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: rgba(10, 22, 48, 0.94);
+      box-shadow: 0 16px 38px rgba(2, 6, 23, 0.28);
+    }
+    .material-manager header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+    .material-manager h1,
+    .material-manager h2 { margin: 0 0 8px; }
+    .material-manager header p,
+    .material-help { margin: 0; color: var(--muted); line-height: 1.5; }
+    .material-layout { display: grid; grid-template-columns: minmax(280px, .85fr) minmax(0, 1.4fr); gap: 18px; }
+    .material-card h2 { font-size: 1.25rem; }
+    .material-form { display: grid; gap: 14px; }
+    .material-form label { display: grid; gap: 6px; font-weight: 700; }
+    .material-form input,
+    .material-form select,
+    .material-filter select {
+      width: 100%;
+      min-height: 42px;
+      padding: 9px 11px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #07142a;
+      color: var(--text);
+      font: inherit;
+    }
+    .file-drop {
+      position: relative;
+      min-height: 112px;
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      border: 1px dashed rgba(77, 168, 255, .65);
+      border-radius: 10px;
+      background: rgba(77, 168, 255, .06);
+      color: var(--muted);
+      text-align: center;
+      cursor: pointer;
+    }
+    .file-drop.dragging { border-color: var(--primary); background: rgba(77, 168, 255, .16); }
+    .file-drop input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+    .material-form button,
+    .material-manager .action-button {
+      min-height: 40px;
+      padding: 9px 13px;
+      border: 0;
+      border-radius: 8px;
+      background: var(--button);
+      color: #fff;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .material-form button:disabled { opacity: .6; cursor: wait; }
+    .material-manager .secondary-button { background: #475569; }
+    .material-manager .delete-button { background: #b91c1c; }
+    .material-filter { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .material-filter select { max-width: 220px; }
+    .material-list { display: grid; gap: 10px; }
+    .material-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 14px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: rgba(255,255,255,.035);
+    }
+    .material-item h3 { margin: 0 0 5px; font-size: 1rem; }
+    .material-item p { margin: 3px 0; color: var(--muted); font-size: .9rem; }
+    .material-item-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .material-item-actions button { padding: 7px 10px !important; }
+    .material-status { min-height: 1.4em; color: var(--muted); }
+    .material-status.error { color: var(--danger); }
+    .material-status.success { color: var(--success); }
+    .material-empty { padding: 20px; border: 1px dashed var(--border); border-radius: 10px; color: var(--muted); text-align: center; }
+    .material-file-note { color: var(--muted); font-size: .82rem; font-weight: 400; }
+    @media (max-width: 760px) {
+      .material-manager { padding: 16px 12px; }
+      .material-layout { grid-template-columns: 1fr; }
+      .material-manager header { align-items: flex-start; flex-direction: column; }
+    }
+    @media (max-width: 480px) {
+      .material-card, .material-manager header { padding: 16px; }
+      .material-item { grid-template-columns: 1fr; }
+      .material-item-actions { width: 100%; }
+      .material-item-actions > * { flex: 1; text-align: center; }
+      .material-filter { align-items: stretch; flex-direction: column; }
+    }
+  </style>
+  <script src="js/config/app-config.js" defer></script>
+  <script src="js/vistas/GestionMaterialVista.js" defer></script>
+</head>
+<body>
+  <main class="material-manager">
+    <header>
+      <div>
+        <h1>Gestión de Material Académico</h1>
+        <p>Comparte documentos con los estudiantes por año escolar.</p>
+      </div>
+      <button class="action-button secondary-button" type="button" onclick="window.location.href = 'registro.html'">← Regresar</button>
+    </header>
+
+    <div class="material-layout">
+      <section class="material-card" aria-labelledby="uploadTitle">
+        <h2 id="uploadTitle">Subir documento</h2>
+        <form id="materialForm" class="material-form">
+          <label for="materialTitle">Título del documento
+            <input id="materialTitle" name="title" type="text" maxlength="150" placeholder="Ej. Plan de Evaluación - Lapso 1" required>
+          </label>
+          <label for="materialCategory">Categoría
+            <select id="materialCategory" name="category" required>
+              <option value="Plan de Evaluación">Plan de Evaluación</option>
+              <option value="Material de Apoyo">Material de Apoyo</option>
+              <option value="Guía de Estudio">Guía de Estudio</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </label>
+          <label for="materialYear">Año escolar dirigido
+            <select id="materialYear" name="schoolYear" required>
+              <option value="1">1er Año</option>
+              <option value="2">2do Año</option>
+              <option value="3">3er Año</option>
+              <option value="4">4to Año</option>
+              <option value="5">5to Año</option>
+              <option value="todos">Todos los años</option>
+            </select>
+          </label>
+          <label for="materialSubject">Asignatura / Materia <span class="material-file-note">(opcional)</span>
+            <input id="materialSubject" name="subject" type="text" maxlength="120" placeholder="Ej. Matemáticas">
+          </label>
+          <label class="file-drop" id="fileDrop" for="materialFile">
+            <span id="fileName">Selecciona un archivo o arrástralo aquí<br><span class="material-file-note">PDF, Word, Excel, PowerPoint, imágenes o texto · máximo 25 MB</span></span>
+            <input id="materialFile" name="file" type="file" accept=".pdf,.doc,.docx,.odt,.xls,.xlsx,.ods,.ppt,.pptx,.odp,.jpg,.jpeg,.png,.gif,.webp,.txt" required>
+          </label>
+          <button id="uploadButton" type="submit">Subir material</button>
+          <p id="uploadStatus" class="material-status" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <section class="material-card" aria-labelledby="materialsTitle">
+        <h2 id="materialsTitle">Documentos cargados</h2>
+        <label class="material-filter" for="materialFilter">
+          Filtrar por año
+          <select id="materialFilter">
+            <option value="all">Todos los años</option>
+            <option value="1">1er Año (incluye todos los años)</option>
+            <option value="2">2do Año (incluye todos los años)</option>
+            <option value="3">3er Año (incluye todos los años)</option>
+            <option value="4">4to Año (incluye todos los años)</option>
+            <option value="5">5to Año (incluye todos los años)</option>
+            <option value="todos">Solo todos los años</option>
+          </select>
+        </label>
+        <div id="materialList" class="material-list" aria-live="polite">
+          <p class="material-empty">Cargando documentos...</p>
+        </div>
+        <p id="listStatus" class="material-status" role="status" aria-live="polite"></p>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

@@ -2,6 +2,7 @@
 const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/e/2PACX-1vR2dzgdf5bWl2KBYcGTWxjjiIk6qKQ5NWjde1eyiv0Gy0velu_8JTPdu8O8WicEJQ/pub?output=csv`;
 const API_SYNC_STATE = window.APP_CONFIG.api.syncState;
 const API_STUDENTS = window.APP_CONFIG.api.students;
+const API_MATERIALS = window.APP_CONFIG.api.academicMaterials;
 const PORTAL_BASE_PATH = window.location.pathname.match(/^(.*\/portal-estudiantes\.html)(?:\/.*)?$/)?.[1] || window.location.pathname;
 const ATTENDANCE_CALCULATIONS = window.ATTENDANCE_CALCULATIONS;
 const SCHOOL_YEAR = {
@@ -27,6 +28,7 @@ const PERIODOS_PAGO = [
 let datosEstudianteActual = null;
 let chartsInstancias = {};
 let boletaAutorizadaActual = false;
+let materialesEstudianteYear = null;
 
 const SHEET_SUBJECT_NAMES = {
   castellano: ['Castellano'],
@@ -708,30 +710,92 @@ const mostrarDashboard = () => {
   document.getElementById('mainView').style.display = '';
 };
 
+const cargarMaterialesEstudiante = async () => {
+  const list = document.getElementById('studentMaterialsList');
+  const year = Number(datosEstudianteActual?.year);
+  if (!list) return;
+  if (!Number.isInteger(year) || year < 1 || year > 5) {
+    list.innerHTML = '<p class="student-material-empty">No se pudo determinar tu año escolar.</p>';
+    return;
+  }
+  if (materialesEstudianteYear === year) return;
+
+  list.innerHTML = '<p class="student-material-empty">Cargando materiales...</p>';
+  try {
+    const response = await fetch(`${API_MATERIALS}?year=${year}`, { cache: 'no-store' });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || 'No se pudieron consultar los materiales.');
+    const materials = Array.isArray(result.materials) ? result.materials : [];
+    if (!materials.length) {
+      list.innerHTML = '<p class="student-material-empty">Todavía no hay materiales disponibles para tu año.</p>';
+      materialesEstudianteYear = year;
+      return;
+    }
+
+    const groups = new Map();
+    materials.forEach((material) => {
+      const category = String(material.category || 'Otros');
+      if (!groups.has(category)) groups.set(category, []);
+      groups.get(category).push(material);
+    });
+    list.innerHTML = [...groups.entries()].map(([category, items]) => `
+      <section class="student-material-group">
+        <h3>${window.escapeHTML(category)}</h3>
+        ${items.map((material) => `
+          <article class="student-material-card">
+            <div>
+              <h4>${window.escapeHTML(material.title)}</h4>
+              <p>${material.subject ? `Materia: ${window.escapeHTML(material.subject)} · ` : ''}${material.school_year === 'todos' ? 'Todos los años' : `${window.escapeHTML(material.school_year)}° Año`}</p>
+              <p>Archivo: ${window.escapeHTML(material.file_name || '')}</p>
+            </div>
+            <div class="student-material-actions">
+              <a href="${window.escapeHTML(material.view_url || '')}" target="_blank" rel="noopener noreferrer">Ver</a>
+              <a href="${window.escapeHTML(material.download_url || '')}" target="_blank" rel="noopener noreferrer">Descargar</a>
+            </div>
+          </article>`).join('')}
+      </section>`).join('');
+    materialesEstudianteYear = year;
+  } catch (error) {
+    console.error('No se pudieron cargar los materiales académicos:', error);
+    list.innerHTML = `<p class="student-material-empty">${window.escapeHTML(error.message || 'No se pudieron consultar los materiales.')}</p>`;
+  }
+};
+
 const mostrarDocumento = (documento) => {
   if (documento === 'recibo' && datosEstudianteActual) {
     renderizarReciboEstudiante();
   }
   const mostrarBoleta = documento === 'boleta' && boletaAutorizadaActual;
+  const mostrarMaterial = documento === 'material';
+  const mostrarRecibo = !mostrarBoleta && !mostrarMaterial;
   const boletaPanel = document.getElementById('boletaPanel');
   const reciboPanel = document.getElementById('reciboPanel');
+  const materialPanel = document.getElementById('materialPanel');
   const tabBoleta = document.getElementById('tabBoleta');
   const tabRecibo = document.getElementById('tabRecibo');
+  const tabMaterial = document.getElementById('tabMaterial');
   const boletaBloqueada = document.getElementById('boletaBloqueada');
 
   if (boletaPanel) boletaPanel.classList.toggle('hidden', !mostrarBoleta);
-  if (reciboPanel) reciboPanel.classList.toggle('hidden', mostrarBoleta);
+  if (reciboPanel) reciboPanel.classList.toggle('hidden', !mostrarRecibo);
+  if (materialPanel) materialPanel.classList.toggle('hidden', !mostrarMaterial);
   if (tabBoleta) {
     tabBoleta.classList.toggle('active', mostrarBoleta);
     tabBoleta.style.display = boletaAutorizadaActual ? '' : 'none';
     tabBoleta.setAttribute('aria-selected', String(mostrarBoleta));
   }
   if (tabRecibo) {
-    tabRecibo.classList.toggle('active', !mostrarBoleta);
-    tabRecibo.setAttribute('aria-selected', String(!mostrarBoleta));
+    tabRecibo.classList.toggle('active', mostrarRecibo);
+    tabRecibo.setAttribute('aria-selected', String(mostrarRecibo));
+  }
+  if (tabMaterial) {
+    tabMaterial.classList.toggle('active', mostrarMaterial);
+    tabMaterial.setAttribute('aria-selected', String(mostrarMaterial));
   }
   if (boletaBloqueada) boletaBloqueada.style.display = boletaAutorizadaActual ? 'none' : 'block';
+  if (mostrarMaterial) cargarMaterialesEstudiante();
 };
+window.mostrarDocumento = mostrarDocumento;
 
 // Reemplazar consulta de recibo de pagos
 const renderizarReciboEstudiante = async () => {

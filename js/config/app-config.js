@@ -105,6 +105,7 @@
       sendWhatsApp: `${apiBaseUrl}/api/send-whatsapp`,
       sendDailyEmails: `${apiBaseUrl}/api/cron-daily-emails`,
       syncState: `${apiBaseUrl}/api/sync-state`,
+      academicMaterials: `${apiBaseUrl}/api/material-academico`,
       authLogin: `${apiBaseUrl}/api/auth/login`,
       authLogout: `${apiBaseUrl}/api/auth/logout`,
     }),

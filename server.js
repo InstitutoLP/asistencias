@@ -475,6 +475,7 @@ app.use(express.json());
 app.post('/api/auth/login', handleLogin);
 app.post('/api/auth/refresh', handleRefresh);
 app.post('/api/auth/logout', handleLogout);
+app.all('/api/material-academico', require('./api/material-academico'));
 const cronDailyEmailsHandler = require('./cron-daily-emails');
 app.get('/api/cron-daily-emails', cronDailyEmailsHandler);
 app.post('/api/cron-daily-emails', requireTeacherSession, cronDailyEmailsHandler);
