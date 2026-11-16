@@ -118,6 +118,11 @@ const canManageAcademicMaterial = () => {
   return (name.includes('nestor') && name.includes('perez'))
     || (name.includes('andy') && name.includes('suarez'));
 };
+const canSendDailyEmails = () => {
+  const name = normalizePersonName(`${currentUser?.name || ''} ${currentUser?.username || ''}`);
+  return (name.includes('patricia') && name.includes('salinas'))
+    || (name.includes('abraham') && name.includes('ramirez'));
+};
 const canViewReports = () => Boolean(currentUser?.puedeVerReportes || currentUser?.soloReportes);
 const canMarkAttendance = () => !isProfessorNestor();
 
@@ -131,7 +136,7 @@ const syncStudentManagementControls = () => {
   const materialBtn = document.getElementById('btnGestionMaterial');
 
   if (mainBtn) mainBtn.style.display = canManageStudents() ? 'inline-block' : 'none';
-  if (sendDailyEmailsBtn) sendDailyEmailsBtn.style.display = canManageStudents() ? 'inline-block' : 'none';
+  if (sendDailyEmailsBtn) sendDailyEmailsBtn.style.display = canSendDailyEmails() ? 'inline-block' : 'none';
   if (landingBtn) landingBtn.style.display = canManageStudents() ? 'inline-block' : 'none';
   if (reportsBtn) reportsBtn.style.display = canViewReports() ? 'inline-block' : '';
   if (gradesBtn) gradesBtn.style.display = canLoadStudentGrades() ? 'inline-block' : 'none';
