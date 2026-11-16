@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Notas Certificadas</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 18px;
+      background: #e8ebee;
+      color: #111;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .actions {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin: 0 auto 16px;
+    }
+    .actions button {
+      padding: 10px 16px;
+      border: 0;
+      border-radius: 6px;
+      background: #1769aa;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .actions button:last-child { background: #475569; }
+    .paper {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      padding: 5mm;
+      background: #fff;
+      box-shadow: 0 2px 14px #0002;
+      font-size: 6.2pt;
+      line-height: 1.08;
+    }
+    .certificate {
+      width: 100%;
+      min-height: 286mm;
+      outline: none;
+    }
+    .editable {
+      outline: none;
+      cursor: text;
+    }
+    .editable:hover { background: #fffde7; }
+    .editable:focus { background: #fff8cc; }
+    .top {
+      display: grid;
+      grid-template-columns: 35% 65%;
+      align-items: center;
+      min-height: 15mm;
+      border-bottom: 1px solid #222;
+      text-align: center;
+    }
+    .government { font-size: 7pt; font-weight: 700; }
+    .government span { display: block; font-size: 5.5pt; font-weight: 400; }
+    .document-title { font-size: 9pt; font-weight: 700; text-decoration: underline; }
+    .document-subtitle { margin-top: 3px; font-size: 6pt; }
+    .top-fields {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2px 8px;
+      margin: 2mm 0;
+    }
+    .top-fields > div, .identity-grid > div {
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+    }
+    .field-line {
+      flex: 1;
+      min-width: 22px;
+      min-height: 10px;
+      border-bottom: 1px solid #555;
+    }
+    .section-title {
+      margin: 2px 0 1px;
+      font-weight: 700;
+    }
+    .identity-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr 1fr 1fr;
+      gap: 1px 5px;
+    }
+    .identity-grid .wide { grid-column: span 2; }
+    .schools {
+      width: 100%;
+      margin: 1px 0 2px;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+    table { border-collapse: collapse; }
+    th, td {
+      border: .6px solid #333;
+      padding: 1.1px 2px;
+      vertical-align: middle;
+    }
+    th { font-weight: 700; text-align: center; }
+    .schools td:nth-child(1), .schools th:nth-child(1) { width: 6%; text-align: center; }
+    .schools td:nth-child(2), .schools th:nth-child(2) { width: 56%; }
+    .schools td:nth-child(3), .schools th:nth-child(3) { width: 19%; text-align: center; }
+    .schools td:nth-child(4), .schools th:nth-child(4) { width: 19%; text-align: center; }
+    .years {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2px 5px;
+    }
+    .year-block h3 {
+      margin: 1px 0;
+      text-align: center;
+      font-size: 6.4pt;
+    }
+    .grades {
+      width: 100%;
+      table-layout: fixed;
+      font-size: 5.3pt;
+    }
+    .grades th, .grades td { padding: 1px 1.5px; }
+    .grades td:nth-child(1), .grades th:nth-child(1) { width: 45%; }
+    .grades td:nth-child(2), .grades th:nth-child(2) { width: 8%; text-align: center; }
+    .grades td:nth-child(3), .grades th:nth-child(3) { width: 22%; text-align: center; }
+    .grades td:nth-child(4), .grades th:nth-child(4) { width: 7%; text-align: center; }
+    .grades td:nth-child(5), .grades th:nth-child(5) { width: 6%; text-align: center; }
+    .grades td:nth-child(6), .grades th:nth-child(6) { width: 12%; text-align: center; }
+    .fifth-and-areas {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5px;
+    }
+    .formation {
+      width: 100%;
+      table-layout: fixed;
+      font-size: 5.4pt;
+    }
+    .formation td:first-child { width: 46%; }
+    .formation td:nth-child(2) { width: 12%; text-align: center; }
+    .formation td:nth-child(3) { width: 26%; text-align: center; }
+    .formation td:nth-child(4) { width: 16%; text-align: center; }
+    .signatures {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5px;
+      margin-top: 2px;
+    }
+    .signature-box {
+      min-height: 38mm;
+      border: .7px solid #333;
+    }
+    .signature-box h3 {
+      margin: 0;
+      padding: 2px;
+      border-bottom: .7px solid #333;
+      text-align: center;
+      font-size: 6.3pt;
+    }
+    .signature-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 33mm;
+    }
+    .signature-details { padding: 3px; }
+    .signature-details div { min-height: 14px; border-bottom: .5px solid #555; }
+    .seal {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 4px;
+      border: 1px dashed #555;
+      border-radius: 50%;
+      text-align: center;
+      font-size: 5.5pt;
+    }
+    .zone-seal {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 33mm;
+      text-align: center;
+      font-weight: 700;
+    }
+    @page { size: A4 portrait; margin: 5mm; }
+    @media print {
+      html, body {
+        width: 200mm;
+        margin: 0;
+        padding: 0;
+        background: #fff;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+      .actions { display: none !important; }
+      .paper {
+        width: 200mm;
+        min-height: 0;
+        margin: 0;
+        padding: 0;
+        box-shadow: none;
+      }
+      .certificate {
+        min-height: 0;
+        outline: none !important;
+      }
+      .editable, .editable:hover, .editable:focus {
+        background: transparent !important;
+        outline: none !important;
+        box-shadow: none !important;
+      }
+      table, tr, .year-block, .signature-box { break-inside: avoid; page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="actions" aria-label="Acciones del documento">
+    <button type="button" onclick="window.print()">Imprimir / Guardar PDF</button>
+    <button type="button" onclick="window.location.href = 'index.html'">Regresar</button>
+  </nav>
+
+  <main class="paper">
+    <article class="certificate editable" contenteditable="true" spellcheck="false" aria-label="Certificación de calificaciones editable">
+      <header class="top">
+        <div class="government">Gobierno Bolivariano de Venezuela<span>Ministerio del Poder Popular para la Educación</span></div>
+        <div>
+          <div class="document-title">CERTIFICACIÓN DE CALIFICACIONES EMG</div>
+          <div class="document-subtitle">Año de Estudio: EDUCACIÓN MEDIA GENERAL</div>
+        </div>
+      </header>
+
+      <div class="top-fields">
+        <div>Código: <span class="field-line"></span></div>
+        <div>Grado: <span class="field-line">5° Año</span></div>
+        <div>Plan de Estudio: <span class="field-line">Educación Media General</span></div>
+        <div>Sección: <span class="field-line"></span></div>
+      </div>
+
+      <section>
+        <div class="section-title">II. Datos del Plantel o Zona Educativa que Emite la Certificación:</div>
+        <div class="identity-grid">
+          <div>Código: <span class="field-line"></span></div>
+          <div class="wide">Nombre: <span class="field-line">UNIDAD EDUCATIVA COLEGIO MONSEÑOR SALUSTIANO CRESPO</span></div>
+          <div class="wide">Dirección: <span class="field-line">AV. PPAL. CENTRO ADMINISTRATIVO EN SU PROLONGACIÓN</span></div>
+          <div>Municipio: <span class="field-line">FRANCISCO DE MIRANDA</span></div>
+          <div>Entidad Federal: <span class="field-line">GUÁRICO</span></div>
+          <div>Zona Educativa: <span class="field-line">GUÁRICO</span></div>
+        </div>
+      </section>
+
+      <section>
+        <div class="section-title">III. Datos de Identificación del Estudiante:</div>
+        <div class="identity-grid">
+          <div>Cédula de Identidad: <span class="field-line">V-31518255</span></div>
+          <div>Fecha de Nacimiento: <span class="field-line">10/05/2005</span></div>
+          <div class="wide">Apellidos: <span class="field-line">SILVA MARTÍNEZ</span></div>
+          <div>Nombres: <span class="field-line">RODRIGO ALEJANDRO</span></div>
+          <div>Lugar de Nacimiento: <span class="field-line">VENEZUELA</span></div>
+          <div>Estado: <span class="field-line">GUÁRICO</span></div>
+          <div>Municipio: <span class="field-line">FRANCISCO DE MIRANDA</span></div>
+          <div>País: <span class="field-line">VENEZUELA</span></div>
+        </div>
+      </section>
+
+      <section>
+        <div class="section-title">IV. Planteles donde cursó estudios:</div>
+        <table class="schools">
+          <thead><tr><th>N°</th><th>Nombre del Plantel</th><th>Código</th><th>Año</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>UNIDAD EDUCATIVA COLEGIO MONSEÑOR SALUSTIANO CRESPO</td><td></td><td>2018 - 2019</td></tr>
+            <tr><td>2</td><td>UNIDAD EDUCATIVA COLEGIO MONSEÑOR SALUSTIANO CRESPO</td><td></td><td>2019 - 2020</td></tr>
+            <tr><td>3</td><td>UNIDAD EDUCATIVA COLEGIO MONSEÑOR SALUSTIANO CRESPO</td><td></td><td>2020 - 2021</td></tr>
+            <tr><td>4</td><td>UNIDAD EDUCATIVA COLEGIO MONSEÑOR SALUSTIANO CRESPO</td><td></td><td>2021 - 2022</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <div class="section-title">V. Plan de Estudio:</div>
+        <div class="years">
+          <div class="year-block">
+            <h3>PRIMER AÑO · CALIFICACIÓN</h3>
+            <table class="grades">
+              <thead><tr><th>ÁREAS DE FORMACIÓN</th><th>N°</th><th>LETRAS</th><th>T-E</th><th colspan="2">FECHA<br>Mes&nbsp;&nbsp; Año</th></tr></thead>
+              <tbody>
+                <tr><td>Castellano</td><td>16</td><td>DIECISÉIS</td><td>F</td><td>07</td><td>2018</td></tr>
+                <tr><td>Inglés y otras Lenguas Extranjeras</td><td>14</td><td>CATORCE</td><td>F</td><td>07</td><td>2018</td></tr>
+                <tr><td>Matemáticas</td><td>14</td><td>CATORCE</td><td>F</td><td>07</td><td>2018</td></tr>
+                <tr><td>Educación Física</td><td>16</td><td>DIECISÉIS</td><td>F</td><td>07</td><td>2018</td></tr>
+                <tr><td>Arte y Patrimonio</td><td>14</td><td>CATORCE</td><td>F</td><td>07</td><td>2018</td></tr>
+                <tr><td>Ciencias Naturales</td><td>14</td><td>CATORCE</td><td>F</td><td>07</td><td>2018</td></tr>
+                <tr><td>Geografía, Historia y Ciudadanía</td><td>14</td><td>CATORCE</td><td>F</td><td>07</td><td>2018</td></tr>
+                <tr><td>Grupo Estable</td><td>19</td><td>DIECINUEVE</td><td>F</td><td>07</td><td>2018</td></tr>
+                <tr><td>Orientación y Convivencia</td><td>14</td><td>CATORCE</td><td>F</td><td>07</td><td>2018</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="year-block">
+            <h3>SEGUNDO AÑO · CALIFICACIÓN</h3>
+            <table class="grades">
+              <thead><tr><th>ÁREAS DE FORMACIÓN</th><th>N°</th><th>LETRAS</th><th>T-E</th><th colspan="2">FECHA<br>Mes&nbsp;&nbsp; Año</th></tr></thead>
+              <tbody>
+                <tr><td>Castellano</td><td>15</td><td>QUINCE</td><td>F</td><td>07</td><td>2019</td></tr>
+                <tr><td>Inglés y otras Lenguas Extranjeras</td><td>13</td><td>TRECE</td><td>F</td><td>07</td><td>2019</td></tr>
+                <tr><td>Matemáticas</td><td>15</td><td>QUINCE</td><td>F</td><td>07</td><td>2019</td></tr>
+                <tr><td>Educación Física</td><td>12</td><td>DOCE</td><td>F</td><td>07</td><td>2019</td></tr>
+                <tr><td>Arte y Patrimonio</td><td>13</td><td>TRECE</td><td>F</td><td>07</td><td>2019</td></tr>
+                <tr><td>Ciencias Naturales</td><td>12</td><td>DOCE</td><td>F</td><td>07</td><td>2019</td></tr>
+                <tr><td>Geografía, Historia y Ciudadanía</td><td>12</td><td>DOCE</td><td>F</td><td>07</td><td>2019</td></tr>
+                <tr><td>Grupo Estable</td><td>12</td><td>DOCE</td><td>F</td><td>07</td><td>2019</td></tr>
+                <tr><td>Orientación y Convivencia</td><td>12</td><td>DOCE</td><td>F</td><td>07</td><td>2019</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="year-block">
+            <h3>TERCER AÑO · CALIFICACIÓN</h3>
+            <table class="grades">
+              <thead><tr><th>ÁREAS DE FORMACIÓN</th><th>N°</th><th>LETRAS</th><th>T-E</th><th colspan="2">FECHA<br>Mes&nbsp;&nbsp; Año</th></tr></thead>
+              <tbody>
+                <tr><td>Castellano</td><td>13</td><td>TRECE</td><td>F</td><td>07</td><td>2020</td></tr>
+                <tr><td>Inglés y otras Lenguas Extranjeras</td><td>12</td><td>DOCE</td><td>F</td><td>07</td><td>2020</td></tr>
+                <tr><td>Matemáticas</td><td>10</td><td>DIEZ</td><td>F</td><td>07</td><td>2020</td></tr>
+                <tr><td>Educación Física</td><td>12</td><td>DOCE</td><td>F</td><td>07</td><td>2020</td></tr>
+                <tr><td>Arte y Patrimonio</td><td>10</td><td>DIEZ</td><td>F</td><td>07</td><td>2020</td></tr>
+                <tr><td>Física</td><td>12</td><td>DOCE</td><td>F</td><td>07</td><td>2020</td></tr>
+                <tr><td>Química</td><td>11</td><td>ONCE</td><td>F</td><td>07</td><td>2020</td></tr>
+                <tr><td>Biología</td><td>12</td><td>DOCE</td><td>F</td><td>07</td><td>2020</td></tr>
+                <tr><td>Geografía, Historia y Ciudadanía</td><td>13</td><td>TRECE</td><td>F</td><td>07</td><td>2020</td></tr>
+                <tr><td>Grupo Estable</td><td>13</td><td>TRECE</td><td>F</td><td>07</td><td>2020</td></tr>
+                <tr><td>Orientación y Convivencia</td><td>13</td><td>TRECE</td><td>F</td><td>07</td><td>2020</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="year-block">
+            <h3>CUARTO AÑO · CALIFICACIÓN</h3>
+            <table class="grades">
+              <thead><tr><th>ÁREAS DE FORMACIÓN</th><th>N°</th><th>LETRAS</th><th>T-E</th><th colspan="2">FECHA<br>Mes&nbsp;&nbsp; Año</th></tr></thead>
+              <tbody>
+                <tr><td>Castellano</td><td>15</td><td>QUINCE</td><td>F</td><td>07</td><td>2021</td></tr>
+                <tr><td>Inglés y otras Lenguas Extranjeras</td><td>10</td><td>DIEZ</td><td>F</td><td>07</td><td>2021</td></tr>
+                <tr><td>Matemáticas</td><td>10</td><td>DIEZ</td><td>F</td><td>07</td><td>2021</td></tr>
+                <tr><td>Educación Física</td><td>12</td><td>DOCE</td><td>F</td><td>07</td><td>2021</td></tr>
+                <tr><td>Arte y Patrimonio</td><td>12</td><td>DOCE</td><td>F</td><td>07</td><td>2021</td></tr>
+                <tr><td>Física</td><td>10</td><td>DIEZ</td><td>F</td><td>07</td><td>2021</td></tr>
+                <tr><td>Química</td><td>12</td><td>DOCE</td><td>F</td><td>07</td><td>2021</td></tr>
+                <tr><td>Biología</td><td>10</td><td>DIEZ</td><td>F</td><td>07</td><td>2021</td></tr>
+                <tr><td>Geografía, Historia y Ciudadanía</td><td>10</td><td>DIEZ</td><td>F</td><td>07</td><td>2021</td></tr>
+                <tr><td>Formación para la Soberanía Nacional</td><td>12</td><td>DOCE</td><td>F</td><td>07</td><td>2021</td></tr>
+                <tr><td>Grupo Estable</td><td>12</td><td>DOCE</td><td>F</td><td>07</td><td>2021</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="fifth-and-areas">
+          <div class="year-block">
+            <h3>QUINTO AÑO · CALIFICACIÓN</h3>
+            <table class="grades">
+              <thead><tr><th>ÁREAS DE FORMACIÓN</th><th>N°</th><th>LETRAS</th><th>T-E</th><th colspan="2">FECHA<br>Mes&nbsp;&nbsp; Año</th></tr></thead>
+              <tbody>
+                <tr><td>Castellano</td><td>12</td><td>DOCE</td><td>F</td><td>07</td><td>2022</td></tr>
+                <tr><td>Inglés y otras Lenguas Extranjeras</td><td>15</td><td>QUINCE</td><td>F</td><td>07</td><td>2022</td></tr>
+                <tr><td>Matemáticas</td><td>11</td><td>ONCE</td><td>F</td><td>07</td><td>2022</td></tr>
+                <tr><td>Educación Física</td><td>17</td><td>DIECISIETE</td><td>F</td><td>07</td><td>2022</td></tr>
+                <tr><td>Física</td><td>15</td><td>QUINCE</td><td>F</td><td>07</td><td>2022</td></tr>
+                <tr><td>Química</td><td>15</td><td>QUINCE</td><td>F</td><td>07</td><td>2022</td></tr>
+                <tr><td>Biología</td><td>16</td><td>DIECISÉIS</td><td>F</td><td>07</td><td>2022</td></tr>
+                <tr><td>Ciencias de la Tierra</td><td>14</td><td>CATORCE</td><td>F</td><td>07</td><td>2022</td></tr>
+                <tr><td>Geografía, Historia y Ciudadanía</td><td>14</td><td>CATORCE</td><td>F</td><td>07</td><td>2022</td></tr>
+                <tr><td>Formación para la Soberanía Nacional</td><td>18</td><td>DIECIOCHO</td><td>F</td><td>07</td><td>2022</td></tr>
+                <tr><td>Grupo Estable</td><td>15</td><td>QUINCE</td><td>F</td><td>07</td><td>2022</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div>
+            <h3 style="margin:1px 0;text-align:center;">ÁREAS DE FORMACIÓN</h3>
+            <table class="formation">
+              <tbody>
+                <tr><td rowspan="5" style="text-align:center;">ORIENTACIÓN Y CONVIVENCIA</td><td>1°</td><td></td><td>B</td></tr>
+                <tr><td>2°</td><td></td><td>C</td></tr>
+                <tr><td>3°</td><td></td><td>C</td></tr>
+                <tr><td>4°</td><td></td><td>B</td></tr>
+                <tr><td>5°</td><td></td><td>B</td></tr>
+                <tr><td rowspan="5" style="text-align:center;">PARTICIPACIÓN EN GRUPOS DE CREACIÓN, RECREACIÓN Y PRODUCCIÓN</td><td>1°</td><td>GRUPO ESCOLAR</td><td>A</td></tr>
+                <tr><td>2°</td><td>MANUALIDADES</td><td>A</td></tr>
+                <tr><td>3°</td><td>DEPORTE Y RECREACIÓN</td><td>B</td></tr>
+                <tr><td>4°</td><td>CONUCO</td><td>C</td></tr>
+                <tr><td>5°</td><td>CULTURA</td><td>A</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="signatures">
+        <div class="signature-box">
+          <h3>VII. Plantel</h3>
+          <div class="signature-content">
+            <div class="signature-details">
+              <div>Director(a):</div>
+              <div>Apellidos y Nombres:</div>
+              <div>Cédula de Identidad:</div>
+              <div>Firma:</div>
+              <div>Para efectos de su validez Nacional</div>
+            </div>
+            <div class="seal">SELLO DEL PLANTEL<br>FIRMA Y SELLO</div>
+          </div>
+        </div>
+        <div class="signature-box">
+          <h3>VIII. Zona Educativa</h3>
+          <div class="signature-content">
+            <div class="signature-details">
+              <div>Director(a):</div>
+              <div>Apellidos y Nombres:</div>
+              <div>Cédula de Identidad:</div>
+              <div>Firma:</div>
+              <div>Para efectos de su validez Internacional</div>
+            </div>
+            <div class="zone-seal">SELLO DE LA ZONA EDUCATIVA</div>
+          </div>
+        </div>
+      </section>
+    </article>
+  </main>
+</body>
+</html>
