@@ -595,7 +595,13 @@
     const deletedStudentIds = new Set();
     const estudianteEliminado = (student) => deletedStudentIds.has(String(student.id));
 
+    const nombrePerfilReportes = `${sessionUser.name || ''} ${sessionUser.username || ''}`
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
     const puedeVerReportes = sessionUser.puedeVerReportes
+      || (nombrePerfilReportes.includes('patricia') && nombrePerfilReportes.includes('salinas'))
+      || (nombrePerfilReportes.includes('abraham') && nombrePerfilReportes.includes('ramirez'))
       || sessionUser.name === 'Prof: Andy'
       || sessionUser.name === 'Prof: Néstor'
       || sessionUser.name === 'Prof: Nestor'

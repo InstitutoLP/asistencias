@@ -127,7 +127,14 @@ const canViewCertifiedGrades = () => {
   const name = normalizePersonName(`${currentUser?.name || ''} ${currentUser?.username || ''}`);
   return name.includes('andy') && name.includes('suarez');
 };
-const canViewReports = () => Boolean(currentUser?.puedeVerReportes || currentUser?.soloReportes);
+const canViewReports = () => {
+  const name = normalizePersonName(`${currentUser?.name || ''} ${currentUser?.username || ''}`);
+  return Boolean(currentUser?.puedeVerReportes || currentUser?.soloReportes
+    || (name.includes('patricia') && name.includes('salinas'))
+    || (name.includes('abraham') && name.includes('ramirez'))
+    || name.includes('prof: patricia')
+    || name.includes('prof: abrahan'));
+};
 const canMarkAttendance = () => !isProfessorNestor();
 
 const syncStudentManagementControls = () => {
