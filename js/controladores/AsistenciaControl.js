@@ -143,7 +143,7 @@ const syncStudentManagementControls = () => {
   if (mainBtn) mainBtn.style.display = canManageStudents() ? 'inline-block' : 'none';
   if (sendDailyEmailsBtn) sendDailyEmailsBtn.style.display = canSendDailyEmails() ? 'inline-block' : 'none';
   if (landingBtn) landingBtn.style.display = canManageStudents() ? 'inline-block' : 'none';
-  if (reportsBtn) reportsBtn.style.display = canViewReports() ? 'inline-block' : '';
+  if (reportsBtn) reportsBtn.style.display = canViewReports() ? 'inline-block' : 'none';
   if (gradesBtn) gradesBtn.style.display = canLoadStudentGrades() ? 'inline-block' : 'none';
   if (materialBtn) materialBtn.classList.toggle('hidden', !canManageAcademicMaterial());
   if (certifiedGradesBtn) certifiedGradesBtn.classList.toggle('hidden', !canViewCertifiedGrades());
