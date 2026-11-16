@@ -475,11 +475,14 @@ app.use(express.json());
 app.post('/api/auth/login', handleLogin);
 app.post('/api/auth/refresh', handleRefresh);
 app.post('/api/auth/logout', handleLogout);
-app.all('/api/material-academico', require('./api/material-academico'));
+const academicMaterialsHandler = require('./academic-material-service');
 const cronDailyEmailsHandler = require('./cron-daily-emails');
 app.get('/api/cron-daily-emails', cronDailyEmailsHandler);
 app.post('/api/cron-daily-emails', requireTeacherSession, cronDailyEmailsHandler);
 app.use('/api/students', async (req, res, next) => {
+  if (req.query.resource === 'academic-materials') {
+    return academicMaterialsHandler(req, res);
+  }
   const isPublicStudentLookup = req.method === 'GET' && (req.query.id || req.query.cedula);
   if (isPublicStudentLookup && !req.headers.authorization) return next();
   return requireTeacherSession(req, res, next);

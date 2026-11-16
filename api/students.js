@@ -1,6 +1,7 @@
 const SUPABASE_URL = (process.env.SUPABASE_URL || '').replace(/\/rest\/v1\/?$/, '').replace(/\/$/, '');
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
 const { authenticateRequest } = require('../auth-service');
+const academicMaterialsHandler = require('../academic-material-service');
 
 const sanitizeText = (val, maxLen = 150) => {
   if (val === null || val === undefined) return '';
@@ -129,6 +130,10 @@ const fetchAttendanceHistory = async (studentIds, startDate, endDate) => {
 };
 
 module.exports = async function handler(req, res) {
+  if (req.query?.resource === 'academic-materials') {
+    return academicMaterialsHandler(req, res);
+  }
+
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');

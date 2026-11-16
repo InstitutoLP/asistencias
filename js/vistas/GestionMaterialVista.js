@@ -76,7 +76,7 @@
     materialList.innerHTML = '<p class="material-empty">Cargando documentos...</p>';
     setStatus(listStatus, '');
     const year = encodeURIComponent(materialFilter.value);
-    const response = await window.apiFetch(`${API_MATERIALS}?year=${year}`, { cache: 'no-store' });
+    const response = await window.apiFetch(`${API_MATERIALS}&year=${year}`, { cache: 'no-store' });
     const result = await readResponse(response, 'No se pudieron cargar los documentos.');
     renderMaterials(Array.isArray(result.materials) ? result.materials : []);
   };
@@ -130,7 +130,7 @@
     setStatus(uploadStatus, 'Preparando la carga...');
     let materialId = '';
     try {
-      const prepareResponse = await window.apiFetch(`${API_MATERIALS}?action=prepare`, {
+      const prepareResponse = await window.apiFetch(`${API_MATERIALS}&action=prepare`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -156,7 +156,7 @@
         throw new Error(storageError.message || storageError.error || 'Supabase Storage rechazó el archivo.');
       }
 
-      const completeResponse = await window.apiFetch(`${API_MATERIALS}?action=complete`, {
+      const completeResponse = await window.apiFetch(`${API_MATERIALS}&action=complete`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: materialId }),

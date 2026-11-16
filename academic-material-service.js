@@ -1,5 +1,5 @@
 const { randomUUID } = require('crypto');
-const { authenticateRequest } = require('../auth-service');
+const { authenticateRequest } = require('./auth-service');
 
 const SUPABASE_URL = (process.env.SUPABASE_URL || '')
   .replace(/\/rest\/v1\/?$/, '')

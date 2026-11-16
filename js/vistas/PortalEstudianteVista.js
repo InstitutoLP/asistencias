@@ -722,7 +722,7 @@ const cargarMaterialesEstudiante = async () => {
 
   list.innerHTML = '<p class="student-material-empty">Cargando materiales...</p>';
   try {
-    const response = await fetch(`${API_MATERIALS}?year=${year}`, { cache: 'no-store' });
+    const response = await fetch(`${API_MATERIALS}&year=${year}`, { cache: 'no-store' });
     const result = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(result.error || 'No se pudieron consultar los materiales.');
     const materials = Array.isArray(result.materials) ? result.materials : [];
