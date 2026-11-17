@@ -4,77 +4,364 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Notas Certificadas</title>
-  <link rel="icon" type="image/png" href="sello.png" />
   <style>
     * { box-sizing: border-box; }
-    html, body {
-      margin: 0;
-      background: #dfe3e7;
+
+    :root {
       color: #111;
       font-family: Arial, Helvetica, sans-serif;
+      font-synthesis: none;
     }
+
     body {
-      padding: 18px;
+      margin: 0;
+      padding: 18px 12px;
+      background: #dfe3e7;
     }
+
     .actions {
       display: flex;
       justify-content: center;
       gap: 12px;
       margin: 0 auto 16px;
     }
+
     .actions button {
+      padding: 10px 16px;
       border: 0;
       border-radius: 6px;
       background: #1d4e89;
       color: #fff;
-      font: 700 15px/1 Arial, Helvetica, sans-serif;
-      padding: 10px 16px;
+      font: 700 14px/1 Arial, Helvetica, sans-serif;
       cursor: pointer;
     }
-    .actions button:last-child {
-      background: #4b5563;
-    }
-    .viewer-wrap {
-      width: 100%;
-      max-width: 980px;
+
+    .actions button:last-child { background: #4b5563; }
+
+    .sheet {
+      width: 210mm;
+      min-height: 297mm;
       margin: 0 auto;
+      padding: 10.8mm 11mm 6mm;
       background: #fff;
-      border: 1px solid rgba(0,0,0,0.08);
-      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-      overflow: hidden;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, .13);
+      font-size: 7.2px;
+      line-height: 1.15;
     }
-    .pdf-view {
-      display: block;
-      width: 100%;
-      min-height: 100vh;
-      max-height: 100vh;
+
+    .edit {
       border: 0;
-      background: #fff;
+      outline: 0;
+      background: transparent;
+      color: inherit;
+      cursor: text;
+      caret-color: #111;
     }
+
+    .edit:focus { outline: 0; }
+
+    .masthead {
+      display: grid;
+      grid-template-columns: 31% 69%;
+      min-height: 48px;
+      align-items: start;
+      border-bottom: 1px solid #222;
+      padding: 1px 3px 4px;
+    }
+
+    .ministry {
+      padding-top: 1px;
+      text-align: center;
+      font-size: 7px;
+      line-height: 1.2;
+    }
+
+    .ministry .country {
+      display: block;
+      margin-bottom: 3px;
+      font-size: 6.4px;
+      font-weight: 700;
+      letter-spacing: .1px;
+    }
+
+    .ministry .agency {
+      display: block;
+      font-size: 9px;
+      font-weight: 700;
+      line-height: 1.05;
+    }
+
+    .heading {
+      text-align: center;
+      padding-top: 0;
+    }
+
+    .heading h1 {
+      margin: 0 0 4px;
+      font-size: 13px;
+      line-height: 1.1;
+      font-weight: 700;
+    }
+
+    .heading p {
+      margin: 2px 0;
+      font-size: 7px;
+      font-weight: 700;
+    }
+
+    .section { margin-top: 5px; }
+
+    .section-title {
+      display: block;
+      margin: 0 0 3px;
+      font-size: 7.4px;
+      font-weight: 700;
+    }
+
+    .form-row {
+      display: grid;
+      align-items: end;
+      gap: 5px;
+      min-height: 12px;
+    }
+
+    .field {
+      display: flex;
+      min-width: 0;
+      align-items: baseline;
+      gap: 3px;
+      border-bottom: 1px solid #666;
+      white-space: nowrap;
+    }
+
+    .field-label { flex: 0 0 auto; font-weight: 700; }
+    .field-value { flex: 1 1 auto; min-width: 0; text-align: center; }
+
+    .plant-main { grid-template-columns: .9fr 2.1fr 1fr; }
+    .plant-address { grid-template-columns: 2.1fr 1fr 1.15fr .7fr; }
+
+    .student-row {
+      grid-template-columns: 1.25fr 1.1fr 1.35fr 1.3fr;
+    }
+
+    .student-row:last-child {
+      grid-template-columns: 1.7fr 1.3fr 1.4fr;
+    }
+
+    .schools {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 7px;
+    }
+
+    .schools th, .schools td {
+      height: 12px;
+      padding: 1px 3px;
+      border: 1px solid #444;
+      text-align: center;
+    }
+
+    .schools th:nth-child(1) { width: 8%; }
+    .schools th:nth-child(2) { width: 59%; }
+    .schools th:nth-child(3) { width: 17%; }
+    .schools th:nth-child(4) { width: 16%; }
+    .schools td:nth-child(2) { text-align: left; }
+
+    .grade-heading {
+      margin: 5px 0 3px;
+      font-size: 7.4px;
+      font-weight: 700;
+    }
+
+    .grade-pair {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      margin-bottom: 3px;
+      align-items: start;
+    }
+
+    .grade-unit { min-width: 0; }
+
+    .grade-unit h3 {
+      margin: 0 0 2px;
+      text-align: center;
+      font-size: 8px;
+      line-height: 1.05;
+    }
+
+    .grades {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 6.5px;
+      line-height: 1.05;
+    }
+
+    .grades th, .grades td {
+      height: 11px;
+      padding: 1px 2px;
+      border: 1px solid #444;
+      text-align: center;
+      overflow-wrap: anywhere;
+    }
+
+    .grades th:first-child, .grades td:first-child {
+      width: 43%;
+      text-align: left;
+    }
+
+    .grades col:nth-child(1) { width: 43%; }
+    .grades col:nth-child(2) { width: 11%; }
+    .grades col:nth-child(3) { width: 20%; }
+    .grades col:nth-child(4) { width: 8%; }
+    .grades col:nth-child(5) { width: 8%; }
+    .grades col:nth-child(6) { width: 10%; }
+
+    .grades th:nth-child(2), .grades td:nth-child(2) { width: 11%; }
+    .grades th:nth-child(3), .grades td:nth-child(3) { width: 20%; }
+    .grades th:nth-child(4), .grades td:nth-child(4) { width: 8%; }
+    .grades th:nth-child(5), .grades td:nth-child(5) { width: 8%; }
+    .grades th:nth-child(6), .grades td:nth-child(6) { width: 10%; }
+
+    .grade-labels th { height: 15px; }
+
+    .fifth-pair { grid-template-columns: 1.18fr .82fr; }
+    .areas { font-size: 6.5px; }
+    .areas th:first-child, .areas td:first-child {
+      width: 70%;
+      text-align: center;
+    }
+
+    .areas col:nth-child(1) { width: 70%; }
+    .areas col:nth-child(2), .areas col:nth-child(3) { width: 15%; }
+
+    .observations { margin-top: 44px; }
+    .observations-box {
+      height: 38px;
+      border: 1px solid #444;
+      padding: 3px;
+    }
+
+    .signatures {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      margin-top: 4px;
+    }
+
+    .signature {
+      height: 126px;
+      border: 1px solid #444;
+    }
+
+    .signature h3 {
+      margin: 0;
+      padding: 3px 2px;
+      border-bottom: 1px solid #444;
+      text-align: center;
+      font-size: 7.2px;
+    }
+
+    .signature-content {
+      display: grid;
+      grid-template-columns: 1fr .95fr;
+      gap: 5px;
+      padding: 5px 4px;
+    }
+
+    .signature-fields .line {
+      display: flex;
+      min-height: 15px;
+      gap: 3px;
+      align-items: end;
+      border-bottom: 1px solid #666;
+      white-space: nowrap;
+    }
+
+    .stamp {
+      min-height: 80px;
+      margin-top: 5px;
+      border: 1px dashed #777;
+      border-radius: 50%;
+      display: grid;
+      place-content: center;
+      text-align: center;
+      font-size: 6px;
+      font-weight: 700;
+    }
+
+    .signature:last-child .stamp {
+      border-style: solid;
+      border-radius: 0;
+    }
+
+    .legal-note {
+      position: relative;
+      margin-top: 183px;
+      font-size: 5.5px;
+      white-space: nowrap;
+    }
+
     @page {
       size: A4 portrait;
       margin: 0;
     }
+
+    @media (max-width: 820px) {
+      body { padding: 12px 0; }
+      .sheet {
+        margin-left: 0;
+        margin-right: 0;
+        zoom: .8;
+      }
+    }
+
+    @media (max-width: 650px) {
+      .sheet { zoom: .65; }
+    }
+
+    @media (max-width: 520px) {
+      .sheet { zoom: .5; }
+    }
+
+    @media (max-width: 380px) {
+      .sheet { zoom: .4; }
+    }
+
     @media print {
       html, body {
-        background: #fff;
+        width: 210mm;
+        height: 297mm;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
       }
-      .actions {
-        display: none !important;
-      }
-      body {
-        padding: 0;
-      }
-      .viewer-wrap {
-        max-width: none;
-        width: 100vw;
-        height: 100vh;
-        border: 0;
+
+      .actions { display: none !important; }
+
+      .sheet {
+        width: 210mm;
+        height: 297mm;
+        min-height: 0;
+        margin: 0;
+        padding: 10.8mm 11mm 6mm;
+        zoom: 1;
         box-shadow: none;
+        overflow: hidden;
       }
-      .pdf-view {
-        min-height: 100vh;
-        height: 100vh;
+
+      .edit, .edit:focus, [contenteditable="true"] {
+        outline: none !important;
+        box-shadow: none !important;
+        caret-color: transparent !important;
+        cursor: default !important;
+      }
+
+      * {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
       }
     }
   </style>
@@ -85,20 +372,228 @@
     <button type="button" onclick="window.location.href = 'registro.html'">Regresar</button>
   </nav>
 
-  <div class="viewer-wrap">
-    <object
-      class="pdf-view"
-      data="./Certificación%20de%20Calificaciones%20EMG.pdf#toolbar=0&navpanes=0&scrollbar=0&view=FitH"
-      type="application/pdf"
-      title="Certificación de Calificaciones EMG"
-      aria-label="Certificación de Calificaciones EMG"
-    >
-      <embed
-        src="./Certificación%20de%20Calificaciones%20EMG.pdf#toolbar=0&navpanes=0&scrollbar=0&view=FitH"
-        type="application/pdf"
-        style="width: 100%; height: 100vh; border: 0; background: #fff;"
-      />
-    </object>
-  </div>
+  <main class="sheet" aria-label="Certificación de calificaciones editable">
+    <header class="masthead">
+      <div class="ministry">
+        <span class="country edit" contenteditable="true" spellcheck="false">REPÚBLICA BOLIVARIANA DE VENEZUELA</span>
+        <span class="agency edit" contenteditable="true" spellcheck="false">Ministerio del Poder Popular para la Educación</span>
+      </div>
+      <div class="heading">
+        <h1 class="edit" contenteditable="true" spellcheck="false">CERTIFICACIÓN DE CALIFICACIONES EMG</h1>
+        <p class="edit" contenteditable="true" spellcheck="false">I. Plan de Estudio: Educación Media General &nbsp; Código: 31059</p>
+        <p class="edit" contenteditable="true" spellcheck="false">Lugar y Fecha de Expedición: Estado Miranda, 13/04/2026</p>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2 class="section-title edit" contenteditable="true" spellcheck="false">I. Datos del Plantel o Zona Educativa o Centro de Desarrollo de la Calidad Educativa (CDCEE) que emite la Certificación:</h2>
+      <div class="form-row plant-row plant-main">
+        <div class="field"><span class="field-label edit" contenteditable="true" spellcheck="false">Código:</span><span class="field-value edit" contenteditable="true" spellcheck="false">PD02631519</span></div>
+        <div class="field"><span class="field-label edit" contenteditable="true" spellcheck="false">Denominación y Epónimo:</span><span class="field-value edit" contenteditable="true" spellcheck="false">UNIDAD EDUCATIVA PRIVADA INSTITUTO LIBERTAD</span></div>
+        <div class="field"><span class="field-label edit" contenteditable="true" spellcheck="false">Teléfono:</span><span class="field-value edit" contenteditable="true" spellcheck="false">0212-2222724</span></div>
+      </div>
+      <div class="form-row plant-row plant-address">
+        <div class="field"><span class="field-label edit" contenteditable="true" spellcheck="false">Dirección:</span><span class="field-value edit" contenteditable="true" spellcheck="false">CALLE LA FEDERACIÓN EDIFICIO N.º 10 PETARE</span></div>
+        <div class="field"><span class="field-label edit" contenteditable="true" spellcheck="false">Municipio:</span><span class="field-value edit" contenteditable="true" spellcheck="false">SUCRE</span></div>
+        <div class="field"><span class="field-label edit" contenteditable="true" spellcheck="false">Entidad Federal:</span><span class="field-value edit" contenteditable="true" spellcheck="false">MIRANDA</span></div>
+        <div class="field"><span class="field-label edit" contenteditable="true" spellcheck="false">CDCEE:</span><span class="field-value edit" contenteditable="true" spellcheck="false">MIRANDA</span></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2 class="section-title edit" contenteditable="true" spellcheck="false">II. Datos de Identificación del Estudiante:</h2>
+      <div class="form-row student-row">
+        <div class="field"><span class="field-label edit" contenteditable="true" spellcheck="false">Cédula de Identidad:</span><span class="field-value edit" contenteditable="true" spellcheck="false">V-34.345.425</span></div>
+        <div class="field"><span class="field-label edit" contenteditable="true" spellcheck="false">Fecha de Nacimiento:</span><span class="field-value edit" contenteditable="true" spellcheck="false">01 DE DICIEMBRE 2007</span></div>
+        <div class="field"><span class="field-label edit" contenteditable="true" spellcheck="false">Apellidos:</span><span class="field-value edit" contenteditable="true" spellcheck="false">MENDEZ LAYA</span></div>
+        <div class="field"><span class="field-label edit" contenteditable="true" spellcheck="false">Nombres:</span><span class="field-value edit" contenteditable="true" spellcheck="false">DEYALIT SORANGER</span></div>
+      </div>
+      <div class="form-row student-row">
+        <div class="field"><span class="field-label edit" contenteditable="true" spellcheck="false">Lugar de Nacimiento: País:</span><span class="field-value edit" contenteditable="true" spellcheck="false">VENEZUELA</span></div>
+        <div class="field"><span class="field-label edit" contenteditable="true" spellcheck="false">Estado:</span><span class="field-value edit" contenteditable="true" spellcheck="false">DISTRITO CAPITAL</span></div>
+        <div class="field"><span class="field-label edit" contenteditable="true" spellcheck="false">Municipio:</span><span class="field-value edit" contenteditable="true" spellcheck="false">LIBERTADOR</span></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2 class="section-title edit" contenteditable="true" spellcheck="false">III. Planteles donde Cursó Estudios:</h2>
+      <table class="schools">
+        <thead>
+          <tr>
+            <th class="edit" contenteditable="true" spellcheck="false">N.º</th>
+            <th class="edit" contenteditable="true" spellcheck="false">Denominación y Epónimo de la Institución</th>
+            <th class="edit" contenteditable="true" spellcheck="false">Localidad</th>
+            <th class="edit" contenteditable="true" spellcheck="false">E.F.</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td contenteditable="true" spellcheck="false">1</td><td contenteditable="true" spellcheck="false">U.E.P. INSTITUTO LIBERTAD</td><td contenteditable="true" spellcheck="false">PETARE</td><td contenteditable="true" spellcheck="false">MI</td></tr>
+          <tr><td contenteditable="true" spellcheck="false">2</td><td contenteditable="true" spellcheck="false">*****</td><td contenteditable="true" spellcheck="false">*****</td><td contenteditable="true" spellcheck="false">***</td></tr>
+          <tr><td contenteditable="true" spellcheck="false">3</td><td contenteditable="true" spellcheck="false">*****</td><td contenteditable="true" spellcheck="false">*****</td><td contenteditable="true" spellcheck="false">***</td></tr>
+          <tr><td contenteditable="true" spellcheck="false">4</td><td contenteditable="true" spellcheck="false">*****</td><td contenteditable="true" spellcheck="false">*****</td><td contenteditable="true" spellcheck="false">***</td></tr>
+          <tr><td contenteditable="true" spellcheck="false">5</td><td contenteditable="true" spellcheck="false">*****</td><td contenteditable="true" spellcheck="false">*****</td><td contenteditable="true" spellcheck="false">***</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2 class="grade-heading edit" contenteditable="true" spellcheck="false">IV. Plan de Estudio:</h2>
+      <div class="grade-pair">
+        <section class="grade-unit">
+          <h3 class="edit" contenteditable="true" spellcheck="false">PRIMER AÑO</h3>
+          <table class="grades">
+            <colgroup><col><col><col><col><col><col></colgroup>
+            <thead><tr class="grade-labels"><th class="edit" contenteditable="true" spellcheck="false">Áreas de Formación</th><th colspan="2" class="edit" contenteditable="true" spellcheck="false">Calificaciones</th><th class="edit" contenteditable="true" spellcheck="false">T-E</th><th colspan="2" class="edit" contenteditable="true" spellcheck="false">Fecha</th></tr>
+              <tr><th class="edit" contenteditable="true" spellcheck="false"></th><th class="edit" contenteditable="true" spellcheck="false">N.º</th><th class="edit" contenteditable="true" spellcheck="false">Letras</th><th class="edit" contenteditable="true" spellcheck="false"></th><th class="edit" contenteditable="true" spellcheck="false">Mes</th><th class="edit" contenteditable="true" spellcheck="false">Año</th></tr></thead>
+            <tbody>
+              <tr><td contenteditable="true" spellcheck="false">Castellano</td><td contenteditable="true" spellcheck="false">15</td><td contenteditable="true" spellcheck="false">DIEZ</td><td contenteditable="true" spellcheck="false">F</td><td contenteditable="true" spellcheck="false">07</td><td contenteditable="true" spellcheck="false">2018</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Inglés y otras lenguas extranjeras</td><td contenteditable="true" spellcheck="false">12</td><td contenteditable="true" spellcheck="false">DIEZ</td><td contenteditable="true" spellcheck="false">F</td><td contenteditable="true" spellcheck="false">07</td><td contenteditable="true" spellcheck="false">2018</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Matemática</td><td contenteditable="true" spellcheck="false">11</td><td contenteditable="true" spellcheck="false">DIEZ</td><td contenteditable="true" spellcheck="false">F</td><td contenteditable="true" spellcheck="false">07</td><td contenteditable="true" spellcheck="false">2018</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Educación Física</td><td contenteditable="true" spellcheck="false">12</td><td contenteditable="true" spellcheck="false">QUINCE</td><td contenteditable="true" spellcheck="false">F</td><td contenteditable="true" spellcheck="false">07</td><td contenteditable="true" spellcheck="false">2018</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Arte y Patrimonio</td><td contenteditable="true" spellcheck="false">12</td><td contenteditable="true" spellcheck="false">DIEZ</td><td contenteditable="true" spellcheck="false">F</td><td contenteditable="true" spellcheck="false">07</td><td contenteditable="true" spellcheck="false">2018</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Ciencias Naturales</td><td contenteditable="true" spellcheck="false">15</td><td contenteditable="true" spellcheck="false">DIEZ</td><td contenteditable="true" spellcheck="false">F</td><td contenteditable="true" spellcheck="false">07</td><td contenteditable="true" spellcheck="false">2018</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Geografía, Historia y Ciudadanía</td><td contenteditable="true" spellcheck="false">14</td><td contenteditable="true" spellcheck="false">DIEZ</td><td contenteditable="true" spellcheck="false">F</td><td contenteditable="true" spellcheck="false">07</td><td contenteditable="true" spellcheck="false">2018</td></tr>
+            </tbody>
+          </table>
+        </section>
+        <section class="grade-unit">
+          <h3 class="edit" contenteditable="true" spellcheck="false">SEGUNDO AÑO</h3>
+          <table class="grades">
+            <colgroup><col><col><col><col><col><col></colgroup>
+            <thead><tr class="grade-labels"><th class="edit" contenteditable="true" spellcheck="false">Áreas de Formación</th><th colspan="2" class="edit" contenteditable="true" spellcheck="false">Calificaciones</th><th class="edit" contenteditable="true" spellcheck="false">T-E</th><th colspan="2" class="edit" contenteditable="true" spellcheck="false">Fecha</th></tr>
+              <tr><th class="edit" contenteditable="true" spellcheck="false"></th><th class="edit" contenteditable="true" spellcheck="false">N.º</th><th class="edit" contenteditable="true" spellcheck="false">Letras</th><th class="edit" contenteditable="true" spellcheck="false"></th><th class="edit" contenteditable="true" spellcheck="false">Mes</th><th class="edit" contenteditable="true" spellcheck="false">Año</th></tr></thead>
+            <tbody>
+              <tr><td contenteditable="true" spellcheck="false">Castellano</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">2019</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Inglés y otras lenguas extranjeras</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">2019</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Matemática</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">2019</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Educación Física</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">2019</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Arte y Patrimonio</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">2019</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Ciencias Naturales</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">2019</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Geografía, Historia y Ciudadanía</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">2019</td></tr>
+            </tbody>
+          </table>
+        </section>
+      </div>
+
+      <div class="grade-pair">
+        <section class="grade-unit">
+          <h3 class="edit" contenteditable="true" spellcheck="false">TERCER AÑO</h3>
+          <table class="grades">
+            <colgroup><col><col><col><col><col><col></colgroup>
+            <thead><tr class="grade-labels"><th class="edit" contenteditable="true" spellcheck="false">Áreas de Formación</th><th colspan="2" class="edit" contenteditable="true" spellcheck="false">Calificaciones</th><th class="edit" contenteditable="true" spellcheck="false">T-E</th><th colspan="2" class="edit" contenteditable="true" spellcheck="false">Fecha</th></tr>
+              <tr><th class="edit" contenteditable="true" spellcheck="false"></th><th class="edit" contenteditable="true" spellcheck="false">N.º</th><th class="edit" contenteditable="true" spellcheck="false">Letras</th><th class="edit" contenteditable="true" spellcheck="false"></th><th class="edit" contenteditable="true" spellcheck="false">Mes</th><th class="edit" contenteditable="true" spellcheck="false">Año</th></tr></thead>
+            <tbody>
+              <tr><td contenteditable="true" spellcheck="false">Castellano</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">2020</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Inglés y otras lenguas extranjeras</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">2020</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Matemática</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">2020</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Educación Física</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">2020</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Física</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">2020</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Química</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">2020</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Biología</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">2020</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Geografía, Historia y Ciudadanía</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">2020</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">****************************</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">2020</td></tr>
+            </tbody>
+          </table>
+        </section>
+        <section class="grade-unit">
+          <h3 class="edit" contenteditable="true" spellcheck="false">CUARTO AÑO</h3>
+          <table class="grades">
+            <colgroup><col><col><col><col><col><col></colgroup>
+            <thead><tr class="grade-labels"><th class="edit" contenteditable="true" spellcheck="false">Áreas de Formación</th><th colspan="2" class="edit" contenteditable="true" spellcheck="false">Calificaciones</th><th class="edit" contenteditable="true" spellcheck="false">T-E</th><th colspan="2" class="edit" contenteditable="true" spellcheck="false">Fecha</th></tr>
+              <tr><th class="edit" contenteditable="true" spellcheck="false"></th><th class="edit" contenteditable="true" spellcheck="false">N.º</th><th class="edit" contenteditable="true" spellcheck="false">Letras</th><th class="edit" contenteditable="true" spellcheck="false"></th><th class="edit" contenteditable="true" spellcheck="false">Mes</th><th class="edit" contenteditable="true" spellcheck="false">Año</th></tr></thead>
+            <tbody>
+              <tr><td contenteditable="true" spellcheck="false">Castellano</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">2021</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Inglés y otras lenguas extranjeras</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">2021</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Matemática</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">2021</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Educación Física</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">2021</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Física</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">2021</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Química</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">2021</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Biología</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">2021</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Geografía, Historia y Ciudadanía</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">2021</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Formación para la Soberanía</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">2021</td></tr>
+            </tbody>
+          </table>
+        </section>
+      </div>
+
+      <div class="grade-pair fifth-pair">
+        <section class="grade-unit">
+          <h3 class="edit" contenteditable="true" spellcheck="false">QUINTO AÑO</h3>
+          <table class="grades">
+            <colgroup><col><col><col><col><col><col></colgroup>
+            <thead><tr class="grade-labels"><th class="edit" contenteditable="true" spellcheck="false">Áreas de Formación</th><th colspan="2" class="edit" contenteditable="true" spellcheck="false">Calificaciones</th><th class="edit" contenteditable="true" spellcheck="false">T-E</th><th colspan="2" class="edit" contenteditable="true" spellcheck="false">Fecha</th></tr>
+              <tr><th class="edit" contenteditable="true" spellcheck="false"></th><th class="edit" contenteditable="true" spellcheck="false">N.º</th><th class="edit" contenteditable="true" spellcheck="false">Letras</th><th class="edit" contenteditable="true" spellcheck="false"></th><th class="edit" contenteditable="true" spellcheck="false">Mes</th><th class="edit" contenteditable="true" spellcheck="false">Año</th></tr></thead>
+            <tbody>
+              <tr><td contenteditable="true" spellcheck="false">Castellano</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">2022</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Inglés y otras lenguas extranjeras</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">2022</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Matemática</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">2022</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Educación Física</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">2022</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Física</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">2022</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Química</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">2022</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Biología</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">2022</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Ciencias de la Tierra</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">2022</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Geografía, Historia y Ciudadanía</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">2022</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Formación para la Soberanía</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">2022</td></tr>
+            </tbody>
+          </table>
+        </section>
+        <section class="grade-unit">
+          <h3 class="edit" contenteditable="true" spellcheck="false">ÁREAS DE FORMACIÓN</h3>
+          <table class="grades areas">
+            <colgroup><col><col><col></colgroup>
+            <thead><tr><th class="edit" contenteditable="true" spellcheck="false">Áreas de Formación</th><th class="edit" contenteditable="true" spellcheck="false">Año</th><th class="edit" contenteditable="true" spellcheck="false">Literal</th></tr></thead>
+            <tbody>
+              <tr><td rowspan="5" class="edit" contenteditable="true" spellcheck="false">ORIENTACIÓN Y CONVIVENCIA</td><td contenteditable="true" spellcheck="false">1.º</td><td contenteditable="true" spellcheck="false">C</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">2.º</td><td contenteditable="true" spellcheck="false">*****</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">3.º</td><td contenteditable="true" spellcheck="false">*****</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">4.º</td><td contenteditable="true" spellcheck="false">*****</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">5.º</td><td contenteditable="true" spellcheck="false">*****</td></tr>
+              <tr><td rowspan="5" class="edit" contenteditable="true" spellcheck="false">PARTICIPACIÓN EN GRUPOS DE CREACIÓN, RECREACIÓN Y PRODUCCIÓN</td><td contenteditable="true" spellcheck="false">1.º</td><td contenteditable="true" spellcheck="false">CONTABILIDAD / C</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">2.º</td><td contenteditable="true" spellcheck="false">*****</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">3.º</td><td contenteditable="true" spellcheck="false">*****</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">4.º</td><td contenteditable="true" spellcheck="false">*****</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">5.º</td><td contenteditable="true" spellcheck="false">*****</td></tr>
+            </tbody>
+          </table>
+        </section>
+      </div>
+    </section>
+
+    <section class="observations">
+      <h2 class="section-title edit" contenteditable="true" spellcheck="false">V. Observaciones:</h2>
+      <div class="observations-box edit" contenteditable="true" spellcheck="false" aria-label="Observaciones"></div>
+    </section>
+
+    <section class="signatures">
+      <div class="signature">
+        <h3 class="edit" contenteditable="true" spellcheck="false">VII. Institución Educativa</h3>
+        <div class="signature-content">
+          <div class="signature-fields">
+            <div class="line"><span class="edit" contenteditable="true" spellcheck="false">Director(a):</span><span class="edit" contenteditable="true" spellcheck="false"></span></div>
+            <div class="line"><span class="edit" contenteditable="true" spellcheck="false">Apellidos y Nombres:</span><span class="edit" contenteditable="true" spellcheck="false">ABRAHAM RAMIREZ</span></div>
+            <div class="line"><span class="edit" contenteditable="true" spellcheck="false">Cédula de Identidad:</span><span class="edit" contenteditable="true" spellcheck="false">V-23689421</span></div>
+            <div class="line"><span class="edit" contenteditable="true" spellcheck="false">Firma:</span><span class="edit" contenteditable="true" spellcheck="false"></span></div>
+            <div class="line edit" contenteditable="true" spellcheck="false">Para Efectos de su Validez Nacional</div>
+          </div>
+          <div class="stamp edit" contenteditable="true" spellcheck="false">SELLO DE LA INSTITUCIÓN EDUCATIVA</div>
+        </div>
+      </div>
+      <div class="signature">
+        <h3 class="edit" contenteditable="true" spellcheck="false">VIII. Centro de Desarrollo de la Calidad Educativa</h3>
+        <div class="signature-content">
+          <div class="signature-fields">
+            <div class="line"><span class="edit" contenteditable="true" spellcheck="false">Director(a):</span><span class="edit" contenteditable="true" spellcheck="false"></span></div>
+            <div class="line"><span class="edit" contenteditable="true" spellcheck="false">Apellidos y Nombres:</span><span class="edit" contenteditable="true" spellcheck="false"></span></div>
+            <div class="line"><span class="edit" contenteditable="true" spellcheck="false">Cédula de Identidad:</span><span class="edit" contenteditable="true" spellcheck="false"></span></div>
+            <div class="line"><span class="edit" contenteditable="true" spellcheck="false">Firma:</span><span class="edit" contenteditable="true" spellcheck="false"></span></div>
+            <div class="line edit" contenteditable="true" spellcheck="false">Para Efectos de su Validez Internacional</div>
+          </div>
+          <div class="stamp edit" contenteditable="true" spellcheck="false">SELLO DEL CENTRO DE DESARROLLO DE LA CALIDAD EDUCATIVA ESTADAL</div>
+        </div>
+      </div>
+    </section>
+
+    <p class="legal-note edit" contenteditable="true" spellcheck="false">VALOR FISCAL: Para su validez legal y de acuerdo al Ramo de Estampillas, al dorso de este documento se le debe colocar tres décimas de la Unidad Tributaria (0,3 U.T.)</p>
+  </main>
 </body>
 </html>
