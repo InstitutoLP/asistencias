@@ -7,10 +7,14 @@
   <link rel="icon" type="image/png" href="sello.png" />
   <style>
     :root {
-      --paper: #f3f3f3;
-      --ink: #111;
-      --line: rgba(0, 0, 0, 0.8);
-      --table: rgba(0, 0, 0, 0.75);
+      --paper: #f8f8f7;
+      --ink: #131313;
+      --soft: #d7d6d3;
+      --line: rgba(18, 18, 18, 0.85);
+      --muted: #666;
+      --blue: #1b3d7a;
+      --yellow: #f8d64c;
+      --red: #d11d3a;
     }
 
     * { box-sizing: border-box; }
@@ -19,7 +23,7 @@
       margin: 0;
       background: #dfe3e7;
       color: var(--ink);
-      font-family: Arial, Helvetica, sans-serif;
+      font-family: "Times New Roman", Times, serif;
     }
 
     body {
@@ -34,33 +38,35 @@
     }
 
     .actions button {
-      padding: 10px 16px;
       border: 0;
       border-radius: 6px;
-      background: #1c5ba7;
+      background: #1d4e89;
       color: #fff;
-      font-size: 15px;
-      font-weight: 700;
+      font: 700 15px/1 Arial, Helvetica, sans-serif;
+      padding: 10px 16px;
       cursor: pointer;
     }
 
-    .actions button:last-child { background: #475569; }
+    .actions button:last-child {
+      background: #4b5563;
+    }
 
     .paper {
       width: 210mm;
       min-height: 297mm;
       margin: 0 auto;
-      background: #f7f7f7;
+      background: var(--paper);
+      border: 1px solid rgba(0, 0, 0, 0.08);
       box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-      padding: 5mm 6mm 4mm 6mm;
+      padding: 7mm 6mm 5mm;
     }
 
     .certificate {
       width: 100%;
-      min-height: 285mm;
+      min-height: 270mm;
       outline: none;
-      font-size: 5.7pt;
-      line-height: 1.1;
+      line-height: 1.2;
+      font-size: 7.2pt;
     }
 
     .editable {
@@ -68,17 +74,17 @@
       cursor: text;
     }
 
-    .editable:hover { background: rgba(255, 240, 170, 0.15); }
-    .editable:focus { background: rgba(255, 240, 170, 0.3); }
+    .editable:hover { background: rgba(255, 244, 197, 0.15); }
+    .editable:focus { background: rgba(255, 244, 197, 0.35); }
 
     .top {
       display: grid;
-      grid-template-columns: 170px 1fr;
+      grid-template-columns: 150px 1fr;
       align-items: center;
-      min-height: 58px;
+      min-height: 56px;
       border-bottom: 1px solid var(--line);
-      margin-bottom: 3px;
       padding-bottom: 2px;
+      margin-bottom: 4px;
     }
 
     .government {
@@ -89,56 +95,56 @@
       text-align: center;
       font-weight: 700;
       font-size: 7pt;
-      line-height: 1;
+      letter-spacing: 0.2px;
+      color: #111;
     }
 
     .flag-logo {
-      width: 52px;
-      height: 32px;
+      width: 46px;
+      height: 30px;
+      border: 1px solid rgba(0,0,0,.35);
+      object-fit: cover;
       display: block;
       margin-bottom: 2px;
-      border: 1px solid rgba(0,0,0,0.35);
-      object-fit: cover;
-      background: white;
+      background: #fff;
     }
 
-    .government span {
+    .government small {
       display: block;
-      font-size: 7.2pt;
-      font-weight: 800;
-      letter-spacing: 0.2px;
+      font-size: 5.8pt;
+      font-weight: 400;
       margin-top: 1px;
     }
 
     .header-right {
       text-align: center;
-      padding-left: 12px;
+      padding-left: 8px;
     }
 
     .document-title {
       font-size: 15pt;
-      font-weight: 800;
-      letter-spacing: 0.15px;
       line-height: 1.1;
+      font-weight: 800;
+      letter-spacing: 0.1px;
     }
 
     .document-subtitle {
-      font-size: 6.3pt;
+      margin-top: 3px;
+      font-size: 6.4pt;
+      line-height: 1.25;
       font-weight: 700;
-      margin-top: 2px;
-      line-height: 1.2;
     }
 
     .doc-meta {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 2px 10px;
-      margin: 2px 0 4px;
-      font-size: 6.7pt;
+      margin: 4px 0 3px;
+      font-size: 6.9pt;
       font-weight: 700;
     }
 
-    .doc-meta > div {
+    .doc-meta div {
       display: flex;
       align-items: flex-end;
       gap: 4px;
@@ -148,16 +154,16 @@
     .doc-meta .field {
       flex: 1;
       min-height: 12px;
-      border-bottom: 1px solid var(--line);
-      text-align: center;
-      font-weight: 400;
+      border-bottom: 1px solid rgba(0,0,0,.75);
       padding-bottom: 1px;
+      font-weight: 400;
+      text-align: center;
     }
 
     .section-title {
-      font-size: 7pt;
       font-weight: 700;
-      margin: 2px 0 1px;
+      font-size: 7.1pt;
+      margin: 4px 0 2px;
     }
 
     .identity-grid {
@@ -171,53 +177,70 @@
       display: flex;
       align-items: flex-end;
       gap: 4px;
-      min-height: 14px;
-      font-size: 6.8pt;
+      min-height: 15px;
+      font-size: 6.9pt;
       font-weight: 700;
+      line-height: 1.1;
     }
 
     .id-row .value {
       flex: 1;
       min-height: 11px;
-      border-bottom: 1px solid var(--line);
-      text-align: center;
+      border-bottom: 1px solid rgba(0,0,0,.6);
       font-weight: 400;
+      text-align: center;
       padding-bottom: 1px;
     }
 
-    .wide { grid-column: span 2; }
+    .wide {
+      grid-column: span 2;
+    }
 
-    .schools {
+    .school-table,
+    .grade-table,
+    .formation-table {
       width: 100%;
       border-collapse: collapse;
       table-layout: fixed;
-      margin-top: 1px;
-      margin-bottom: 4px;
     }
 
-    th, td {
-      border: 0.7px solid var(--table);
-      padding: 1px 2px;
-      text-align: left;
+    .school-table th,
+    .school-table td,
+    .grade-table th,
+    .grade-table td,
+    .formation-table th,
+    .formation-table td {
+      border: 0.7px solid rgba(18,18,18,0.7);
+      padding: 1.2px 2px;
       vertical-align: middle;
     }
 
-    th {
+    .school-table th,
+    .grade-table th,
+    .formation-table th {
       font-weight: 700;
       text-align: center;
       background: rgba(0,0,0,0.02);
     }
 
-    .schools td:nth-child(1), .schools th:nth-child(1) { width: 8%; text-align: center; }
-    .schools td:nth-child(2), .schools th:nth-child(2) { width: 59%; }
-    .schools td:nth-child(3), .schools th:nth-child(3) { width: 15%; text-align: center; }
-    .schools td:nth-child(4), .schools th:nth-child(4) { width: 18%; text-align: center; }
+    .school-table td:nth-child(1),
+    .school-table th:nth-child(1) { width: 8%; text-align: center; }
+    .school-table td:nth-child(2),
+    .school-table th:nth-child(2) { width: 58%; }
+    .school-table td:nth-child(3),
+    .school-table th:nth-child(3) { width: 16%; text-align: center; }
+    .school-table td:nth-child(4),
+    .school-table th:nth-child(4) { width: 18%; text-align: center; }
 
     .year-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 4px 8px;
-      margin-top: 2px;
+      gap: 3px 6px;
+      margin-top: 3px;
+    }
+
+    .year-block {
+      min-width: 0;
     }
 
     .year-block h3 {
@@ -228,66 +251,57 @@
     }
 
     .grade-table {
-      width: 100%;
-      border-collapse: collapse;
-      table-layout: fixed;
-      font-size: 5.3pt;
+      font-size: 5.65pt;
     }
 
-    .grade-table th, .grade-table td {
-      padding: 1px 1.4px;
-      border: 0.7px solid var(--table);
-      vertical-align: middle;
-    }
-
-    .grade-table th { text-align: center; }
-    .grade-table td:nth-child(1), .grade-table th:nth-child(1) { width: 44%; }
-    .grade-table td:nth-child(2), .grade-table th:nth-child(2) { width: 8%; text-align: center; }
-    .grade-table td:nth-child(3), .grade-table th:nth-child(3) { width: 17%; text-align: center; }
-    .grade-table td:nth-child(4), .grade-table th:nth-child(4) { width: 9%; text-align: center; }
-    .grade-table td:nth-child(5), .grade-table th:nth-child(5) { width: 11%; text-align: center; }
-    .grade-table td:nth-child(6), .grade-table th:nth-child(6) { width: 11%; text-align: center; }
+    .grade-table thead th:nth-child(1),
+    .grade-table tbody td:nth-child(1) { width: 42%; }
+    .grade-table thead th:nth-child(2),
+    .grade-table tbody td:nth-child(2) { width: 8%; text-align: center; }
+    .grade-table thead th:nth-child(3),
+    .grade-table tbody td:nth-child(3) { width: 18%; text-align: center; }
+    .grade-table thead th:nth-child(4),
+    .grade-table tbody td:nth-child(4) { width: 8%; text-align: center; }
+    .grade-table thead th:nth-child(5),
+    .grade-table tbody td:nth-child(5) { width: 12%; text-align: center; }
+    .grade-table thead th:nth-child(6),
+    .grade-table tbody td:nth-child(6) { width: 12%; text-align: center; }
 
     .fifth-layout {
       display: grid;
       grid-template-columns: 1.15fr 0.85fr;
       gap: 6px;
-      margin-top: 4px;
+      margin-top: 3px;
     }
 
     .formation-table {
-      width: 100%;
-      border-collapse: collapse;
-      table-layout: fixed;
-      font-size: 5.4pt;
-    }
-
-    .formation-table th, .formation-table td {
-      border: 0.7px solid var(--table);
-      padding: 1px 1.5px;
+      font-size: 5.7pt;
     }
 
     .formation-table td:nth-child(1) { width: 48%; }
-    .formation-table td:nth-child(2), .formation-table th:nth-child(2) { width: 12%; text-align: center; }
-    .formation-table td:nth-child(3), .formation-table th:nth-child(3) { width: 24%; text-align: center; }
-    .formation-table td:nth-child(4), .formation-table th:nth-child(4) { width: 16%; text-align: center; }
+    .formation-table td:nth-child(2),
+    .formation-table th:nth-child(2) { width: 12%; text-align: center; }
+    .formation-table td:nth-child(3),
+    .formation-table th:nth-child(3) { width: 22%; text-align: center; }
+    .formation-table td:nth-child(4),
+    .formation-table th:nth-child(4) { width: 18%; text-align: center; }
 
     .signatures {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-top: 8px;
+      gap: 7px;
+      margin-top: 7px;
     }
 
     .signature-box {
-      border: 1px solid var(--table);
+      border: 1px solid rgba(18,18,18,0.8);
       min-height: 92px;
     }
 
     .signature-box h3 {
       margin: 0;
       padding: 2px 0;
-      border-bottom: 1px solid var(--table);
+      border-bottom: 1px solid rgba(18,18,18,0.8);
       text-align: center;
       font-size: 6.8pt;
       font-weight: 700;
@@ -308,40 +322,44 @@
     }
 
     .signature-details div {
-      min-height: 14px;
-      border-bottom: 1px solid rgba(0,0,0,0.6);
+      min-height: 15px;
+      border-bottom: 1px solid rgba(18,18,18,0.65);
       padding-top: 2px;
-      font-size: 6.3pt;
+      font-size: 6.5pt;
     }
 
     .seal {
       display: flex;
       align-items: center;
       justify-content: center;
-      margin: 6px 4px 3px;
-      border: 1px dashed rgba(0,0,0,0.7);
+      margin: 6px 3px 3px;
+      border: 1px dashed rgba(18,18,18,0.7);
       border-radius: 50%;
-      font-size: 5.8pt;
       text-align: center;
+      font-size: 5.9pt;
+      line-height: 1.2;
       font-weight: 700;
-      min-height: 74px;
-      padding: 8px;
+      min-height: 72px;
+      padding: 10px;
     }
 
     .zone-seal {
       display: flex;
       align-items: center;
       justify-content: center;
-      margin: 6px 4px 3px;
-      border: 1px solid rgba(0,0,0,0.45);
-      font-size: 5.7pt;
+      border: 1px solid rgba(18,18,18,0.45);
       text-align: center;
+      font-size: 5.7pt;
       font-weight: 700;
       min-height: 82px;
+      margin: 6px 3px 3px;
       padding: 10px;
     }
 
-    @page { size: A4 portrait; margin: 6mm; }
+    @page {
+      size: A4 portrait;
+      margin: 6mm;
+    }
 
     @media print {
       html, body {
@@ -350,7 +368,11 @@
         padding: 0;
         background: #fff;
       }
-      .actions { display: none !important; }
+
+      .actions {
+        display: none !important;
+      }
+
       .paper {
         width: 100%;
         min-height: auto;
@@ -359,9 +381,12 @@
         margin: 0;
         padding: 0;
       }
-      .editable, .editable:hover, .editable:focus {
-        background: transparent !important;
+
+      .editable,
+      .editable:hover,
+      .editable:focus {
         outline: none !important;
+        background: transparent !important;
       }
     }
   </style>
@@ -377,30 +402,37 @@
       <header class="top">
         <div class="government">
           <img class="flag-logo" src="venezuelaa.png" alt="Bandera de Venezuela">
-        <span>EDUCACIÓN</span>
+          <div>Ministerio del Poder Popular para la Educación</div>
         </div>
         <div class="header-right">
           <div class="document-title">CERTIFICACIÓN DE CALIFICACIONES EMG</div>
-        <div class="document-subtitle">Plan de Estudio: Educación Media General &nbsp;&nbsp; Código: 659</div>
-        <div class="document-subtitle">Lugar y Fecha de Expedición: Estado Miranda 13/04/2026</div>
+          <div class="document-subtitle">Plan de Estudio: Educación Media General   Código: 659</div>
         </div>
       </header>
 
       <div class="doc-meta">
-      <div><span>Datos del Plantel o Zona Educativa:</span> <span class="field">U.E. INSTITUTO LIBERTAD</span></div>
         <div><span>Código:</span> <span class="field">PD06231519</span></div>
-      <div><span>Dirección:</span> <span class="field">AV. PÁEZ, URB. LA LAGUNA</span></div>
-        <div><span>Municipio:</span> <span class="field">SUCRE</span></div>
-        <div><span>Entidad Federal:</span> <span class="field">MIRANDA</span></div>
-        <div><span>Zona Educativa:</span> <span class="field">MIRANDA</span></div>
+        <div><span>Grado:</span> <span class="field">5° Año</span></div>
+        <div><span>Plan de Estudio:</span> <span class="field">Educación Media General</span></div>
+        <div><span>Sección:</span> <span class="field">A</span></div>
+      </div>
+
+      <div class="section-title">I. Datos del Plantel o Zona Educativa que Emite la Certificación:</div>
+      <div class="identity-grid">
+        <div class="id-row"><span>Código:</span> <span class="value">PD06231519</span></div>
+        <div class="id-row wide"><span>Nombre:</span> <span class="value">UNIDAD EDUCATIVA PRIVADA INSTITUTO LIBERTAD</span></div>
+        <div class="id-row wide"><span>Dirección:</span> <span class="value">AV. PÁEZ, URB. LA LAGUNA</span></div>
+        <div class="id-row"><span>Municipio:</span> <span class="value">SUCRE</span></div>
+        <div class="id-row"><span>Entidad Federal:</span> <span class="value">MIRANDA</span></div>
+        <div class="id-row"><span>Zona Educativa:</span> <span class="value">MIRANDA</span></div>
       </div>
 
       <div class="section-title">II. Datos de Identificación del Estudiante:</div>
       <div class="identity-grid">
         <div class="id-row"><span>Cédula de Identidad:</span> <span class="value">V-34.345.425</span></div>
         <div class="id-row"><span>Fecha de Nacimiento:</span> <span class="value">01 DE DICIEMBRE 2007</span></div>
-      <div class="id-row wide"><span>Apellidos:</span> <span class="value">LEYVA GONZÁLEZ</span></div>
-        <div class="id-row"><span>Nombres:</span> <span class="value">LUIS ALBERTO</span></div>
+        <div class="id-row wide"><span>Apellidos:</span> <span class="value">RAMÍREZ</span></div>
+        <div class="id-row"><span>Nombres:</span> <span class="value">ABRAHAM</span></div>
         <div class="id-row"><span>Lugar de Nacimiento:</span> <span class="value">VENEZUELA</span></div>
         <div class="id-row"><span>Estado:</span> <span class="value">DISTRITO CAPITAL</span></div>
         <div class="id-row"><span>Municipio:</span> <span class="value">LIBERTADOR</span></div>
@@ -408,21 +440,21 @@
       </div>
 
       <div class="section-title">III. Planteles donde cursó estudios:</div>
-    <table class="schools">
+      <table class="school-table" aria-label="Planteles donde cursó estudios">
         <thead>
           <tr>
             <th>N°</th>
             <th>Denominación y Epónimo de la Institución</th>
             <th>Localidad</th>
-          <th>E.F.</th>
+            <th>E.F.</th>
           </tr>
         </thead>
         <tbody>
-          <tr><td>1</td><td>U.E. INSTITUTO LIBERTAD</td><td>PETARE</td><td>2018-2019</td></tr>
-          <tr><td>2</td><td>U.E. INSTITUTO LIBERTAD</td><td>PETARE</td><td>2019-2020</td></tr>
-          <tr><td>3</td><td>U.E. INSTITUTO LIBERTAD</td><td>PETARE</td><td>2020-2021</td></tr>
-          <tr><td>4</td><td>U.E. INSTITUTO LIBERTAD</td><td>PETARE</td><td>2021-2022</td></tr>
-          <tr><td>5</td><td>U.E. INSTITUTO LIBERTAD</td><td>PETARE</td><td>2022-2023</td></tr>
+          <tr><td>1</td><td>U.E. INSTITUTO LIBERTAD</td><td>PETARE</td><td>****</td></tr>
+          <tr><td>2</td><td>U.E. INSTITUTO LIBERTAD</td><td>****</td><td>****</td></tr>
+          <tr><td>3</td><td>****</td><td>****</td><td>****</td></tr>
+          <tr><td>4</td><td>****</td><td>****</td><td>****</td></tr>
+          <tr><td>5</td><td>****</td><td>****</td><td>****</td></tr>
         </tbody>
       </table>
 
@@ -442,13 +474,13 @@
               </tr>
             </thead>
             <tbody>
-              <tr><td>Castellano</td><td>15</td><td>QUINCE</td><td>F</td><td>07</td><td>2018</td></tr>
-              <tr><td>Inglés u otras lenguas extranjeras</td><td>12</td><td>DOCE</td><td>F</td><td>07</td><td>2018</td></tr>
+              <tr><td>Castellano</td><td>15</td><td>DIECISÉIS</td><td>F</td><td>07</td><td>2018</td></tr>
+              <tr><td>Inglés u otras lenguas extranjeras</td><td>12</td><td>DIEZ</td><td>F</td><td>07</td><td>2018</td></tr>
               <tr><td>Matemática</td><td>11</td><td>ONCE</td><td>F</td><td>07</td><td>2018</td></tr>
               <tr><td>Educación Física</td><td>12</td><td>DOCE</td><td>F</td><td>07</td><td>2018</td></tr>
               <tr><td>Arte y Patrimonio</td><td>13</td><td>TRECE</td><td>F</td><td>07</td><td>2018</td></tr>
               <tr><td>Ciencias Naturales</td><td>12</td><td>DOCE</td><td>F</td><td>07</td><td>2018</td></tr>
-              <tr><td>Geografía, Historia y Ciudadanía</td><td>12</td><td>DOCE</td><td>F</td><td>07</td><td>2018</td></tr>
+              <tr><td>Geografía, Historia y Ciudadanía</td><td>14</td><td>CATORCE</td><td>F</td><td>07</td><td>2018</td></tr>
             </tbody>
           </table>
         </div>
@@ -467,13 +499,13 @@
               </tr>
             </thead>
             <tbody>
-              <tr><td>Castellano</td><td>14</td><td>CATORCE</td><td>F</td><td>07</td><td>2019</td></tr>
-              <tr><td>Inglés u otras lenguas extranjeras</td><td>13</td><td>TRECE</td><td>F</td><td>07</td><td>2019</td></tr>
-              <tr><td>Matemática</td><td>14</td><td>CATORCE</td><td>F</td><td>07</td><td>2019</td></tr>
+              <tr><td>Castellano</td><td>15</td><td>QUINCE</td><td>F</td><td>07</td><td>2019</td></tr>
+              <tr><td>Inglés u otras lenguas extranjeras</td><td>12</td><td>DOCE</td><td>F</td><td>07</td><td>2019</td></tr>
+              <tr><td>Matemática</td><td>15</td><td>QUINCE</td><td>F</td><td>07</td><td>2019</td></tr>
               <tr><td>Educación Física</td><td>12</td><td>DOCE</td><td>F</td><td>07</td><td>2019</td></tr>
-              <tr><td>Arte y Patrimonio</td><td>12</td><td>DOCE</td><td>F</td><td>07</td><td>2019</td></tr>
-              <tr><td>Ciencias Naturales</td><td>13</td><td>TRECE</td><td>F</td><td>07</td><td>2019</td></tr>
-              <tr><td>Geografía, Historia y Ciudadanía</td><td>13</td><td>TRECE</td><td>F</td><td>07</td><td>2019</td></tr>
+              <tr><td>Arte y Patrimonio</td><td>13</td><td>TRECE</td><td>F</td><td>07</td><td>2019</td></tr>
+              <tr><td>Ciencias Naturales</td><td>12</td><td>DOCE</td><td>F</td><td>07</td><td>2019</td></tr>
+              <tr><td>Geografía, Historia y Ciudadanía</td><td>12</td><td>DOCE</td><td>F</td><td>07</td><td>2019</td></tr>
             </tbody>
           </table>
         </div>
@@ -557,18 +589,18 @@
 
         <div>
           <h3 style="margin:2px 0 1px; text-align:center; font-size:7.2pt; font-weight:700;">ÁREAS DE FORMACIÓN</h3>
-        <table class="formation-table">
+          <table class="formation-table" aria-label="Áreas de Formación">
             <tbody>
               <tr>
                 <td rowspan="5" style="text-align:center;font-weight:700;">ORIENTACIÓN Y CONVIVENCIA</td>
                 <td>1°</td>
-                <td></td>
+                <td>****</td>
                 <td>B</td>
               </tr>
-              <tr><td>2°</td><td></td><td>C</td></tr>
-              <tr><td>3°</td><td></td><td>C</td></tr>
-              <tr><td>4°</td><td></td><td>B</td></tr>
-              <tr><td>5°</td><td></td><td>B</td></tr>
+              <tr><td>2°</td><td>****</td><td>C</td></tr>
+              <tr><td>3°</td><td>****</td><td>C</td></tr>
+              <tr><td>4°</td><td>****</td><td>B</td></tr>
+              <tr><td>5°</td><td>****</td><td>B</td></tr>
               <tr>
                 <td rowspan="5" style="text-align:center;font-weight:700;">PARTICIPACIÓN EN GRUPOS DE CREACIÓN, RECREACIÓN Y PRODUCCIÓN</td>
                 <td>1°</td>
@@ -586,28 +618,30 @@
 
       <div class="signatures">
         <div class="signature-box">
-        <h3>VII. Institución Educativa</h3>
+          <h3>VII. Institución Educativa</h3>
           <div class="signature-content">
             <div class="signature-details">
               <div>Director(a):</div>
               <div>Apellidos y Nombres:</div>
               <div>Cédula de Identidad:</div>
               <div>Firma:</div>
+              <div>Para efectos de su validez Nacional</div>
             </div>
-          <div class="seal">SELLO DE LA INSTITUCIÓN EDUCATIVA</div>
+            <div class="seal">SELLO DE LA INSTITUCIÓN EDUCATIVA</div>
           </div>
         </div>
 
         <div class="signature-box">
-        <h3>VIII. Centro de Desarrollo de la Calidad Educativa</h3>
+          <h3>VIII. Centro de Desarrollo de la Calidad Educativa</h3>
           <div class="signature-content">
             <div class="signature-details">
               <div>Director(a):</div>
               <div>Apellidos y Nombres:</div>
               <div>Cédula de Identidad:</div>
               <div>Firma:</div>
+              <div>Para efectos de su validez Internacional</div>
             </div>
-          <div class="zone-seal">SELLO DEL CENTRO DE DESARROLLO DE LA CALIDAD EDUCATIVA</div>
+            <div class="zone-seal">SELLO DEL CENTRO DE DESARROLLO DE LA CALIDAD EDUCATIVA</div>
           </div>
         </div>
       </div>
