@@ -7,14 +7,10 @@
   <link rel="icon" type="image/png" href="sello.png" />
   <style>
     :root {
-      --paper: #f8f8f7;
-      --ink: #131313;
-      --soft: #d7d6d3;
-      --line: rgba(18, 18, 18, 0.85);
-      --muted: #666;
-      --blue: #1b3d7a;
-      --yellow: #f8d64c;
-      --red: #d11d3a;
+      --paper: #f3f3f3;
+      --ink: #111;
+      --line: rgba(0, 0, 0, 0.8);
+      --table: rgba(0, 0, 0, 0.75);
     }
 
     * { box-sizing: border-box; }
@@ -38,35 +34,33 @@
     }
 
     .actions button {
+      padding: 10px 16px;
       border: 0;
       border-radius: 6px;
-      background: #1d4e89;
+      background: #1c5ba7;
       color: #fff;
-      font: 700 15px/1 Arial, Helvetica, sans-serif;
-      padding: 10px 16px;
+      font-size: 15px;
+      font-weight: 700;
       cursor: pointer;
     }
 
-    .actions button:last-child {
-      background: #4b5563;
-    }
+    .actions button:last-child { background: #475569; }
 
     .paper {
       width: 210mm;
       min-height: 297mm;
       margin: 0 auto;
-      background: var(--paper);
-      border: 1px solid rgba(0, 0, 0, 0.08);
+      background: #f7f7f7;
       box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-      padding: 7mm 6mm 5mm;
+      padding: 5mm 6mm 4mm 6mm;
     }
 
     .certificate {
       width: 100%;
-      min-height: 270mm;
+      min-height: 285mm;
       outline: none;
-      line-height: 1.2;
-      font-size: 7.2pt;
+      font-size: 5.7pt;
+      line-height: 1.1;
     }
 
     .editable {
@@ -74,17 +68,17 @@
       cursor: text;
     }
 
-    .editable:hover { background: rgba(255, 244, 197, 0.15); }
-    .editable:focus { background: rgba(255, 244, 197, 0.35); }
+    .editable:hover { background: rgba(255, 240, 170, 0.15); }
+    .editable:focus { background: rgba(255, 240, 170, 0.3); }
 
     .top {
       display: grid;
-      grid-template-columns: 150px 1fr;
+      grid-template-columns: 170px 1fr;
       align-items: center;
-      min-height: 56px;
+      min-height: 58px;
       border-bottom: 1px solid var(--line);
+      margin-bottom: 3px;
       padding-bottom: 2px;
-      margin-bottom: 4px;
     }
 
     .government {
@@ -95,56 +89,56 @@
       text-align: center;
       font-weight: 700;
       font-size: 7pt;
-      letter-spacing: 0.2px;
-      color: #111;
+      line-height: 1;
     }
 
     .flag-logo {
-      width: 46px;
-      height: 30px;
-      border: 1px solid rgba(0,0,0,.35);
-      object-fit: cover;
+      width: 52px;
+      height: 32px;
       display: block;
       margin-bottom: 2px;
-      background: #fff;
+      border: 1px solid rgba(0,0,0,0.35);
+      object-fit: cover;
+      background: white;
     }
 
-    .government small {
+    .government span {
       display: block;
-      font-size: 5.8pt;
-      font-weight: 400;
+      font-size: 7.2pt;
+      font-weight: 800;
+      letter-spacing: 0.2px;
       margin-top: 1px;
     }
 
     .header-right {
       text-align: center;
-      padding-left: 8px;
+      padding-left: 12px;
     }
 
     .document-title {
       font-size: 15pt;
-      line-height: 1.1;
       font-weight: 800;
-      letter-spacing: 0.1px;
+      letter-spacing: 0.15px;
+      line-height: 1.1;
     }
 
     .document-subtitle {
-      margin-top: 3px;
-      font-size: 6.4pt;
-      line-height: 1.25;
+      font-size: 6.3pt;
       font-weight: 700;
+      margin-top: 2px;
+      line-height: 1.2;
     }
 
     .doc-meta {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 2px 10px;
-      margin: 4px 0 3px;
-      font-size: 6.9pt;
+      margin: 2px 0 4px;
+      font-size: 6.7pt;
       font-weight: 700;
     }
 
-    .doc-meta div {
+    .doc-meta > div {
       display: flex;
       align-items: flex-end;
       gap: 4px;
@@ -154,16 +148,16 @@
     .doc-meta .field {
       flex: 1;
       min-height: 12px;
-      border-bottom: 1px solid rgba(0,0,0,.75);
-      padding-bottom: 1px;
-      font-weight: 400;
+      border-bottom: 1px solid var(--line);
       text-align: center;
+      font-weight: 400;
+      padding-bottom: 1px;
     }
 
     .section-title {
+      font-size: 7pt;
       font-weight: 700;
-      font-size: 7.1pt;
-      margin: 4px 0 2px;
+      margin: 2px 0 1px;
     }
 
     .identity-grid {
@@ -177,70 +171,53 @@
       display: flex;
       align-items: flex-end;
       gap: 4px;
-      min-height: 15px;
-      font-size: 6.9pt;
+      min-height: 14px;
+      font-size: 6.8pt;
       font-weight: 700;
-      line-height: 1.1;
     }
 
     .id-row .value {
       flex: 1;
       min-height: 11px;
-      border-bottom: 1px solid rgba(0,0,0,.6);
-      font-weight: 400;
+      border-bottom: 1px solid var(--line);
       text-align: center;
+      font-weight: 400;
       padding-bottom: 1px;
     }
 
-    .wide {
-      grid-column: span 2;
-    }
+    .wide { grid-column: span 2; }
 
-    .school-table,
-    .grade-table,
-    .formation-table {
+    .schools {
       width: 100%;
       border-collapse: collapse;
       table-layout: fixed;
+      margin-top: 1px;
+      margin-bottom: 4px;
     }
 
-    .school-table th,
-    .school-table td,
-    .grade-table th,
-    .grade-table td,
-    .formation-table th,
-    .formation-table td {
-      border: 0.7px solid rgba(18,18,18,0.7);
-      padding: 1.2px 2px;
+    th, td {
+      border: 0.7px solid var(--table);
+      padding: 1px 2px;
+      text-align: left;
       vertical-align: middle;
     }
 
-    .school-table th,
-    .grade-table th,
-    .formation-table th {
+    th {
       font-weight: 700;
       text-align: center;
       background: rgba(0,0,0,0.02);
     }
 
-    .school-table td:nth-child(1),
-    .school-table th:nth-child(1) { width: 8%; text-align: center; }
-    .school-table td:nth-child(2),
-    .school-table th:nth-child(2) { width: 58%; }
-    .school-table td:nth-child(3),
-    .school-table th:nth-child(3) { width: 16%; text-align: center; }
-    .school-table td:nth-child(4),
-    .school-table th:nth-child(4) { width: 18%; text-align: center; }
+    .schools td:nth-child(1), .schools th:nth-child(1) { width: 8%; text-align: center; }
+    .schools td:nth-child(2), .schools th:nth-child(2) { width: 59%; }
+    .schools td:nth-child(3), .schools th:nth-child(3) { width: 15%; text-align: center; }
+    .schools td:nth-child(4), .schools th:nth-child(4) { width: 18%; text-align: center; }
 
     .year-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 3px 6px;
-      margin-top: 3px;
-    }
-
-    .year-block {
-      min-width: 0;
+      gap: 4px 8px;
+      margin-top: 2px;
     }
 
     .year-block h3 {
@@ -251,57 +228,66 @@
     }
 
     .grade-table {
-      font-size: 5.65pt;
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 5.3pt;
     }
 
-    .grade-table thead th:nth-child(1),
-    .grade-table tbody td:nth-child(1) { width: 42%; }
-    .grade-table thead th:nth-child(2),
-    .grade-table tbody td:nth-child(2) { width: 8%; text-align: center; }
-    .grade-table thead th:nth-child(3),
-    .grade-table tbody td:nth-child(3) { width: 18%; text-align: center; }
-    .grade-table thead th:nth-child(4),
-    .grade-table tbody td:nth-child(4) { width: 8%; text-align: center; }
-    .grade-table thead th:nth-child(5),
-    .grade-table tbody td:nth-child(5) { width: 12%; text-align: center; }
-    .grade-table thead th:nth-child(6),
-    .grade-table tbody td:nth-child(6) { width: 12%; text-align: center; }
+    .grade-table th, .grade-table td {
+      padding: 1px 1.4px;
+      border: 0.7px solid var(--table);
+      vertical-align: middle;
+    }
+
+    .grade-table th { text-align: center; }
+    .grade-table td:nth-child(1), .grade-table th:nth-child(1) { width: 44%; }
+    .grade-table td:nth-child(2), .grade-table th:nth-child(2) { width: 8%; text-align: center; }
+    .grade-table td:nth-child(3), .grade-table th:nth-child(3) { width: 17%; text-align: center; }
+    .grade-table td:nth-child(4), .grade-table th:nth-child(4) { width: 9%; text-align: center; }
+    .grade-table td:nth-child(5), .grade-table th:nth-child(5) { width: 11%; text-align: center; }
+    .grade-table td:nth-child(6), .grade-table th:nth-child(6) { width: 11%; text-align: center; }
 
     .fifth-layout {
       display: grid;
       grid-template-columns: 1.15fr 0.85fr;
       gap: 6px;
-      margin-top: 3px;
+      margin-top: 4px;
     }
 
     .formation-table {
-      font-size: 5.7pt;
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 5.4pt;
+    }
+
+    .formation-table th, .formation-table td {
+      border: 0.7px solid var(--table);
+      padding: 1px 1.5px;
     }
 
     .formation-table td:nth-child(1) { width: 48%; }
-    .formation-table td:nth-child(2),
-    .formation-table th:nth-child(2) { width: 12%; text-align: center; }
-    .formation-table td:nth-child(3),
-    .formation-table th:nth-child(3) { width: 22%; text-align: center; }
-    .formation-table td:nth-child(4),
-    .formation-table th:nth-child(4) { width: 18%; text-align: center; }
+    .formation-table td:nth-child(2), .formation-table th:nth-child(2) { width: 12%; text-align: center; }
+    .formation-table td:nth-child(3), .formation-table th:nth-child(3) { width: 24%; text-align: center; }
+    .formation-table td:nth-child(4), .formation-table th:nth-child(4) { width: 16%; text-align: center; }
 
     .signatures {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 7px;
-      margin-top: 7px;
+      gap: 8px;
+      margin-top: 8px;
     }
 
     .signature-box {
-      border: 1px solid rgba(18,18,18,0.8);
+      border: 1px solid var(--table);
       min-height: 92px;
     }
 
     .signature-box h3 {
       margin: 0;
       padding: 2px 0;
-      border-bottom: 1px solid rgba(18,18,18,0.8);
+      border-bottom: 1px solid var(--table);
       text-align: center;
       font-size: 6.8pt;
       font-weight: 700;
@@ -322,44 +308,40 @@
     }
 
     .signature-details div {
-      min-height: 15px;
-      border-bottom: 1px solid rgba(18,18,18,0.65);
+      min-height: 14px;
+      border-bottom: 1px solid rgba(0,0,0,0.6);
       padding-top: 2px;
-      font-size: 6.5pt;
+      font-size: 6.3pt;
     }
 
     .seal {
       display: flex;
       align-items: center;
       justify-content: center;
-      margin: 6px 3px 3px;
-      border: 1px dashed rgba(18,18,18,0.7);
+      margin: 6px 4px 3px;
+      border: 1px dashed rgba(0,0,0,0.7);
       border-radius: 50%;
+      font-size: 5.8pt;
       text-align: center;
-      font-size: 5.9pt;
-      line-height: 1.2;
       font-weight: 700;
-      min-height: 72px;
-      padding: 10px;
+      min-height: 74px;
+      padding: 8px;
     }
 
     .zone-seal {
       display: flex;
       align-items: center;
       justify-content: center;
-      border: 1px solid rgba(18,18,18,0.45);
-      text-align: center;
+      margin: 6px 4px 3px;
+      border: 1px solid rgba(0,0,0,0.45);
       font-size: 5.7pt;
+      text-align: center;
       font-weight: 700;
       min-height: 82px;
-      margin: 6px 3px 3px;
       padding: 10px;
     }
 
-    @page {
-      size: A4 portrait;
-      margin: 6mm;
-    }
+    @page { size: A4 portrait; margin: 6mm; }
 
     @media print {
       html, body {
@@ -368,11 +350,7 @@
         padding: 0;
         background: #fff;
       }
-
-      .actions {
-        display: none !important;
-      }
-
+      .actions { display: none !important; }
       .paper {
         width: 100%;
         min-height: auto;
@@ -381,12 +359,9 @@
         margin: 0;
         padding: 0;
       }
-
-      .editable,
-      .editable:hover,
-      .editable:focus {
-        outline: none !important;
+      .editable, .editable:hover, .editable:focus {
         background: transparent !important;
+        outline: none !important;
       }
     }
   </style>
@@ -402,38 +377,29 @@
       <header class="top">
         <div class="government">
           <img class="flag-logo" src="venezuelaa.png" alt="Bandera de Venezuela">
-          <div>Ministerio del Poder Popular para la Educación</div>
+        <span>EDUCACIÓN</span>
         </div>
         <div class="header-right">
           <div class="document-title">CERTIFICACIÓN DE CALIFICACIONES EMG</div>
-          <div class="document-subtitle">Plan de Estudio: Educación Media General &nbsp;&nbsp; Código: 759</div>
+        <div class="document-subtitle">Plan de Estudio: Educación Media General &nbsp;&nbsp; Código: 659</div>
+        <div class="document-subtitle">Lugar y Fecha de Expedición: Estado Miranda 13/04/2026</div>
         </div>
       </header>
 
       <div class="doc-meta">
+      <div><span>Datos del Plantel o Zona Educativa:</span> <span class="field">U.E. INSTITUTO LIBERTAD</span></div>
         <div><span>Código:</span> <span class="field">PD06231519</span></div>
-        <div><span>Grado:</span> <span class="field">5° Año</span></div>
-        <div><span>Denominación y Código de la Institución:</span> <span class="field">U.E. INSTITUTO LIBERTAD</span></div>
+      <div><span>Dirección:</span> <span class="field">AV. PÁEZ, URB. LA LAGUNA</span></div>
         <div><span>Municipio:</span> <span class="field">SUCRE</span></div>
         <div><span>Entidad Federal:</span> <span class="field">MIRANDA</span></div>
         <div><span>Zona Educativa:</span> <span class="field">MIRANDA</span></div>
-      </div>
-
-      <div class="section-title">I. Datos del Plantel o Zona Educativa que Emite la Certificación:</div>
-      <div class="identity-grid">
-        <div class="id-row"><span>Código:</span> <span class="value">PD06231519</span></div>
-        <div class="id-row wide"><span>Denominación:</span> <span class="value">U.E. INSTITUTO LIBERTAD</span></div>
-        <div class="id-row wide"><span>Dirección:</span> <span class="value">AV. PÁEZ, URB. LA LAGUNA</span></div>
-        <div class="id-row"><span>Municipio:</span> <span class="value">SUCRE</span></div>
-        <div class="id-row"><span>Entidad Federal:</span> <span class="value">MIRANDA</span></div>
-        <div class="id-row"><span>Zona Educativa:</span> <span class="value">MIRANDA</span></div>
       </div>
 
       <div class="section-title">II. Datos de Identificación del Estudiante:</div>
       <div class="identity-grid">
         <div class="id-row"><span>Cédula de Identidad:</span> <span class="value">V-34.345.425</span></div>
         <div class="id-row"><span>Fecha de Nacimiento:</span> <span class="value">01 DE DICIEMBRE 2007</span></div>
-        <div class="id-row wide"><span>Apellidos:</span> <span class="value">GONZÁLEZ RIVERA</span></div>
+      <div class="id-row wide"><span>Apellidos:</span> <span class="value">LEYVA GONZÁLEZ</span></div>
         <div class="id-row"><span>Nombres:</span> <span class="value">LUIS ALBERTO</span></div>
         <div class="id-row"><span>Lugar de Nacimiento:</span> <span class="value">VENEZUELA</span></div>
         <div class="id-row"><span>Estado:</span> <span class="value">DISTRITO CAPITAL</span></div>
@@ -442,13 +408,13 @@
       </div>
 
       <div class="section-title">III. Planteles donde cursó estudios:</div>
-      <table class="school-table" aria-label="Planteles donde cursó estudios">
+    <table class="schools">
         <thead>
           <tr>
             <th>N°</th>
             <th>Denominación y Epónimo de la Institución</th>
             <th>Localidad</th>
-            <th>Periodo</th>
+          <th>E.F.</th>
           </tr>
         </thead>
         <tbody>
@@ -591,7 +557,7 @@
 
         <div>
           <h3 style="margin:2px 0 1px; text-align:center; font-size:7.2pt; font-weight:700;">ÁREAS DE FORMACIÓN</h3>
-          <table class="formation-table" aria-label="Áreas de Formación">
+        <table class="formation-table">
             <tbody>
               <tr>
                 <td rowspan="5" style="text-align:center;font-weight:700;">ORIENTACIÓN Y CONVIVENCIA</td>
@@ -620,30 +586,28 @@
 
       <div class="signatures">
         <div class="signature-box">
-          <h3>VII. Plantel</h3>
+        <h3>VII. Institución Educativa</h3>
           <div class="signature-content">
             <div class="signature-details">
               <div>Director(a):</div>
               <div>Apellidos y Nombres:</div>
               <div>Cédula de Identidad:</div>
               <div>Firma:</div>
-              <div>Para efectos de su validez Nacional</div>
             </div>
-            <div class="seal">SELLO DEL PLANTEL<br>FIRMA Y SELLO</div>
+          <div class="seal">SELLO DE LA INSTITUCIÓN EDUCATIVA</div>
           </div>
         </div>
 
         <div class="signature-box">
-          <h3>VIII. Zona Educativa</h3>
+        <h3>VIII. Centro de Desarrollo de la Calidad Educativa</h3>
           <div class="signature-content">
             <div class="signature-details">
               <div>Director(a):</div>
               <div>Apellidos y Nombres:</div>
               <div>Cédula de Identidad:</div>
               <div>Firma:</div>
-              <div>Para efectos de su validez Internacional</div>
             </div>
-            <div class="zone-seal">SELLO DE LA ZONA EDUCATIVA</div>
+          <div class="zone-seal">SELLO DEL CENTRO DE DESARROLLO DE LA CALIDAD EDUCATIVA</div>
           </div>
         </div>
       </div>
