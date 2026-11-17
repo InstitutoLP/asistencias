@@ -1,80 +1,332 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Notas Certificadas</title>
   <link rel="icon" type="image/png" href="sello.png" />
   <style>
+    :root {
+      --paper-bg: #f8f9fb;
+      --paper-border: #c9ced8;
+      --ink: #131a2a;
+      --muted: #4b586b;
+      --line: #202b3d;
+      --accent: #0b2e5d;
+      --light: #eef2f7;
+    }
+
     * { box-sizing: border-box; }
+
     html, body {
       margin: 0;
+      padding: 18px;
       background: #dfe3e7;
-      color: #111;
+      color: var(--ink);
       font-family: Arial, Helvetica, sans-serif;
     }
+
     body {
-      padding: 18px;
+      min-height: 100vh;
     }
+
     .actions {
       display: flex;
       justify-content: center;
       gap: 12px;
       margin: 0 auto 16px;
+      flex-wrap: wrap;
     }
+
     .actions button {
       border: 0;
-      border-radius: 6px;
+      border-radius: 7px;
       background: #1d4e89;
       color: #fff;
       font: 700 15px/1 Arial, Helvetica, sans-serif;
-      padding: 10px 16px;
+      padding: 11px 18px;
       cursor: pointer;
     }
-    .actions button:last-child {
+
+    .actions button.secondary {
       background: #4b5563;
     }
-    .viewer-wrap {
-      width: 100%;
-      max-width: 980px;
+
+    .page-wrap {
+      width: min(100%, 980px);
       margin: 0 auto;
-      background: #fff;
+      background: var(--paper-bg);
       border: 1px solid rgba(0,0,0,0.08);
       box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-      overflow: hidden;
+      padding: 18px;
     }
-    .pdf-view {
+
+    .certificate {
+      width: 100%;
+      max-width: 850px;
+      margin: 0 auto;
+      background: #fff;
+      border: 1px solid var(--paper-border);
+      padding: 18px 22px 14px;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.02);
+    }
+
+    .header {
+      display: grid;
+      grid-template-columns: 130px 1fr 110px;
+      align-items: center;
+      gap: 14px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--line);
+    }
+
+    .flag,
+    .seal {
       display: block;
       width: 100%;
-      min-height: 100vh;
-      max-height: 100vh;
-      border: 0;
-      background: #fff;
+      max-height: 110px;
+      object-fit: contain;
     }
+
+    .header-center {
+      text-align: center;
+      font-weight: 700;
+      line-height: 1.2;
+      font-size: 12px;
+      color: var(--ink);
+    }
+
+    .header-center .title {
+      display: block;
+      margin-top: 10px;
+      font-size: 22px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .header-center .subtitle {
+      display: block;
+      margin-top: 6px;
+      font-size: 12px;
+      letter-spacing: 0.05em;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(180px, 1fr));
+      gap: 8px 18px;
+      margin-top: 18px;
+      padding-bottom: 8px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .field label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .field input,
+    .field textarea,
+    .field select {
+      width: 100%;
+      min-height: 32px;
+      border: 1px solid #cfd7e2;
+      border-radius: 4px;
+      background: #fff;
+      color: var(--ink);
+      padding: 6px 8px;
+      font: 600 13px/1.2 Arial, Helvetica, sans-serif;
+    }
+
+    .field textarea {
+      min-height: 70px;
+      resize: vertical;
+    }
+
+    .table-header {
+      margin-top: 16px;
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--ink);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      table-layout: fixed;
+    }
+
+    th, td {
+      border: 1px solid #b9c3ce;
+      padding: 7px 6px;
+      text-align: center;
+      font-size: 12px;
+      vertical-align: middle;
+    }
+
+    th {
+      background: #edf2f7;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    td input {
+      width: 100%;
+      min-height: 28px;
+      border: 0;
+      background: transparent;
+      text-align: center;
+      color: var(--ink);
+      font: 700 13px/1.1 Arial, Helvetica, sans-serif;
+      padding: 4px 2px;
+    }
+
+    .subject-col {
+      width: 34%;
+      text-align: left;
+    }
+
+    .subject-col input {
+      text-align: left;
+    }
+
+    .notes-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-top: 16px;
+    }
+
+    .box {
+      border: 1px solid #c7d1dc;
+      background: #f9fafc;
+      padding: 12px;
+      min-height: 120px;
+    }
+
+    .box-title {
+      margin: 0 0 8px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+    }
+
+    .box textarea {
+      width: 100%;
+      height: 80px;
+      resize: vertical;
+      border: 1px solid #cfd7e2;
+      background: #fff;
+      padding: 8px;
+      font: 600 12px/1.5 Arial, Helvetica, sans-serif;
+      color: var(--ink);
+    }
+
+    .signature-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-top: 18px;
+      padding-top: 10px;
+      border-top: 1px solid #d7dfe8;
+    }
+
+    .signature-box {
+      text-align: center;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .signature-box .line {
+      height: 62px;
+      border-bottom: 1px solid #212d3f;
+      margin-bottom: 8px;
+      opacity: 0.8;
+    }
+
+    .signature-box input {
+      width: 100%;
+      border: 0;
+      border-bottom: 1px solid #212d3f;
+      background: transparent;
+      text-align: center;
+      font: 700 12px/1.2 Arial, Helvetica, sans-serif;
+      color: var(--ink);
+      padding: 2px 0 6px;
+      margin-bottom: 8px;
+    }
+
     @page {
       size: A4 portrait;
-      margin: 0;
+      margin: 10mm;
     }
+
     @media print {
       html, body {
         background: #fff;
+        padding: 0;
       }
+
       .actions {
         display: none !important;
       }
-      body {
-        padding: 0;
-      }
-      .viewer-wrap {
+
+      .page-wrap {
         max-width: none;
-        width: 100vw;
-        height: 100vh;
+        width: 100%;
+        background: #fff;
         border: 0;
         box-shadow: none;
+        padding: 0;
       }
-      .pdf-view {
-        min-height: 100vh;
-        height: 100vh;
+
+      .certificate {
+        max-width: none;
+        width: 100%;
+        border: 0;
+        box-shadow: none;
+        margin: 0;
+      }
+    }
+
+    @media (max-width: 700px) {
+      html, body {
+        padding: 12px;
+      }
+
+      .header {
+        grid-template-columns: 90px 1fr 80px;
+      }
+
+      .header-center {
+        font-size: 10px;
+      }
+
+      .header-center .title {
+        font-size: 16px;
+      }
+
+      .meta-grid,
+      .notes-grid,
+      .signature-row {
+        grid-template-columns: 1fr;
       }
     }
   </style>
@@ -82,23 +334,134 @@
 <body>
   <nav class="actions" aria-label="Acciones del documento">
     <button type="button" onclick="window.print()">Imprimir / Guardar PDF</button>
-    <button type="button" onclick="window.location.href = 'registro.html'">Regresar</button>
+    <button type="button" class="secondary" onclick="window.location.href = 'registro.html'">Regresar</button>
   </nav>
 
-  <div class="viewer-wrap">
-    <object
-      class="pdf-view"
-      data="./Certificación%20de%20Calificaciones%20EMG.pdf#toolbar=0&navpanes=0&scrollbar=0&view=FitH"
-      type="application/pdf"
-      title="Certificación de Calificaciones EMG"
-      aria-label="Certificación de Calificaciones EMG"
-    >
-      <embed
-        src="./Certificación%20de%20Calificaciones%20EMG.pdf#toolbar=0&navpanes=0&scrollbar=0&view=FitH"
-        type="application/pdf"
-        style="width: 100%; height: 100vh; border: 0; background: #fff;"
-      />
-    </object>
-  </div>
+  <main class="page-wrap">
+    <section class="certificate" aria-label="Certificado editable de calificaciones">
+      <header class="header">
+        <img class="flag" src="venezuelaa.png" alt="Bandera de Venezuela" />
+
+        <div class="header-center">
+          <span>REPÚBLICA BOLIVARIANA DE VENEZUELA</span>
+          <span>MINISTERIO DEL PODER POPULAR PARA LA EDUCACIÓN</span>
+          <span>UNIDAD EDUCATIVA PRIVADA INSTITUTO LIBERTAD</span>
+          <span class="subtitle">CÓDIGO: PD02631519</span>
+          <span class="title">Certificación de Calificaciones</span>
+          <span class="subtitle">EMG</span>
+        </div>
+
+        <img class="seal" src="sello-instituto-libertad.jpg" alt="Sello del Instituto Libertad" />
+      </header>
+
+      <div class="meta-grid">
+        <div class="field">
+          <label for="estudiante">Estudiante</label>
+          <input id="estudiante" value="Deyalit Sorangery Mendez Laya" />
+        </div>
+
+        <div class="field">
+          <label for="cedula">Cédula</label>
+          <input id="cedula" value="V-30.001.111" />
+        </div>
+
+        <div class="field">
+          <label for="grado">Grado / Sección</label>
+          <input id="grado" value="5to Año / A" />
+        </div>
+
+        <div class="field">
+          <label for="anoEscolar">Año escolar</label>
+          <input id="anoEscolar" value="2026 - 2027" />
+        </div>
+
+        <div class="field">
+          <label for="codigo">Código de certificado</label>
+          <input id="codigo" value="EMG-2026-001" />
+        </div>
+
+        <div class="field">
+          <label for="fecha">Fecha</label>
+          <input id="fecha" value="17/11/2026" />
+        </div>
+      </div>
+
+      <div class="table-header">Notas certificadas</div>
+      <table aria-label="Tabla de calificaciones">
+        <thead>
+          <tr>
+            <th class="subject-col">Materia</th>
+            <th>1er Lapso</th>
+            <th>2do Lapso</th>
+            <th>3er Lapso</th>
+            <th>Promedio</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="subject-col"><input value="Matemática" /></td>
+            <td><input value="18" /></td>
+            <td><input value="19" /></td>
+            <td><input value="18" /></td>
+            <td><input value="18.3" /></td>
+          </tr>
+          <tr>
+            <td class="subject-col"><input value="Ciencias Naturales" /></td>
+            <td><input value="17" /></td>
+            <td><input value="18" /></td>
+            <td><input value="19" /></td>
+            <td><input value="18.0" /></td>
+          </tr>
+          <tr>
+            <td class="subject-col"><input value="Lengua y Literatura" /></td>
+            <td><input value="19" /></td>
+            <td><input value="18" /></td>
+            <td><input value="20" /></td>
+            <td><input value="19.0" /></td>
+          </tr>
+          <tr>
+            <td class="subject-col"><input value="Historia" /></td>
+            <td><input value="17" /></td>
+            <td><input value="17" /></td>
+            <td><input value="18" /></td>
+            <td><input value="17.3" /></td>
+          </tr>
+          <tr>
+            <td class="subject-col"><input value="Educación Física" /></td>
+            <td><input value="20" /></td>
+            <td><input value="19" /></td>
+            <td><input value="18" /></td>
+            <td><input value="19.0" /></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="notes-grid">
+        <div class="box">
+          <p class="box-title">Observaciones</p>
+          <textarea>El estudiante presenta un rendimiento académico satisfactorio y constante durante el período escolar. Se certifican las calificaciones según el registro oficial de la institución.</textarea>
+        </div>
+
+        <div class="box">
+          <p class="box-title">Promedio general</p>
+          <textarea>18.5</textarea>
+        </div>
+      </div>
+
+      <div class="signature-row">
+        <div class="signature-box">
+          <div class="line"></div>
+          <div>Director</div>
+          <input value="Lic. Ana García" />
+        </div>
+
+        <div class="signature-box">
+          <div class="line"></div>
+          <div>Secretaría</div>
+          <input value="MSc. Carmen López" />
+        </div>
+      </div>
+    </section>
+  </main>
 </body>
 </html>
