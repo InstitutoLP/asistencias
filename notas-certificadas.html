@@ -15,8 +15,6 @@
     }
     body {
       padding: 18px;
-      display: flex;
-      justify-content: center;
     }
     .actions {
       display: flex;
@@ -36,39 +34,71 @@
     .actions button:last-child {
       background: #4b5563;
     }
-    .page-shell {
+    .viewer-wrap {
       width: 100%;
-      max-width: 960px;
-      display: flex;
-      justify-content: center;
-    }
-    .page {
-      display: block;
-      width: min(100%, 920px);
-      height: auto;
+      max-width: 980px;
+      margin: 0 auto;
+      background: #fff;
       border: 1px solid rgba(0,0,0,0.08);
       box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+    .pdf-view {
+      display: block;
+      width: 100%;
+      min-height: 100vh;
+      max-height: 100vh;
+      border: 0;
       background: #fff;
     }
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
     @media print {
-      html, body { background: #fff; }
-      .actions { display: none !important; }
-      body { padding: 0; }
-      .page-shell { width: 100%; max-width: none; }
-      .page { box-shadow: none; border: 0; width: 100%; }
+      html, body {
+        background: #fff;
+      }
+      .actions {
+        display: none !important;
+      }
+      body {
+        padding: 0;
+      }
+      .viewer-wrap {
+        max-width: none;
+        width: 100vw;
+        height: 100vh;
+        border: 0;
+        box-shadow: none;
+      }
+      .pdf-view {
+        min-height: 100vh;
+        height: 100vh;
+      }
     }
   </style>
 </head>
 <body>
-  <div style="width:100%;max-width:960px;">
-    <nav class="actions" aria-label="Acciones del documento">
-      <button type="button" onclick="window.print()">Imprimir / Guardar PDF</button>
-      <button type="button" onclick="window.location.href = 'registro.html'">Regresar</button>
-    </nav>
+  <nav class="actions" aria-label="Acciones del documento">
+    <button type="button" onclick="window.print()">Imprimir / Guardar PDF</button>
+    <button type="button" onclick="window.location.href = 'registro.html'">Regresar</button>
+  </nav>
 
-    <div class="page-shell">
-      <img class="page" src="reference-cert.png" alt="Certificación de calificaciones EMG" />
-    </div>
+  <div class="viewer-wrap">
+    <object
+      class="pdf-view"
+      data="./Certificación%20de%20Calificaciones%20EMG.pdf#toolbar=0&navpanes=0&scrollbar=0&view=FitH"
+      type="application/pdf"
+      title="Certificación de Calificaciones EMG"
+      aria-label="Certificación de Calificaciones EMG"
+    >
+      <embed
+        src="./Certificación%20de%20Calificaciones%20EMG.pdf#toolbar=0&navpanes=0&scrollbar=0&view=FitH"
+        type="application/pdf"
+        style="width: 100%; height: 100vh; border: 0; background: #fff;"
+      />
+    </object>
   </div>
 </body>
 </html>
