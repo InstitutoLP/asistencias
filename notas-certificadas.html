@@ -449,7 +449,7 @@
 <body>
   <nav class="actions" aria-label="Acciones del documento">
     <button type="button" onclick="window.print()">Imprimir</button>
-    <button type="button" onclick="window.print()">Guardar PDF</button>
+    <button id="save-pdf-button" type="button" onclick="guardarNotasPDF()">Guardar PDF</button>
     <button type="button" onclick="window.location.href = 'registro.html'">Regresar</button>
   </nav>
 
@@ -702,5 +702,56 @@
 
     <p class="legal-note edit" contenteditable="true" spellcheck="false">VALOR FISCAL: Para su validez legal y de acuerdo al Ramo de Estampillas, al dorso de este documento se le debe colocar tres décimas de la Unidad Tributaria (0,3 U.T)</p>
   </main>
+  <script src="js/config/external-libraries.js"></script>
+  <script>
+    async function guardarNotasPDF() {
+      const button = document.getElementById('save-pdf-button');
+      const sheet = document.querySelector('.sheet');
+      if (!button || !sheet) {
+        window.alert('No se encontró el documento para guardar.');
+        return;
+      }
+
+      const originalLabel = button.textContent;
+      const originalZoom = sheet.style.zoom;
+      button.disabled = true;
+      button.textContent = 'Generando PDF...';
+
+      try {
+        await window.loadPdfLibraries();
+        sheet.style.zoom = '1';
+        const canvas = await window.html2canvas(sheet, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: false,
+          backgroundColor: '#ffffff',
+          logging: false,
+        });
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({
+          orientation: 'portrait',
+          unit: 'mm',
+          format: [215.9, 330.2],
+        });
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const scale = Math.min(pageWidth / canvas.width, pageHeight / canvas.height);
+        const imageWidth = canvas.width * scale;
+        const imageHeight = canvas.height * scale;
+        const x = (pageWidth - imageWidth) / 2;
+        const y = (pageHeight - imageHeight) / 2;
+
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', x, y, imageWidth, imageHeight);
+        pdf.save('Notas_Certificadas.pdf');
+      } catch (error) {
+        console.error('Error al generar el PDF de las notas certificadas:', error);
+        window.alert('No se pudo guardar el PDF. Verifica tu conexión e inténtalo de nuevo.');
+      } finally {
+        sheet.style.zoom = originalZoom;
+        button.disabled = false;
+        button.textContent = originalLabel;
+      }
+    }
+  </script>
 </body>
 </html>
