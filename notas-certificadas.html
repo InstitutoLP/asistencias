@@ -40,12 +40,12 @@
 
     .sheet {
       width: 215.9mm;
-      min-height: 355.6mm;
+      min-height: 330.2mm;
       margin: 0 auto;
-      padding: 7.5mm 6mm 33mm;
+      padding: 7.5mm 6mm;
       background: #fff;
       box-shadow: 0 2px 12px rgba(0, 0, 0, .13);
-      font-size: 7.2px;
+      font-size: 12px;
       line-height: 1.15;
     }
 
@@ -61,12 +61,18 @@
     .edit:focus { outline: 0; }
 
     .masthead {
+      position: relative;
       display: grid;
       grid-template-columns: 40% 60%;
       min-height: 58px;
       align-items: center;
-      border-bottom: 1px solid #222;
       padding: 1px 3px 4px;
+    }
+
+    .masthead-index {
+      position: absolute;
+      top: -2px;
+      left: -10px;
     }
 
     .ministry {
@@ -87,32 +93,32 @@
     }
 
     .heading h1 {
-      margin: 0 0 4px;
-      font-size: 13px;
+      margin: 0 0 3px;
+      font-size: 12px;
       line-height: 1.1;
       font-weight: 700;
     }
 
     .heading p {
-      margin: 2px 0;
-      font-size: 7px;
+      margin: 1px 0;
+      font-size: 12px;
       font-weight: 700;
     }
 
-    .section { margin-top: 5px; }
+    .section { margin-top: 3px; }
 
     .section-title {
       display: block;
-      margin: 0 0 3px;
-      font-size: 7.4px;
+      margin: 0 0 2px;
+      font-size: 12px;
       font-weight: 700;
     }
 
     .form-row {
       display: grid;
       align-items: end;
-      gap: 5px;
-      min-height: 12px;
+      gap: 3px;
+      min-height: 16px;
     }
 
     .field {
@@ -128,40 +134,50 @@
     .field-value { flex: 1 1 auto; min-width: 0; text-align: center; }
 
     .plant-main { grid-template-columns: .9fr 3.1fr; }
-    .plant-address { grid-template-columns: 2.1fr 1fr; }
+    .plant-address { grid-template-columns: 3.2fr 1fr; }
     .plant-location { grid-template-columns: 1fr 1.15fr .7fr; }
 
     .student-row {
-      grid-template-columns: 1fr 1.35fr;
+      grid-template-columns: 1fr 2fr;
     }
 
     .student-row:last-child {
       grid-template-columns: 1.7fr 1.3fr 1.4fr;
     }
 
+    .student-row:nth-of-type(2) {
+      grid-template-columns: 1fr 1fr;
+    }
+
     .schools {
       width: 100%;
       border-collapse: collapse;
       table-layout: fixed;
-      font-size: 7px;
+      font-size: 10px;
     }
 
     .schools th, .schools td {
-      height: 12px;
-      padding: 1px 3px;
+      height: 16px;
+      padding: 1px 2px;
       border: 1px solid #444;
       text-align: center;
     }
 
-    .schools th:nth-child(1) { width: 8%; }
-    .schools th:nth-child(2) { width: 59%; }
-    .schools th:nth-child(3) { width: 17%; }
-    .schools th:nth-child(4) { width: 16%; }
+    .schools th:nth-child(1) { width: 9%; }
+    .schools th:nth-child(2) { width: 66%; }
+    .schools th:nth-child(3) { width: 15%; }
+    .schools th:nth-child(4) { width: 10%; }
     .schools td:nth-child(2) { text-align: left; }
+
+    .schools-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
 
     .grade-heading {
       margin: 5px 0 3px;
-      font-size: 7.4px;
+      font-size: 12px;
       font-weight: 700;
     }
 
@@ -178,7 +194,7 @@
     .grade-unit h3 {
       margin: 0 0 2px;
       text-align: center;
-      font-size: 8px;
+      font-size: 12px;
       line-height: 1.05;
     }
 
@@ -186,12 +202,12 @@
       width: 100%;
       border-collapse: collapse;
       table-layout: fixed;
-      font-size: 6.5px;
+      font-size: 12px;
       line-height: 1.05;
     }
 
     .grades th, .grades td {
-      height: 11px;
+      height: 16px;
       padding: 1px 2px;
       border: 1px solid #444;
       text-align: center;
@@ -221,7 +237,7 @@
     .grade-labels th { height: 15px; }
 
     .fifth-pair { grid-template-columns: 1.18fr .82fr; }
-    .areas { font-size: 6.5px; }
+    .areas { font-size: 12px; }
     .areas th:first-child, .areas td:first-child {
       width: 55%;
       text-align: center;
@@ -247,7 +263,7 @@
     }
 
     .signature {
-      height: 126px;
+      height: 150px;
       border: 1px solid #444;
     }
 
@@ -256,7 +272,7 @@
       padding: 3px 2px;
       border-bottom: 1px solid #444;
       text-align: center;
-      font-size: 7.2px;
+      font-size: 12px;
     }
 
     .signature-content {
@@ -283,7 +299,7 @@
       display: grid;
       place-content: center;
       text-align: center;
-      font-size: 6px;
+      font-size: 12px;
       font-weight: 700;
     }
 
@@ -294,13 +310,13 @@
 
     .legal-note {
       position: relative;
-      margin-top: 35mm;
-      font-size: 5.5px;
-      white-space: nowrap;
+      margin-top: 18mm;
+      font-size: 12px;
+      white-space: normal;
     }
 
     @page {
-      size: 215.9mm 355.6mm;
+      size: 215.9mm 330.2mm;
       margin: 0;
     }
 
@@ -328,7 +344,7 @@
     @media print {
       html, body {
         width: 215.9mm;
-        height: 355.6mm;
+        height: auto;
         margin: 0 !important;
         padding: 0 !important;
         background: #fff !important;
@@ -338,13 +354,13 @@
 
       .sheet {
         width: 215.9mm;
-        height: 355.6mm;
-        min-height: 0;
+        height: auto;
+        min-height: 330.2mm;
         margin: 0;
-        padding: 7.5mm 6mm 33mm;
+        padding: 7.5mm 6mm;
         zoom: 1;
         box-shadow: none;
-        overflow: hidden;
+        overflow: visible;
       }
 
       .edit, .edit:focus, [contenteditable="true"] {
@@ -369,6 +385,7 @@
 
   <main class="sheet" aria-label="Certificación de calificaciones editable">
     <header class="masthead">
+      <span class="masthead-index edit" contenteditable="true" spellcheck="false">I</span>
       <div class="ministry">
         <img src="ministerio-educacion.jpeg" alt="República Bolivariana de Venezuela. Ministerio del Poder Popular para la Educación">
       </div>
@@ -399,7 +416,7 @@
     <section class="section">
       <h2 class="section-title edit" contenteditable="true" spellcheck="false">III. Datos de Identificación del Estudiante:</h2>
       <div class="form-row student-row">
-        <div class="field"><span class="field-label edit" contenteditable="true" spellcheck="false">Cédula de Identidad:</span><span class="field-value edit" contenteditable="true" spellcheck="false">V 34.345.425</span></div>
+        <div class="field"><span class="field-label edit" contenteditable="true" spellcheck="false">Cédula de Identidad:</span><span class="field-value edit" contenteditable="true" spellcheck="false">V-34.345.425</span></div>
         <div class="field"><span class="field-label edit" contenteditable="true" spellcheck="false">Fecha de Nacimiento:</span><span class="field-value edit" contenteditable="true" spellcheck="false">01 DE DICIEMBRE 2007</span></div>
       </div>
       <div class="form-row student-row">
@@ -415,23 +432,37 @@
 
     <section class="section">
       <h2 class="section-title edit" contenteditable="true" spellcheck="false">IV. Planteles donde Cursó Estudios</h2>
-      <table class="schools">
-        <thead>
-          <tr>
-            <th class="edit" contenteditable="true" spellcheck="false">Nº</th>
-            <th class="edit" contenteditable="true" spellcheck="false">Denominación y Epónimo de la Institución</th>
-            <th class="edit" contenteditable="true" spellcheck="false">Localidad</th>
-            <th class="edit" contenteditable="true" spellcheck="false">E.F.</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td contenteditable="true" spellcheck="false">1</td><td contenteditable="true" spellcheck="false">U.E.P. INSTITUTO LIBERTAD</td><td contenteditable="true" spellcheck="false">PETARE</td><td contenteditable="true" spellcheck="false">MI</td></tr>
-          <tr><td contenteditable="true" spellcheck="false">2</td><td contenteditable="true" spellcheck="false">*****</td><td contenteditable="true" spellcheck="false">*****</td><td contenteditable="true" spellcheck="false">***</td></tr>
-          <tr><td contenteditable="true" spellcheck="false">3</td><td contenteditable="true" spellcheck="false">*****</td><td contenteditable="true" spellcheck="false">*****</td><td contenteditable="true" spellcheck="false">***</td></tr>
-          <tr><td contenteditable="true" spellcheck="false">4</td><td contenteditable="true" spellcheck="false">*****</td><td contenteditable="true" spellcheck="false">*****</td><td contenteditable="true" spellcheck="false">***</td></tr>
-          <tr><td contenteditable="true" spellcheck="false">5</td><td contenteditable="true" spellcheck="false">*****</td><td contenteditable="true" spellcheck="false">*****</td><td contenteditable="true" spellcheck="false">***</td></tr>
-        </tbody>
-      </table>
+      <div class="schools-grid">
+        <table class="schools">
+          <thead>
+            <tr>
+              <th class="edit" contenteditable="true" spellcheck="false">Nº</th>
+              <th class="edit" contenteditable="true" spellcheck="false">Denominación y Epónimo de la Institución</th>
+              <th class="edit" contenteditable="true" spellcheck="false">Localidad</th>
+              <th class="edit" contenteditable="true" spellcheck="false">E.F.</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td contenteditable="true" spellcheck="false">1</td><td contenteditable="true" spellcheck="false">U.E.P. INSTITUTO LIBERTAD</td><td contenteditable="true" spellcheck="false">PETARE</td><td contenteditable="true" spellcheck="false">MI</td></tr>
+            <tr><td contenteditable="true" spellcheck="false">2</td><td contenteditable="true" spellcheck="false">*****</td><td contenteditable="true" spellcheck="false">*****</td><td contenteditable="true" spellcheck="false">***</td></tr>
+          </tbody>
+        </table>
+        <table class="schools">
+          <thead>
+            <tr>
+              <th class="edit" contenteditable="true" spellcheck="false">Nº</th>
+              <th class="edit" contenteditable="true" spellcheck="false">Denominación y Epónimo de la Institución</th>
+              <th class="edit" contenteditable="true" spellcheck="false">Localidad</th>
+              <th class="edit" contenteditable="true" spellcheck="false">E.F.</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td contenteditable="true" spellcheck="false">3</td><td contenteditable="true" spellcheck="false">*****</td><td contenteditable="true" spellcheck="false">*****</td><td contenteditable="true" spellcheck="false">***</td></tr>
+            <tr><td contenteditable="true" spellcheck="false">4</td><td contenteditable="true" spellcheck="false">*****</td><td contenteditable="true" spellcheck="false">*****</td><td contenteditable="true" spellcheck="false">***</td></tr>
+            <tr><td contenteditable="true" spellcheck="false">5</td><td contenteditable="true" spellcheck="false">*****</td><td contenteditable="true" spellcheck="false">*****</td><td contenteditable="true" spellcheck="false">***</td></tr>
+          </tbody>
+        </table>
+      </div>
     </section>
 
     <section class="section">
