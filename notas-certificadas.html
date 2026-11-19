@@ -70,9 +70,8 @@
     }
 
     .masthead-index {
-      position: absolute;
-      top: -2px;
-      left: -10px;
+      margin-right: 4px;
+      font-weight: 700;
     }
 
     .ministry {
@@ -96,13 +95,15 @@
       margin: 0 0 3px;
       font-size: 12px;
       line-height: 1.1;
-      font-weight: 700;
+      font-weight: 400;
+      text-decoration: underline;
     }
 
     .heading p {
       margin: 1px 0;
       font-size: 12px;
       font-weight: 700;
+      text-decoration: underline;
     }
 
     .section { margin-top: 3px; }
@@ -196,6 +197,7 @@
       text-align: center;
       font-size: 9px;
       line-height: 1.05;
+      font-weight: 700;
     }
 
     .grades {
@@ -232,7 +234,18 @@
     }
     .grades thead tr:nth-child(2) th { height: 14px; }
 
-    .fifth-pair { grid-template-columns: 1fr 1fr; }
+    .fifth-pair {
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      margin-bottom: 0;
+      align-items: stretch;
+    }
+
+    .fifth-pair .grade-unit:last-child {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+    }
+
     .areas { font-size: 9px; }
     .areas th:first-child, .areas td:first-child {
       width: 46%;
@@ -262,38 +275,76 @@
       transform-origin: center;
     }
 
-    .observations { margin-top: 5px; }
+    .observations {
+      margin-top: 0;
+      border-right: 1px solid #444;
+      border-bottom: 1px solid #444;
+      border-left: 1px solid #444;
+      font-size: 9px;
+    }
+
+    .observations .section-title {
+      margin: 0;
+      padding: 0 2px;
+      font-size: 9px;
+    }
+
     .observations-box {
-      height: 38px;
-      border: 1px solid #444;
-      padding: 3px;
+      height: 16px;
+      border-top: 1px solid #444;
+      padding: 1px 3px;
+    }
+
+    .post-observation-row {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    .post-observation-row td {
+      height: 16px;
+      padding: 1px 3px;
+      border-right: 1px solid #444;
+      border-bottom: 1px solid #444;
+      border-left: 1px solid #444;
     }
 
     .signatures {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 7px;
-      margin-top: 4px;
+      margin-top: 0;
+      font-size: 9px;
     }
 
     .signature {
-      height: 150px;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      height: 130px;
       border: 1px solid #444;
+      border-top: 0;
     }
 
     .signature h3 {
       margin: 0;
-      padding: 3px 2px;
+      padding: 2px 2px;
       border-bottom: 1px solid #444;
-      text-align: center;
-      font-size: 12px;
+      text-align: left;
+      font-size: 9px;
     }
 
     .signature-content {
       display: grid;
-      grid-template-columns: 1fr .95fr;
-      gap: 5px;
-      padding: 5px 4px;
+      grid-template-columns: .81fr 1fr;
+      gap: 0;
+      min-height: 0;
+      padding: 0;
+    }
+
+    .signature-fields {
+      display: flex;
+      min-height: 0;
+      flex-direction: column;
     }
 
     .signature-fields .line {
@@ -303,29 +354,33 @@
       align-items: end;
       border-bottom: 1px solid #666;
       white-space: nowrap;
+      font-size: 9px;
+    }
+
+    .signature-fields .line.centered { justify-content: center; }
+    .signature-fields .line:first-child { font-weight: 700; }
+
+    .signature-fields .line:last-child {
+      margin-top: auto;
+      border-bottom: 0;
+      transform: translateY(-5px);
     }
 
     .stamp {
       min-height: 80px;
-      margin-top: 5px;
-      border: 1px dashed #777;
-      border-radius: 50%;
+      margin: 0;
+      border-left: 1px solid #444;
       display: grid;
       place-content: center;
       text-align: center;
-      font-size: 12px;
-      font-weight: 700;
-    }
-
-    .signature:last-child .stamp {
-      border-style: solid;
-      border-radius: 0;
+      font-size: 9px;
+      font-weight: 400;
     }
 
     .legal-note {
       position: relative;
-      margin-top: 18mm;
-      font-size: 12px;
+      margin-top: 2px;
+      font-size: 9px;
       white-space: normal;
     }
 
@@ -393,19 +448,19 @@
 </head>
 <body>
   <nav class="actions" aria-label="Acciones del documento">
-    <button type="button" onclick="window.print()">Imprimir / Guardar PDF</button>
+    <button type="button" onclick="window.print()">Imprimir</button>
+    <button type="button" onclick="window.print()">Guardar PDF</button>
     <button type="button" onclick="window.location.href = 'registro.html'">Regresar</button>
   </nav>
 
   <main class="sheet" aria-label="Certificación de calificaciones editable">
     <header class="masthead">
-      <span class="masthead-index edit" contenteditable="true" spellcheck="false">I</span>
       <div class="ministry">
         <img src="ministerio-educacion.jpeg" alt="República Bolivariana de Venezuela. Ministerio del Poder Popular para la Educación">
       </div>
       <div class="heading">
         <h1 class="edit" contenteditable="true" spellcheck="false">CERTIFICACIÓN DE CALIFICACIONES EMG</h1>
-        <p class="edit" contenteditable="true" spellcheck="false"><strong>Plan de Estudio:</strong> Educación Media General &nbsp; Código: 31059</p>
+        <p class="edit" contenteditable="true" spellcheck="false"><span class="masthead-index">I.</span>&nbsp;<strong>Plan de Estudio:</strong> Educación Media General &nbsp; Código: 31059</p>
         <p class="edit" contenteditable="true" spellcheck="false"><strong>Lugar y Fecha de Expedición:</strong> Estado Miranda 13/04/2026</p>
       </div>
     </header>
@@ -608,15 +663,21 @@
       <div class="observations-box edit" contenteditable="true" spellcheck="false" aria-label="Observaciones"></div>
     </section>
 
+    <table class="post-observation-row" aria-label="Fila vacía después de observaciones">
+      <tbody><tr><td class="edit" contenteditable="true" spellcheck="false"></td></tr></tbody>
+    </table>
+
     <section class="signatures">
       <div class="signature">
         <h3 class="edit" contenteditable="true" spellcheck="false">VII. Institución Educativa</h3>
         <div class="signature-content">
           <div class="signature-fields">
-            <div class="line"><span class="edit" contenteditable="true" spellcheck="false">Director(a)</span><span class="edit" contenteditable="true" spellcheck="false"></span></div>
-            <div class="line"><span class="edit" contenteditable="true" spellcheck="false">Apellidos y Nombres:</span><span class="edit" contenteditable="true" spellcheck="false">ABRAHAM RAMIREZ</span></div>
-            <div class="line"><span class="edit" contenteditable="true" spellcheck="false">Cédula de Identidad:</span><span class="edit" contenteditable="true" spellcheck="false">V 23689421</span></div>
-            <div class="line"><span class="edit" contenteditable="true" spellcheck="false">Firma:</span><span class="edit" contenteditable="true" spellcheck="false"></span></div>
+            <div class="line centered edit" contenteditable="true" spellcheck="false">Director(a)</div>
+            <div class="line edit" contenteditable="true" spellcheck="false">Apellidos y Nombres:</div>
+            <div class="line centered edit" contenteditable="true" spellcheck="false">ABRAHAM RAMIREZ</div>
+            <div class="line edit" contenteditable="true" spellcheck="false">Cédula de Identidad:</div>
+            <div class="line centered edit" contenteditable="true" spellcheck="false">V 23689421</div>
+            <div class="line edit" contenteditable="true" spellcheck="false">Firma:</div>
             <div class="line edit" contenteditable="true" spellcheck="false">Para Efecto de su Validez Nacional</div>
           </div>
           <div class="stamp edit" contenteditable="true" spellcheck="false">SELLO DE LA INSTITUCIÓN EDUCATIVA</div>
@@ -626,13 +687,15 @@
         <h3 class="edit" contenteditable="true" spellcheck="false">VIII. Centro de Desarrollo de la Calidad Educativa</h3>
         <div class="signature-content">
           <div class="signature-fields">
-            <div class="line"><span class="edit" contenteditable="true" spellcheck="false">Director(a)</span><span class="edit" contenteditable="true" spellcheck="false"></span></div>
-            <div class="line"><span class="edit" contenteditable="true" spellcheck="false">Apellidos y Nombres:</span><span class="edit" contenteditable="true" spellcheck="false"></span></div>
-            <div class="line"><span class="edit" contenteditable="true" spellcheck="false">Cédula de Identidad:</span><span class="edit" contenteditable="true" spellcheck="false"></span></div>
-            <div class="line"><span class="edit" contenteditable="true" spellcheck="false">Firma:</span><span class="edit" contenteditable="true" spellcheck="false"></span></div>
+            <div class="line centered edit" contenteditable="true" spellcheck="false">Director(a)</div>
+            <div class="line edit" contenteditable="true" spellcheck="false">Apellidos y Nombres:</div>
+            <div class="line centered edit" contenteditable="true" spellcheck="false"></div>
+            <div class="line edit" contenteditable="true" spellcheck="false">Cédula de Identidad:</div>
+            <div class="line centered edit" contenteditable="true" spellcheck="false"></div>
+            <div class="line edit" contenteditable="true" spellcheck="false">Firma:</div>
             <div class="line edit" contenteditable="true" spellcheck="false">Para Efecto de su Validez Internacional</div>
           </div>
-          <div class="stamp edit" contenteditable="true" spellcheck="false">SELLO DEL CENTRO DE DESARROLLO DE LA CALIDAD EDUCATIVA ESTADAL</div>
+          <div class="stamp edit" contenteditable="true" spellcheck="false">SELLO DEL CENTRO DE<br>DESARROLLO DE LA CALIDAD<br>EDUCATIVA ESTADAL</div>
         </div>
       </div>
     </section>
