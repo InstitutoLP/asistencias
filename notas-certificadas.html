@@ -153,11 +153,11 @@
       width: 100%;
       border-collapse: collapse;
       table-layout: fixed;
-      font-size: 10px;
+      font-size: 12px;
     }
 
     .schools th, .schools td {
-      height: 16px;
+      height: auto;
       padding: 1px 2px;
       border: 1px solid #444;
       text-align: center;
@@ -215,39 +215,41 @@
     }
 
     .grades th:first-child, .grades td:first-child {
-      width: 43%;
       text-align: left;
     }
 
-    .grades col:nth-child(1) { width: 43%; }
-    .grades col:nth-child(2) { width: 9%; }
+    .grades col:nth-child(1) { width: 50%; }
+    .grades col:nth-child(2) { width: 6%; }
     .grades col:nth-child(3) { width: 17%; }
-    .grades col:nth-child(4) { width: 7%; }
+    .grades col:nth-child(4) { width: 6%; }
     .grades col:nth-child(5) { width: 8%; }
     .grades col:nth-child(6) { width: 8%; }
-    .grades col:nth-child(7) { width: 8%; }
+    .grades col:nth-child(7) { width: 5%; }
 
-    .grades th:nth-child(2), .grades td:nth-child(2) { width: 9%; }
-    .grades th:nth-child(3), .grades td:nth-child(3) { width: 17%; }
-    .grades th:nth-child(4), .grades td:nth-child(4) { width: 7%; }
-    .grades th:nth-child(5), .grades td:nth-child(5) { width: 8%; }
-    .grades th:nth-child(6), .grades td:nth-child(6) { width: 8%; }
-    .grades th:nth-child(7), .grades td:nth-child(7) { width: 8%; }
+    .grade-labels th { height: 28px; }
 
-    .grade-labels th { height: 15px; }
+    .grades .institution-header {
+      padding: 1px 0;
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      white-space: nowrap;
+    }
 
     .fifth-pair { grid-template-columns: 1.18fr .82fr; }
     .areas { font-size: 12px; }
     .areas th:first-child, .areas td:first-child {
-      width: 55%;
       text-align: center;
     }
 
-    .areas col:nth-child(1) { width: 55%; }
-    .areas col:nth-child(2) { width: 15%; }
-    .areas col:nth-child(3) { width: 20%; }
-    .areas col:nth-child(4) { width: 10%; }
+    .areas.orientation col:nth-child(1) { width: 68%; }
+    .areas.orientation col:nth-child(2) { width: 14%; }
+    .areas.orientation col:nth-child(3) { width: 18%; }
 
+    .areas.participation { margin-top: 0; }
+    .areas.participation col:nth-child(1) { width: 45%; }
+    .areas.participation col:nth-child(2) { width: 13%; }
+    .areas.participation col:nth-child(3) { width: 27%; }
+    .areas.participation col:nth-child(4) { width: 15%; }
     .observations { margin-top: 5px; }
     .observations-box {
       height: 38px;
@@ -472,16 +474,16 @@
           <h3 class="edit" contenteditable="true" spellcheck="false">PRIMER AÑO</h3>
           <table class="grades">
             <colgroup><col><col><col><col><col><col><col></colgroup>
-            <thead><tr class="grade-labels"><th class="edit" contenteditable="true" spellcheck="false">ÁREAS DEFORMACIÓN</th><th colspan="2" class="edit" contenteditable="true" spellcheck="false">Calificaciones</th><th class="edit" contenteditable="true" spellcheck="false">T-E</th><th colspan="2" class="edit" contenteditable="true" spellcheck="false">Fecha</th><th class="edit" contenteditable="true" spellcheck="false">Inst. Educa.</th></tr>
-              <tr><th class="edit" contenteditable="true" spellcheck="false"></th><th class="edit" contenteditable="true" spellcheck="false">Nº</th><th class="edit" contenteditable="true" spellcheck="false">Letras</th><th class="edit" contenteditable="true" spellcheck="false"></th><th class="edit" contenteditable="true" spellcheck="false">Mes</th><th class="edit" contenteditable="true" spellcheck="false">Año</th><th class="edit" contenteditable="true" spellcheck="false"></th></tr></thead>
+            <thead><tr class="grade-labels"><th class="edit" contenteditable="true" spellcheck="false">ÁREAS DE<br>FORMACIÓN</th><th colspan="2" class="edit" contenteditable="true" spellcheck="false">CALIFICACIONES</th><th class="edit" contenteditable="true" spellcheck="false">T-E</th><th colspan="2" class="edit" contenteditable="true" spellcheck="false">FECHA</th><th rowspan="2" class="edit institution-header" contenteditable="true" spellcheck="false">Inst. Educa.</th></tr>
+              <tr><th class="edit" contenteditable="true" spellcheck="false"></th><th class="edit" contenteditable="true" spellcheck="false">Nº</th><th class="edit" contenteditable="true" spellcheck="false">LETRAS</th><th class="edit" contenteditable="true" spellcheck="false"></th><th class="edit" contenteditable="true" spellcheck="false">MES</th><th class="edit" contenteditable="true" spellcheck="false">AÑO</th></tr></thead>
             <tbody>
-              <tr><td contenteditable="true" spellcheck="false">Castellano</td><td contenteditable="true" spellcheck="false">15</td><td contenteditable="true" spellcheck="false">DIEZ</td><td contenteditable="true" spellcheck="false">F</td><td contenteditable="true" spellcheck="false">07</td><td contenteditable="true" spellcheck="false"></td><td contenteditable="true" spellcheck="false">1</td></tr>
-              <tr><td contenteditable="true" spellcheck="false">Inglés u otras lenguas Extranjeras</td><td contenteditable="true" spellcheck="false">12</td><td contenteditable="true" spellcheck="false">DIEZ</td><td contenteditable="true" spellcheck="false">F</td><td contenteditable="true" spellcheck="false">07</td><td contenteditable="true" spellcheck="false"></td><td contenteditable="true" spellcheck="false">1</td></tr>
-              <tr><td contenteditable="true" spellcheck="false">Matemática</td><td contenteditable="true" spellcheck="false">11</td><td contenteditable="true" spellcheck="false">DIEZ</td><td contenteditable="true" spellcheck="false">F</td><td contenteditable="true" spellcheck="false">07</td><td contenteditable="true" spellcheck="false"></td><td contenteditable="true" spellcheck="false">1</td></tr>
-              <tr><td contenteditable="true" spellcheck="false">Educación Física</td><td contenteditable="true" spellcheck="false">12</td><td contenteditable="true" spellcheck="false">QUINCE</td><td contenteditable="true" spellcheck="false">F</td><td contenteditable="true" spellcheck="false">07</td><td contenteditable="true" spellcheck="false"></td><td contenteditable="true" spellcheck="false">1</td></tr>
-              <tr><td contenteditable="true" spellcheck="false">Arte y Patrimonio</td><td contenteditable="true" spellcheck="false">12</td><td contenteditable="true" spellcheck="false">DIEZ</td><td contenteditable="true" spellcheck="false">F</td><td contenteditable="true" spellcheck="false">07</td><td contenteditable="true" spellcheck="false"></td><td contenteditable="true" spellcheck="false">1</td></tr>
-              <tr><td contenteditable="true" spellcheck="false">Ciencias Naturales</td><td contenteditable="true" spellcheck="false">15</td><td contenteditable="true" spellcheck="false">DIEZ</td><td contenteditable="true" spellcheck="false">F</td><td contenteditable="true" spellcheck="false">07</td><td contenteditable="true" spellcheck="false"></td><td contenteditable="true" spellcheck="false">1</td></tr>
-              <tr><td contenteditable="true" spellcheck="false">Geografía, Historia y Ciudadanía</td><td contenteditable="true" spellcheck="false">14</td><td contenteditable="true" spellcheck="false">DIEZ</td><td contenteditable="true" spellcheck="false">F</td><td contenteditable="true" spellcheck="false">07</td><td contenteditable="true" spellcheck="false"></td><td contenteditable="true" spellcheck="false">1</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Castellano</td><td contenteditable="true" spellcheck="false">15</td><td contenteditable="true" spellcheck="false">DIEZ</td><td contenteditable="true" spellcheck="false">F</td><td contenteditable="true" spellcheck="false">07</td><td contenteditable="true" spellcheck="false">1</td><td contenteditable="true" spellcheck="false">1</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Inglés u otras lenguas Extranjeras</td><td contenteditable="true" spellcheck="false">12</td><td contenteditable="true" spellcheck="false">DIEZ</td><td contenteditable="true" spellcheck="false">F</td><td contenteditable="true" spellcheck="false">07</td><td contenteditable="true" spellcheck="false">1</td><td contenteditable="true" spellcheck="false">1</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Matemática</td><td contenteditable="true" spellcheck="false">11</td><td contenteditable="true" spellcheck="false">DIEZ</td><td contenteditable="true" spellcheck="false">F</td><td contenteditable="true" spellcheck="false">07</td><td contenteditable="true" spellcheck="false">1</td><td contenteditable="true" spellcheck="false">1</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Educación Física</td><td contenteditable="true" spellcheck="false">12</td><td contenteditable="true" spellcheck="false">QUINCE</td><td contenteditable="true" spellcheck="false">F</td><td contenteditable="true" spellcheck="false">07</td><td contenteditable="true" spellcheck="false">1</td><td contenteditable="true" spellcheck="false">1</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Arte y Patrimonio</td><td contenteditable="true" spellcheck="false">12</td><td contenteditable="true" spellcheck="false">DIEZ</td><td contenteditable="true" spellcheck="false">F</td><td contenteditable="true" spellcheck="false">07</td><td contenteditable="true" spellcheck="false">1</td><td contenteditable="true" spellcheck="false">1</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Ciencias Naturales</td><td contenteditable="true" spellcheck="false">15</td><td contenteditable="true" spellcheck="false">DIEZ</td><td contenteditable="true" spellcheck="false">F</td><td contenteditable="true" spellcheck="false">07</td><td contenteditable="true" spellcheck="false">1</td><td contenteditable="true" spellcheck="false">1</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">Geografía, Historia y Ciudadanía</td><td contenteditable="true" spellcheck="false">14</td><td contenteditable="true" spellcheck="false">DIEZ</td><td contenteditable="true" spellcheck="false">F</td><td contenteditable="true" spellcheck="false">07</td><td contenteditable="true" spellcheck="false">1</td><td contenteditable="true" spellcheck="false">1</td></tr>
             </tbody>
           </table>
         </section>
@@ -489,8 +491,8 @@
           <h3 class="edit" contenteditable="true" spellcheck="false">SEGUNDO AÑO</h3>
           <table class="grades">
             <colgroup><col><col><col><col><col><col><col></colgroup>
-            <thead><tr class="grade-labels"><th class="edit" contenteditable="true" spellcheck="false">ÁREAS DEFORMACIÓN</th><th colspan="2" class="edit" contenteditable="true" spellcheck="false">Calificaciones</th><th class="edit" contenteditable="true" spellcheck="false">T-E</th><th colspan="2" class="edit" contenteditable="true" spellcheck="false">Fecha</th><th class="edit" contenteditable="true" spellcheck="false">Inst. Educa.</th></tr>
-              <tr><th class="edit" contenteditable="true" spellcheck="false"></th><th class="edit" contenteditable="true" spellcheck="false">Nº</th><th class="edit" contenteditable="true" spellcheck="false">Letras</th><th class="edit" contenteditable="true" spellcheck="false"></th><th class="edit" contenteditable="true" spellcheck="false">Mes</th><th class="edit" contenteditable="true" spellcheck="false">Año</th><th class="edit" contenteditable="true" spellcheck="false"></th></tr></thead>
+            <thead><tr class="grade-labels"><th class="edit" contenteditable="true" spellcheck="false">ÁREAS DE<br>FORMACIÓN</th><th colspan="2" class="edit" contenteditable="true" spellcheck="false">CALIFICACIONES</th><th class="edit" contenteditable="true" spellcheck="false">T-E</th><th colspan="2" class="edit" contenteditable="true" spellcheck="false">FECHA</th><th rowspan="2" class="edit institution-header" contenteditable="true" spellcheck="false">Inst. Educa.</th></tr>
+              <tr><th class="edit" contenteditable="true" spellcheck="false"></th><th class="edit" contenteditable="true" spellcheck="false">Nº</th><th class="edit" contenteditable="true" spellcheck="false">LETRAS</th><th class="edit" contenteditable="true" spellcheck="false"></th><th class="edit" contenteditable="true" spellcheck="false">MES</th><th class="edit" contenteditable="true" spellcheck="false">AÑO</th></tr></thead>
             <tbody>
               <tr><td contenteditable="true" spellcheck="false">Castellano</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td></tr>
               <tr><td contenteditable="true" spellcheck="false">Inglés u otras lenguas Extranjeras</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td></tr>
@@ -509,8 +511,8 @@
           <h3 class="edit" contenteditable="true" spellcheck="false">TERCER AÑO</h3>
           <table class="grades">
             <colgroup><col><col><col><col><col><col><col></colgroup>
-            <thead><tr class="grade-labels"><th class="edit" contenteditable="true" spellcheck="false">ÁREAS DEFORMACIÓN</th><th colspan="2" class="edit" contenteditable="true" spellcheck="false">Calificaciones</th><th class="edit" contenteditable="true" spellcheck="false">T-E</th><th colspan="2" class="edit" contenteditable="true" spellcheck="false">Fecha</th><th class="edit" contenteditable="true" spellcheck="false">Inst. Educa.</th></tr>
-              <tr><th class="edit" contenteditable="true" spellcheck="false"></th><th class="edit" contenteditable="true" spellcheck="false">Nº</th><th class="edit" contenteditable="true" spellcheck="false">Letras</th><th class="edit" contenteditable="true" spellcheck="false"></th><th class="edit" contenteditable="true" spellcheck="false">Mes</th><th class="edit" contenteditable="true" spellcheck="false">Año</th><th class="edit" contenteditable="true" spellcheck="false"></th></tr></thead>
+            <thead><tr class="grade-labels"><th class="edit" contenteditable="true" spellcheck="false">ÁREAS DE<br>FORMACIÓN</th><th colspan="2" class="edit" contenteditable="true" spellcheck="false">CALIFICACIONES</th><th class="edit" contenteditable="true" spellcheck="false">T-E</th><th colspan="2" class="edit" contenteditable="true" spellcheck="false">FECHA</th><th rowspan="2" class="edit institution-header" contenteditable="true" spellcheck="false">Inst. Educa.</th></tr>
+              <tr><th class="edit" contenteditable="true" spellcheck="false"></th><th class="edit" contenteditable="true" spellcheck="false">Nº</th><th class="edit" contenteditable="true" spellcheck="false">LETRAS</th><th class="edit" contenteditable="true" spellcheck="false"></th><th class="edit" contenteditable="true" spellcheck="false">MES</th><th class="edit" contenteditable="true" spellcheck="false">AÑO</th></tr></thead>
             <tbody>
               <tr><td contenteditable="true" spellcheck="false">Castellano</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td></tr>
               <tr><td contenteditable="true" spellcheck="false">Inglés u otras lenguas Extranjeras</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td></tr>
@@ -528,8 +530,8 @@
           <h3 class="edit" contenteditable="true" spellcheck="false">CUARTO AÑO</h3>
           <table class="grades">
             <colgroup><col><col><col><col><col><col><col></colgroup>
-            <thead><tr class="grade-labels"><th class="edit" contenteditable="true" spellcheck="false">ÁREAS DEFORMACIÓN</th><th colspan="2" class="edit" contenteditable="true" spellcheck="false">Calificaciones</th><th class="edit" contenteditable="true" spellcheck="false">T-E</th><th colspan="2" class="edit" contenteditable="true" spellcheck="false">Fecha</th><th class="edit" contenteditable="true" spellcheck="false">Inst. Educa.</th></tr>
-              <tr><th class="edit" contenteditable="true" spellcheck="false"></th><th class="edit" contenteditable="true" spellcheck="false">Nº</th><th class="edit" contenteditable="true" spellcheck="false">Letras</th><th class="edit" contenteditable="true" spellcheck="false"></th><th class="edit" contenteditable="true" spellcheck="false">Mes</th><th class="edit" contenteditable="true" spellcheck="false">Año</th><th class="edit" contenteditable="true" spellcheck="false"></th></tr></thead>
+            <thead><tr class="grade-labels"><th class="edit" contenteditable="true" spellcheck="false">ÁREAS DE<br>FORMACIÓN</th><th colspan="2" class="edit" contenteditable="true" spellcheck="false">CALIFICACIONES</th><th class="edit" contenteditable="true" spellcheck="false">T-E</th><th colspan="2" class="edit" contenteditable="true" spellcheck="false">FECHA</th><th rowspan="2" class="edit institution-header" contenteditable="true" spellcheck="false">Inst. Educa.</th></tr>
+              <tr><th class="edit" contenteditable="true" spellcheck="false"></th><th class="edit" contenteditable="true" spellcheck="false">Nº</th><th class="edit" contenteditable="true" spellcheck="false">LETRAS</th><th class="edit" contenteditable="true" spellcheck="false"></th><th class="edit" contenteditable="true" spellcheck="false">MES</th><th class="edit" contenteditable="true" spellcheck="false">AÑO</th></tr></thead>
             <tbody>
               <tr><td contenteditable="true" spellcheck="false">Castellano</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td></tr>
               <tr><td contenteditable="true" spellcheck="false">Inglés u otras lenguas Extranjeras</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td></tr>
@@ -550,8 +552,8 @@
           <h3 class="edit" contenteditable="true" spellcheck="false">QUINTO AÑO</h3>
           <table class="grades">
             <colgroup><col><col><col><col><col><col><col></colgroup>
-            <thead><tr class="grade-labels"><th class="edit" contenteditable="true" spellcheck="false">ÁREAS DEFORMACIÓN</th><th colspan="2" class="edit" contenteditable="true" spellcheck="false">Calificaciones</th><th class="edit" contenteditable="true" spellcheck="false">T-E</th><th colspan="2" class="edit" contenteditable="true" spellcheck="false">Fecha</th><th class="edit" contenteditable="true" spellcheck="false">Inst. Educa.</th></tr>
-              <tr><th class="edit" contenteditable="true" spellcheck="false"></th><th class="edit" contenteditable="true" spellcheck="false">Nº</th><th class="edit" contenteditable="true" spellcheck="false">Letras</th><th class="edit" contenteditable="true" spellcheck="false"></th><th class="edit" contenteditable="true" spellcheck="false">Mes</th><th class="edit" contenteditable="true" spellcheck="false">Año</th><th class="edit" contenteditable="true" spellcheck="false"></th></tr></thead>
+            <thead><tr class="grade-labels"><th class="edit" contenteditable="true" spellcheck="false">ÁREAS DE<br>FORMACIÓN</th><th colspan="2" class="edit" contenteditable="true" spellcheck="false">CALIFICACIONES</th><th class="edit" contenteditable="true" spellcheck="false">T-E</th><th colspan="2" class="edit" contenteditable="true" spellcheck="false">FECHA</th><th rowspan="2" class="edit institution-header" contenteditable="true" spellcheck="false">Inst. Educa.</th></tr>
+              <tr><th class="edit" contenteditable="true" spellcheck="false"></th><th class="edit" contenteditable="true" spellcheck="false">Nº</th><th class="edit" contenteditable="true" spellcheck="false">LETRAS</th><th class="edit" contenteditable="true" spellcheck="false"></th><th class="edit" contenteditable="true" spellcheck="false">MES</th><th class="edit" contenteditable="true" spellcheck="false">AÑO</th></tr></thead>
             <tbody>
               <tr><td contenteditable="true" spellcheck="false">Castellano</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td></tr>
               <tr><td contenteditable="true" spellcheck="false">Inglés u otras lenguas Extranjeras</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td></tr>
@@ -568,17 +570,22 @@
         </section>
         <section class="grade-unit">
           <h3 class="edit" contenteditable="true" spellcheck="false">ÁREAS DE FORMACIÓN</h3>
-          <table class="grades areas">
-            <colgroup><col><col><col><col></colgroup>
-            <thead><tr><th class="edit" contenteditable="true" spellcheck="false">ÁREAS DE FORMACIÓN</th><th class="edit" contenteditable="true" spellcheck="false">AÑO</th><th colspan="2" class="edit" contenteditable="true" spellcheck="false">LITERAL</th></tr></thead>
+          <table class="grades areas orientation">
+            <colgroup><col><col><col></colgroup>
+            <thead><tr><th class="edit" contenteditable="true" spellcheck="false">ÁREAS DE<br>FORMACIÓN</th><th class="edit" contenteditable="true" spellcheck="false">AÑO</th><th class="edit" contenteditable="true" spellcheck="false">LITERAL</th></tr></thead>
             <tbody>
-              <tr><td rowspan="5" class="edit" contenteditable="true" spellcheck="false">ORIENTACIÓN Y CONVIVENCIA</td><td contenteditable="true" spellcheck="false">1°</td><td contenteditable="true" spellcheck="false"></td><td contenteditable="true" spellcheck="false">C</td></tr>
-              <tr><td contenteditable="true" spellcheck="false">2°</td><td contenteditable="true" spellcheck="false"></td><td contenteditable="true" spellcheck="false">*****</td></tr>
-              <tr><td contenteditable="true" spellcheck="false">3°</td><td contenteditable="true" spellcheck="false"></td><td contenteditable="true" spellcheck="false">*****</td></tr>
-              <tr><td contenteditable="true" spellcheck="false">4°</td><td contenteditable="true" spellcheck="false"></td><td contenteditable="true" spellcheck="false">*****</td></tr>
-              <tr><td contenteditable="true" spellcheck="false">5°</td><td contenteditable="true" spellcheck="false"></td><td contenteditable="true" spellcheck="false">*****</td></tr>
-              <tr><th class="edit" contenteditable="true" spellcheck="false">ÁREAS DE FORMACIÓN</th><th class="edit" contenteditable="true" spellcheck="false">AÑO</th><th class="edit" contenteditable="true" spellcheck="false">GRUPO</th><th class="edit" contenteditable="true" spellcheck="false">LITERAL</th></tr>
-              <tr><td rowspan="5" class="edit" contenteditable="true" spellcheck="false">PARTICIPACIÓN EN GRUPOS DE CREACIÓN, RECREACIÓN Y PRODUCCIÓN</td><td contenteditable="true" spellcheck="false">1°</td><td contenteditable="true" spellcheck="false">CONTABILIDAD</td><td contenteditable="true" spellcheck="false">C</td></tr>
+              <tr><td rowspan="5" class="edit" contenteditable="true" spellcheck="false">ORIENTACIÓN Y<br>CONVIVENCIA</td><td contenteditable="true" spellcheck="false">1°</td><td contenteditable="true" spellcheck="false">C</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">2°</td><td contenteditable="true" spellcheck="false">*****</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">3°</td><td contenteditable="true" spellcheck="false">*****</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">4°</td><td contenteditable="true" spellcheck="false">*****</td></tr>
+              <tr><td contenteditable="true" spellcheck="false">5°</td><td contenteditable="true" spellcheck="false">*****</td></tr>
+            </tbody>
+          </table>
+          <table class="grades areas participation">
+            <colgroup><col><col><col><col></colgroup>
+            <thead><tr><th class="edit" contenteditable="true" spellcheck="false">ÁREAS DE<br>FORMACIÓN</th><th class="edit" contenteditable="true" spellcheck="false">AÑO</th><th class="edit" contenteditable="true" spellcheck="false">GRUPO</th><th class="edit" contenteditable="true" spellcheck="false">LITERAL</th></tr></thead>
+            <tbody>
+              <tr><td rowspan="5" class="edit" contenteditable="true" spellcheck="false">PARTICIPACIÓN EN<br>GRUPOS DE CREACIÓN,<br>RECREACIÓN Y<br>PRODUCCIÓN</td><td contenteditable="true" spellcheck="false">1°</td><td contenteditable="true" spellcheck="false">CONTABILIDAD</td><td contenteditable="true" spellcheck="false">C</td></tr>
               <tr><td contenteditable="true" spellcheck="false">2°</td><td contenteditable="true" spellcheck="false">*****</td><td contenteditable="true" spellcheck="false">***</td></tr>
               <tr><td contenteditable="true" spellcheck="false">3°</td><td contenteditable="true" spellcheck="false">*****</td><td contenteditable="true" spellcheck="false">***</td></tr>
               <tr><td contenteditable="true" spellcheck="false">4°</td><td contenteditable="true" spellcheck="false">*****</td><td contenteditable="true" spellcheck="false">***</td></tr>
