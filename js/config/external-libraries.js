@@ -9,6 +9,10 @@
       src: 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
       isReady: () => typeof window.html2canvas === 'function',
     },
+    jszip: {
+      src: 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',
+      isReady: () => typeof window.JSZip === 'function',
+    },
     jsPdf: {
       src: 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
       isReady: () => Boolean(window.jspdf?.jsPDF),
