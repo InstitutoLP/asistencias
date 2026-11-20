@@ -64,7 +64,7 @@
       position: relative;
       display: grid;
       grid-template-columns: 40% 60%;
-      min-height: 58px;
+      min-height: 68px;
       align-items: center;
       padding: 1px 3px 4px;
     }
@@ -109,6 +109,9 @@
     .heading-underline { text-decoration: underline; }
 
     .section { margin-top: 3px; }
+    .plant-data { margin-top: 10px; }
+    .student-data { margin-top: 15px; }
+    .school-history { margin-top: 20px; }
 
     .section-title {
       display: block;
@@ -122,6 +125,11 @@
       align-items: end;
       gap: 3px;
       min-height: 16px;
+    }
+
+    .plant-row, .student-row {
+      min-height: 18px;
+      row-gap: 4px;
     }
 
     .field {
@@ -189,7 +197,7 @@
     }
 
     .grade-heading {
-      margin: 4px 0 2px;
+      margin: 8px 0 2px;
       font-size: 9px;
       font-weight: 700;
     }
@@ -227,6 +235,8 @@
       text-align: center;
       overflow-wrap: anywhere;
     }
+
+    .grades tbody td { height: 17.5px; }
 
     .grades th:first-child, .grades td:first-child { text-align: left; }
 
@@ -477,7 +487,7 @@
       </div>
     </header>
 
-    <section class="section">
+    <section class="section plant-data">
       <h2 class="section-title edit" contenteditable="true" spellcheck="false">II. Datos del Plantel o Zona Educativa o Centro de Desarrollo de la Calidad Educativa (CDCEE) que emite la Certificación:</h2>
       <div class="form-row plant-row plant-main">
         <div class="field"><span class="field-label edit" contenteditable="true" spellcheck="false">Código:</span><span class="field-value edit" contenteditable="true" spellcheck="false">PD02631519</span></div>
@@ -494,7 +504,7 @@
       </div>
     </section>
 
-    <section class="section">
+    <section class="section student-data">
       <h2 class="section-title edit" contenteditable="true" spellcheck="false">III. Datos de Identificación del Estudiante:</h2>
       <div class="form-row student-row">
         <div class="field value-only-underline"><span class="field-label edit" contenteditable="true" spellcheck="false">Cédula de Identidad:</span><span class="field-value edit" contenteditable="true" spellcheck="false">V-34.345.425</span></div>
@@ -511,7 +521,7 @@
       </div>
     </section>
 
-    <section class="section">
+    <section class="section school-history">
       <h2 class="section-title edit" contenteditable="true" spellcheck="false">IV. Planteles donde Cursó Estudios</h2>
       <div class="schools-grid">
         <table class="schools">
