@@ -158,7 +158,7 @@
     if (total !== width && columnWidths.length) columnWidths[columnWidths.length - 1] += width - total;
     const grid = columnWidths.map((column) => `<w:gridCol w:w="${column}"/>`).join('');
     const margins = options.cellMargins || { top: 15, right: 30, bottom: 15, left: 30 };
-    const tableProperties = `<w:tblPr><w:tblW w:w="${width}" w:type="dxa"/><w:tblLayout w:type="fixed"/>${cellMarginsXml(margins)}${tableBordersXml(Boolean(options.bordered), options.borderEdges)}</w:tblPr>`;
+    const tableProperties = `<w:tblPr><w:tblW w:w="0" w:type="auto"/><w:jc w:val="center"/><w:tblLayout w:type="fixed"/>${cellMarginsXml(margins)}${tableBordersXml(Boolean(options.bordered), options.borderEdges)}</w:tblPr>`;
     const body = rows.map((row) => {
       const cells = row.cells.map((cell, index) => {
         const definition = typeof cell === 'string' ? { content: cell } : cell;
