@@ -106,6 +106,8 @@
       text-decoration: none;
     }
 
+    .heading-underline { text-decoration: underline; }
+
     .section { margin-top: 3px; }
 
     .section-title {
@@ -133,8 +135,20 @@
 
     .field-label { flex: 0 0 auto; font-weight: 700; }
     .field-value { flex: 1 1 auto; min-width: 0; text-align: center; }
+    .field.value-only-underline { border-bottom: 0; }
+    .field.value-only-underline .field-value {
+      margin-left: -3px;
+      border-bottom: 1px solid #666;
+    }
 
     .plant-main { grid-template-columns: .9fr 3.1fr; }
+    .plant-main .field { border-bottom: 0; }
+    .plant-main .field-value {
+      margin-left: -3px;
+      padding-bottom: 1px;
+      border-bottom: 1px solid currentColor;
+      text-decoration: none;
+    }
     .plant-address { grid-template-columns: 3.2fr 1fr; }
     .plant-location { grid-template-columns: 1fr 1.15fr .7fr; }
 
@@ -168,8 +182,6 @@
     .schools th:nth-child(2) { width: 66%; }
     .schools th:nth-child(3) { width: 15%; }
     .schools th:nth-child(4) { width: 10%; }
-    .schools td:nth-child(2) { text-align: left; }
-
     .schools-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -449,7 +461,7 @@
 <body>
   <nav class="actions" aria-label="Acciones del documento">
     <button type="button" onclick="window.print()">Imprimir</button>
-    <button id="save-pdf-button" type="button" onclick="guardarNotasPDF()">Guardar PDF</button>
+    <button id="save-word-button" type="button" onclick="guardarNotasWord()">Guardar en Word</button>
     <button type="button" onclick="window.location.href = 'registro.html'">Regresar</button>
   </nav>
 
@@ -460,8 +472,8 @@
       </div>
       <div class="heading">
         <h1 class="edit" contenteditable="true" spellcheck="false">CERTIFICACIÓN DE CALIFICACIONES EMG</h1>
-        <p class="edit" contenteditable="true" spellcheck="false"><span class="masthead-index">I.</span>&nbsp;<strong>Plan de Estudio:</strong> Educación Media General &nbsp; Código: 31059</p>
-        <p class="edit" contenteditable="true" spellcheck="false"><strong>Lugar y Fecha de Expedición:</strong> Estado Miranda 13/04/2026</p>
+        <p class="edit" contenteditable="true" spellcheck="false"><span class="masthead-index">I.</span>&nbsp;<strong>Plan de Estudio:</strong> <span class="heading-underline">Educación Media General &nbsp; Código: 31059</span></p>
+        <p class="edit" contenteditable="true" spellcheck="false"><strong>Lugar y Fecha de Expedición:</strong> <span class="heading-underline">Estado Miranda 13/04/2026</span></p>
       </div>
     </header>
 
@@ -472,30 +484,30 @@
         <div class="field"><span class="field-label edit" contenteditable="true" spellcheck="false">Denominación y Epónimo:</span><span class="field-value edit" contenteditable="true" spellcheck="false">UNIDAD EDUCATIVA PRIVADA INSTITUTO LIBERTAD</span></div>
       </div>
       <div class="form-row plant-row plant-address">
-        <div class="field"><span class="field-label edit" contenteditable="true" spellcheck="false">Dirección:</span><span class="field-value edit" contenteditable="true" spellcheck="false">CALLE LA FEDERACIÓN EDIFICIO N° 10 PETARE</span></div>
-        <div class="field"><span class="field-label edit" contenteditable="true" spellcheck="false">Teléfono:</span><span class="field-value edit" contenteditable="true" spellcheck="false">0212-2222724</span></div>
+        <div class="field value-only-underline"><span class="field-label edit" contenteditable="true" spellcheck="false">Dirección:</span><span class="field-value edit" contenteditable="true" spellcheck="false">CALLE LA FEDERACIÓN EDIFICIO N° 10 PETARE</span></div>
+        <div class="field value-only-underline"><span class="field-label edit" contenteditable="true" spellcheck="false">Teléfono:</span><span class="field-value edit" contenteditable="true" spellcheck="false">0212-2222724</span></div>
       </div>
       <div class="form-row plant-row plant-location">
-        <div class="field"><span class="field-label edit" contenteditable="true" spellcheck="false">Municipio:</span><span class="field-value edit" contenteditable="true" spellcheck="false">SUCRE</span></div>
-        <div class="field"><span class="field-label edit" contenteditable="true" spellcheck="false">Entidad Federal:</span><span class="field-value edit" contenteditable="true" spellcheck="false">MIRANDA</span></div>
-        <div class="field"><span class="field-label edit" contenteditable="true" spellcheck="false">CDCEE:</span><span class="field-value edit" contenteditable="true" spellcheck="false">MIRANDA</span></div>
+        <div class="field value-only-underline"><span class="field-label edit" contenteditable="true" spellcheck="false">Municipio:</span><span class="field-value edit" contenteditable="true" spellcheck="false">SUCRE</span></div>
+        <div class="field value-only-underline"><span class="field-label edit" contenteditable="true" spellcheck="false">Entidad Federal:</span><span class="field-value edit" contenteditable="true" spellcheck="false">MIRANDA</span></div>
+        <div class="field value-only-underline"><span class="field-label edit" contenteditable="true" spellcheck="false">CDCEE:</span><span class="field-value edit" contenteditable="true" spellcheck="false">MIRANDA</span></div>
       </div>
     </section>
 
     <section class="section">
       <h2 class="section-title edit" contenteditable="true" spellcheck="false">III. Datos de Identificación del Estudiante:</h2>
       <div class="form-row student-row">
-        <div class="field"><span class="field-label edit" contenteditable="true" spellcheck="false">Cédula de Identidad:</span><span class="field-value edit" contenteditable="true" spellcheck="false">V-34.345.425</span></div>
-        <div class="field"><span class="field-label edit" contenteditable="true" spellcheck="false">Fecha de Nacimiento:</span><span class="field-value edit" contenteditable="true" spellcheck="false">01 DE DICIEMBRE 2007</span></div>
+        <div class="field value-only-underline"><span class="field-label edit" contenteditable="true" spellcheck="false">Cédula de Identidad:</span><span class="field-value edit" contenteditable="true" spellcheck="false">V-34.345.425</span></div>
+        <div class="field value-only-underline"><span class="field-label edit" contenteditable="true" spellcheck="false">Fecha de Nacimiento:</span><span class="field-value edit" contenteditable="true" spellcheck="false">01 DE DICIEMBRE 2007</span></div>
       </div>
       <div class="form-row student-row">
-        <div class="field"><span class="field-label edit" contenteditable="true" spellcheck="false">Apellidos:</span><span class="field-value edit" contenteditable="true" spellcheck="false">MENDEZ LAYA</span></div>
-        <div class="field"><span class="field-label edit" contenteditable="true" spellcheck="false">Nombres:</span><span class="field-value edit" contenteditable="true" spellcheck="false">DEYALIT SORANGER</span></div>
+        <div class="field value-only-underline"><span class="field-label edit" contenteditable="true" spellcheck="false">Apellidos:</span><span class="field-value edit" contenteditable="true" spellcheck="false">MENDEZ LAYA</span></div>
+        <div class="field value-only-underline"><span class="field-label edit" contenteditable="true" spellcheck="false">Nombres:</span><span class="field-value edit" contenteditable="true" spellcheck="false">DEYALIT SORANGER</span></div>
       </div>
       <div class="form-row student-row">
-        <div class="field"><span class="field-label edit" contenteditable="true" spellcheck="false">Lugar de Nacimiento: País:</span><span class="field-value edit" contenteditable="true" spellcheck="false">VENEZUELA</span></div>
-        <div class="field"><span class="field-label edit" contenteditable="true" spellcheck="false">Estado:</span><span class="field-value edit" contenteditable="true" spellcheck="false">DISTRITO CAPITAL</span></div>
-        <div class="field"><span class="field-label edit" contenteditable="true" spellcheck="false">Municipio:</span><span class="field-value edit" contenteditable="true" spellcheck="false">LIBERTADOR</span></div>
+        <div class="field value-only-underline"><span class="field-label edit" contenteditable="true" spellcheck="false">Lugar de Nacimiento: País:</span><span class="field-value edit" contenteditable="true" spellcheck="false">VENEZUELA</span></div>
+        <div class="field value-only-underline"><span class="field-label edit" contenteditable="true" spellcheck="false">Estado:</span><span class="field-value edit" contenteditable="true" spellcheck="false">DISTRITO CAPITAL</span></div>
+        <div class="field value-only-underline"><span class="field-label edit" contenteditable="true" spellcheck="false">Municipio:</span><span class="field-value edit" contenteditable="true" spellcheck="false">LIBERTADOR</span></div>
       </div>
     </section>
 
@@ -702,52 +714,65 @@
 
     <p class="legal-note edit" contenteditable="true" spellcheck="false">VALOR FISCAL: Para su validez legal y de acuerdo al Ramo de Estampillas, al dorso de este documento se le debe colocar tres décimas de la Unidad Tributaria (0,3 U.T)</p>
   </main>
-  <script src="js/config/external-libraries.js"></script>
   <script>
-    async function guardarNotasPDF() {
-      const button = document.getElementById('save-pdf-button');
+    function guardarNotasWord() {
+      const button = document.getElementById('save-word-button');
       const sheet = document.querySelector('.sheet');
-      if (!button || !sheet) {
+      const styles = document.querySelector('head style');
+      if (!button || !sheet || !styles) {
         window.alert('No se encontró el documento para guardar.');
         return;
       }
 
       const originalLabel = button.textContent;
-      const originalZoom = sheet.style.zoom;
       button.disabled = true;
-      button.textContent = 'Generando PDF...';
+      button.textContent = 'Preparando Word...';
 
       try {
-        await window.loadPdfLibraries();
-        sheet.style.zoom = '1';
-        const canvas = await window.html2canvas(sheet, {
-          scale: 2,
-          useCORS: true,
-          allowTaint: false,
-          backgroundColor: '#ffffff',
-          logging: false,
+        const exportedSheet = sheet.cloneNode(true);
+        exportedSheet.querySelectorAll('[contenteditable]').forEach((element) => {
+          element.removeAttribute('contenteditable');
+          element.removeAttribute('spellcheck');
+          element.classList.remove('edit');
         });
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF({
-          orientation: 'portrait',
-          unit: 'mm',
-          format: [215.9, 330.2],
+        exportedSheet.querySelectorAll('img').forEach((image) => {
+          image.src = image.currentSrc || image.src;
         });
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        const scale = Math.min(pageWidth / canvas.width, pageHeight / canvas.height);
-        const imageWidth = canvas.width * scale;
-        const imageHeight = canvas.height * scale;
-        const x = (pageWidth - imageWidth) / 2;
-        const y = (pageHeight - imageHeight) / 2;
+        exportedSheet.querySelectorAll('script, iframe, object, embed').forEach((element) => element.remove());
+        exportedSheet.querySelectorAll('*').forEach((element) => {
+          Array.from(element.attributes).forEach((attribute) => {
+            if (attribute.name.toLowerCase().startsWith('on')) {
+              element.removeAttribute(attribute.name);
+            }
+          });
+        });
 
-        pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', x, y, imageWidth, imageHeight);
-        pdf.save('Notas_Certificadas.pdf');
+        const wordHtml = `<!DOCTYPE html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="ProgId" content="Word.Document">
+  <title>Notas Certificadas</title>
+  <style>${styles.textContent}
+    body { margin: 0; padding: 0; background: #fff; }
+    .sheet { margin: 0 auto; box-shadow: none; zoom: 1; }
+  </style>
+</head>
+<body>${exportedSheet.outerHTML}</body>
+</html>`;
+        const blob = new Blob(['\ufeff', wordHtml], { type: 'application/msword' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'Notas_Certificadas.doc';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
       } catch (error) {
-        console.error('Error al generar el PDF de las notas certificadas:', error);
-        window.alert('No se pudo guardar el PDF. Verifica tu conexión e inténtalo de nuevo.');
+        console.error('Error al generar el documento Word de las notas certificadas:', error);
+        window.alert('No se pudo guardar el documento Word. Inténtalo de nuevo.');
       } finally {
-        sheet.style.zoom = originalZoom;
         button.disabled = false;
         button.textContent = originalLabel;
       }
