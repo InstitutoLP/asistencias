@@ -714,51 +714,53 @@
 
     <p class="legal-note edit" contenteditable="true" spellcheck="false">VALOR FISCAL: Para su validez legal y de acuerdo al Ramo de Estampillas, al dorso de este documento se le debe colocar tres décimas de la Unidad Tributaria (0,3 U.T)</p>
   </main>
+  <script src="js/config/external-libraries.js"></script>
   <script>
-    function guardarNotasWord() {
+    async function guardarNotasWord() {
       const button = document.getElementById('save-word-button');
       const sheet = document.querySelector('.sheet');
-      const styles = document.querySelector('head style');
-      if (!button || !sheet || !styles) {
+      if (!button || !sheet) {
         window.alert('No se encontró el documento para guardar.');
         return;
       }
 
       const originalLabel = button.textContent;
+      const originalZoom = sheet.style.zoom;
       button.disabled = true;
-      button.textContent = 'Preparando Word...';
+      button.textContent = 'Generando Word...';
 
       try {
-        const exportedSheet = sheet.cloneNode(true);
-        exportedSheet.querySelectorAll('[contenteditable]').forEach((element) => {
-          element.removeAttribute('contenteditable');
-          element.removeAttribute('spellcheck');
-          element.classList.remove('edit');
+        await document.fonts.ready;
+        await window.loadExternalLibrary('html2canvas');
+        sheet.style.zoom = '1';
+        const canvas = await window.html2canvas(sheet, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: false,
+          backgroundColor: '#ffffff',
+          logging: false,
         });
-        exportedSheet.querySelectorAll('img').forEach((image) => {
-          image.src = image.currentSrc || image.src;
-        });
-        exportedSheet.querySelectorAll('script, iframe, object, embed').forEach((element) => element.remove());
-        exportedSheet.querySelectorAll('*').forEach((element) => {
-          Array.from(element.attributes).forEach((attribute) => {
-            if (attribute.name.toLowerCase().startsWith('on')) {
-              element.removeAttribute(attribute.name);
-            }
-          });
-        });
-
+        const pageWidth = 215.9;
+        const pageHeight = 330.2;
+        const scale = Math.min(pageWidth / canvas.width, pageHeight / canvas.height);
+        const imageWidth = canvas.width * scale;
+        const imageHeight = canvas.height * scale;
+        const top = (pageHeight - imageHeight) / 2;
+        const image = canvas.toDataURL('image/png');
         const wordHtml = `<!DOCTYPE html>
 <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="ProgId" content="Word.Document">
   <title>Notas Certificadas</title>
-  <style>${styles.textContent}
-    body { margin: 0; padding: 0; background: #fff; }
-    .sheet { margin: 0 auto; box-shadow: none; zoom: 1; }
+  <style>
+    @page WordSection1 { size: 215.9mm 330.2mm; margin: 0; }
+    div.WordSection1 { page: WordSection1; width: 215.9mm; height: 330.2mm; overflow: hidden; }
+    body { margin: 0; padding: 0; }
+    img { display: block; width: ${imageWidth}mm; height: ${imageHeight}mm; margin: ${top}mm auto 0; }
   </style>
 </head>
-<body>${exportedSheet.outerHTML}</body>
+<body><div class="WordSection1"><img src="${image}" alt="Notas certificadas"></div></body>
 </html>`;
         const blob = new Blob(['\ufeff', wordHtml], { type: 'application/msword' });
         const url = URL.createObjectURL(blob);
@@ -773,6 +775,7 @@
         console.error('Error al generar el documento Word de las notas certificadas:', error);
         window.alert('No se pudo guardar el documento Word. Inténtalo de nuevo.');
       } finally {
+        sheet.style.zoom = originalZoom;
         button.disabled = false;
         button.textContent = originalLabel;
       }
