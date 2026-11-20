@@ -80,6 +80,10 @@
   function paragraphXml(element, options = {}) {
     const computed = window.getComputedStyle(element);
     const align = options.align || (computed.textAlign === 'center' ? 'center' : computed.textAlign === 'right' ? 'right' : 'left');
+    const computedLineHeight = Number.parseFloat(computed.lineHeight);
+    const line = options.line === undefined
+      ? pxToTwips(Number.isFinite(computedLineHeight) ? computedLineHeight : fontSizePx(element) * 1.15)
+      : options.line;
     const runs = Array.from(element.childNodes).map((node) => inlineRuns(node, {
       size: options.size || Math.round(fontSizePx(element) * 1.5),
       bold: Boolean(options.bold),
@@ -87,7 +91,7 @@
       underline: Boolean(options.underline),
     })).join('') || textRun('', { size: options.size || Math.round(fontSizePx(element) * 1.5) });
 
-    return `<w:p>${paragraphProperties({ ...options, align })}${runs}</w:p>`;
+    return `<w:p>${paragraphProperties({ ...options, align, line, lineRule: 'exact' })}${runs}</w:p>`;
   }
 
   function emptyParagraph() {
@@ -137,15 +141,15 @@
     if (options.verticalMerge === 'restart') properties.push('<w:vMerge w:val="restart"/>');
     if (options.verticalMerge === 'continue') properties.push('<w:vMerge/>');
     if (options.borderEdges) properties.push(cellBordersXml(options.borderEdges, options.borderColor, options.borderSize));
+    if (options.noWrap) properties.push('<w:noWrap/>');
     if (options.margins) properties.push(cellMarginsXml(options.margins));
     if (options.textDirection) properties.push(`<w:textDirection w:val="${options.textDirection}"/>`);
     if (options.verticalAlign) properties.push(`<w:vAlign w:val="${options.verticalAlign}"/>`);
-    if (options.noWrap) properties.push('<w:noWrap/>');
     return `<w:tc><w:tcPr>${properties.join('')}</w:tcPr>${body}</w:tc>`;
   }
 
   function tableRowXml(cells, options = {}) {
-    const height = options.height ? `<w:trPr><w:trHeight w:val="${options.height}" w:hRule="atLeast"/></w:trPr>` : '';
+    const height = options.height ? `<w:trPr><w:trHeight w:val="${options.height}" w:hRule="exact"/></w:trPr>` : '';
     return `<w:tr>${height}${cells.join('')}</w:tr>`;
   }
 
@@ -253,6 +257,7 @@
             gridSpan: placement.columnSpan,
             verticalMerge: placement.rowSpan > 1 ? (isOrigin ? 'restart' : 'continue') : undefined,
             textDirection: isInstitution ? 'tbRl' : undefined,
+            noWrap: true,
             verticalAlign: 'center',
             margins: { top: 8, right: 12, bottom: 8, left: 12 },
           },
@@ -312,23 +317,27 @@
       const valueParagraph = paragraphXml(value, { align: 'center', size: Math.round(fontSizePx(value) * 1.5) });
       const valueOnlyUnderline = field.classList.contains('value-only-underline') || Boolean(field.closest('.plant-main'));
       const innerCells = [
-        { content: labelParagraph, width: labelWidth, options: { verticalAlign: 'center' } },
+        { content: labelParagraph, width: labelWidth, options: { verticalAlign: 'center', noWrap: true } },
         {
           content: valueParagraph,
           width: valueWidth,
           options: {
             verticalAlign: 'center',
+            noWrap: true,
             borderEdges: valueOnlyUnderline ? ['bottom'] : undefined,
           },
         },
       ];
-      const innerTable = makeLayoutTable(fieldWidth, [labelWidth, valueWidth], innerCells, {
+      const leftMargin = index === 0 ? 0 : Math.round(gap / 2);
+      const rightMargin = index === fields.length - 1 ? 0 : gap - leftMargin;
+      const fieldContentWidth = Math.max(1, fieldWidth - leftMargin - rightMargin);
+      const fieldValueWidth = Math.max(1, fieldContentWidth - labelWidth);
+      innerCells[1].width = fieldValueWidth;
+      const innerTable = makeLayoutTable(fieldContentWidth, [labelWidth, fieldValueWidth], innerCells, {
         cellMargins: { top: 0, right: 0, bottom: 0, left: 0 },
         verticalAlign: 'center',
       });
       const outerEdges = valueOnlyUnderline ? undefined : ['bottom'];
-      const leftMargin = index === 0 ? 0 : Math.round(gap / 2);
-      const rightMargin = index === fields.length - 1 ? 0 : gap - leftMargin;
       return {
         content: innerTable,
         width: columns[index],
@@ -390,17 +399,13 @@
   function rowOfFieldsXml(section, width) {
     const output = [];
     const rows = Array.from(section.querySelectorAll(':scope > .form-row'));
-    rows.forEach((row, index) => {
+    rows.forEach((row) => {
       output.push(fieldRowXml(row, width));
-      if (index < rows.length - 1) {
-        const gap = Number.parseFloat(window.getComputedStyle(row).rowGap) || 0;
-        output.push(spacerParagraph(gap));
-      }
     });
     return output.join('');
   }
 
-  function fieldSectionXml(section, width) {
+  function fieldSectionXml(section, width, topSpacing) {
     const title = section.querySelector('.section-title');
     const titleXml = paragraphXml(title, {
       bold: true,
@@ -408,10 +413,10 @@
       after: pxToTwips(Number.parseFloat(window.getComputedStyle(title).marginBottom) || 0),
       keepNext: true,
     });
-    return `${spacerParagraph(Number.parseFloat(window.getComputedStyle(section).marginTop) || 0)}${titleXml}${rowOfFieldsXml(section, width)}`;
+    return `${spacerParagraph(topSpacing)}${titleXml}${rowOfFieldsXml(section, width)}`;
   }
 
-  function schoolHistoryXml(section, width) {
+  function schoolHistoryXml(section, width, topSpacing) {
     const grid = section.querySelector('.schools-grid');
     const left = grid.querySelector('.school-history-left');
     const title = left.querySelector('.section-title');
@@ -437,7 +442,7 @@
       { content: rightContent, margins: { top: 0, right: 0, bottom: 0, left: marginHalf } },
     ];
     const layout = makeLayoutTable(width, columnWidths, cells, { verticalAlign: 'top' });
-    return `${spacerParagraph(Number.parseFloat(window.getComputedStyle(section).marginTop) || 0)}${layout}`;
+    return `${spacerParagraph(topSpacing)}${layout}`;
   }
 
   function gradeUnitXml(unit) {
@@ -648,10 +653,15 @@
       const body = [];
       const masthead = sheet.querySelector('.masthead');
       body.push(mastheadXml(masthead, pageContentWidth));
-      body.push(fieldSectionXml(sheet.querySelector('.plant-data'), pageContentWidth));
-      body.push(fieldSectionXml(sheet.querySelector('.student-data'), pageContentWidth));
+      const plantData = sheet.querySelector('.plant-data');
+      const studentData = sheet.querySelector('.student-data');
       const schoolHistory = sheet.querySelector('.school-history');
-      body.push(schoolHistoryXml(schoolHistory, pageContentWidth));
+      const plantMargin = Number.parseFloat(window.getComputedStyle(plantData).marginTop) || 0;
+      const studentMargin = Number.parseFloat(window.getComputedStyle(studentData).marginTop) || 0;
+      const historyMargin = Number.parseFloat(window.getComputedStyle(schoolHistory).marginTop) || 0;
+      body.push(fieldSectionXml(plantData, pageContentWidth, plantMargin));
+      body.push(fieldSectionXml(studentData, pageContentWidth, studentMargin));
+      body.push(schoolHistoryXml(schoolHistory, pageContentWidth, historyMargin));
 
       const gradeSection = schoolHistory.nextElementSibling;
       body.push(gradePairsXml(gradeSection, pageContentWidth));
