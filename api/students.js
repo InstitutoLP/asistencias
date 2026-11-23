@@ -102,6 +102,22 @@ const supabaseFetch = async (path, options = {}) => {
   return fetch(url, { ...options, headers });
 };
 
+const saveAuditLog = async ({ actorName, action, entityType, entityId, studentName, details }) => {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return;
+  await supabaseFetch('/audit_logs', {
+    method: 'POST',
+    headers: { Prefer: 'return=representation' },
+    body: JSON.stringify([{
+      actor_name: String(actorName || '').trim() || 'Usuario no identificado',
+      action,
+      entity_type: entityType,
+      entity_id: entityId ? String(entityId) : null,
+      student_name: studentName || null,
+      details: details && typeof details === 'object' ? details : {},
+    }]),
+  }).catch(() => null);
+};
+
 const fetchAttendanceHistory = async (studentIds, startDate, endDate) => {
   const filters = [
     `student_id=in.(${studentIds.map((id) => encodeURIComponent(String(id))).join(',')})`,
@@ -284,6 +300,14 @@ module.exports = async function handler(req, res) {
       }
 
       const saved = Array.isArray(data) ? data[0] : data;
+      await saveAuditLog({
+        actorName: body?.actorName,
+        action: req.method === 'DELETE' ? 'Eliminó estudiante' : req.method === 'PATCH' ? 'Modificó datos del estudiante' : 'Agregó estudiante',
+        entityType: 'student',
+        entityId: saved?.id || payload.id,
+        studentName: saved?.name || payload.name,
+        details: req.method === 'PATCH' ? { cambios: changes } : { year: payload.year, cedula: payload.cedula || '' },
+      });
       return res.status(201).json(normalizeStudent(saved || payload));
     }
 
@@ -339,20 +363,40 @@ module.exports = async function handler(req, res) {
       }
 
       const updated = Array.isArray(data) ? data[0] : data;
+      await saveAuditLog({
+        actorName: body.actorName,
+        action: 'Modificó datos del estudiante',
+        entityType: 'student',
+        entityId: String(id),
+        studentName: name || updated?.name || String(id),
+        details: { campos_modificados: Object.keys(changes), cambios: changes },
+      });
       return res.status(200).json(normalizeStudent(updated || { id }));
     }
 
     if (req.method === 'DELETE') {
-      const id = req.query?.id || (await parseBody(req)).id;
+      const body = await parseBody(req);
+      const id = req.query?.id || body.id;
       if (!id) {
         return res.status(400).json({ error: 'Falta id para eliminar.' });
       }
 
+      const beforeResponse = await supabaseFetch(`/students?id=eq.${encodeURIComponent(String(id))}&select=*`);
+      const beforeData = await beforeResponse.json().catch(() => []);
+      const deletedStudent = Array.isArray(beforeData) ? beforeData[0] : beforeData;
       const response = await supabaseFetch(`/students?id=eq.${encodeURIComponent(String(id))}`, {
         method: 'DELETE',
       });
 
       if (response.status === 204 || response.ok) {
+        await saveAuditLog({
+          actorName: body.actorName || req.query?.actorName,
+          action: 'Eliminó estudiante',
+          entityType: 'student',
+          entityId: String(id),
+          studentName: deletedStudent?.name || String(id),
+          details: { datos_eliminados: deletedStudent || { id } },
+        });
         return res.status(200).json({ success: true, id });
       }
 

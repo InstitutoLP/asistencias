@@ -23,21 +23,34 @@
     {
       method,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(student),
+      body: JSON.stringify({
+        ...student,
+        actorName: JSON.parse(sessionStorage.getItem('activeUser') || '{}').name || '',
+      }),
     },
   );
 
-  const eliminar = (studentId) => request(
-    `${window.APP_CONFIG.api.students}?id=${encodeURIComponent(studentId)}`,
-    { method: 'DELETE' },
-  );
+  const eliminar = (studentId) => {
+    const actorName = JSON.parse(sessionStorage.getItem('activeUser') || '{}').name || '';
+    return request(
+      `${window.APP_CONFIG.api.students}?id=${encodeURIComponent(studentId)}&actorName=${encodeURIComponent(actorName)}`,
+      {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: studentId, actorName }),
+      },
+    );
+  };
 
   const registrarAsistencia = (payload) => request(
     window.APP_CONFIG.api.attendance,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        ...payload,
+        actorName: payload.teacherName || JSON.parse(sessionStorage.getItem('activeUser') || '{}').name || '',
+      }),
     },
   );
 

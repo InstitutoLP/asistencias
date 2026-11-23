@@ -189,6 +189,30 @@
       <button id="reportExitButton" class="btn" onclick="salirDeReportes()">Volver al Panel de Registro de Asistencia</button>
     </div>
 
+    <div class="card">
+      <div class="table-header">
+        <div>
+          <h3 style="margin: 0;">Registro de cambios</h3>
+          <p style="margin: 6px 0 0; color: #666;">Cambios realizados en asistencia y datos de estudiantes.</p>
+        </div>
+      </div>
+      <p id="auditLogMessage" role="status" style="color: #666;">Cargando registro de cambios...</p>
+      <div style="overflow-x: auto;">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>Fecha y hora exacta</th>
+              <th>Usuario</th>
+              <th>Cambio realizado</th>
+              <th>Estudiante</th>
+              <th>Detalle</th>
+            </tr>
+          </thead>
+          <tbody id="auditLogBody"></tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- Filtros por Rango de Fechas y Parámetros -->
     <div class="card filters">
       <div class="filters-container">
@@ -429,6 +453,7 @@
         document.getElementById('reportExitButton').textContent = 'Cerrar sesión';
       }
       actualizarFiltroMaterias();
+      actualizarRegistroCambios();
     } else {
       document.getElementById('accessDenied').classList.remove('hidden');
     }
@@ -611,6 +636,54 @@
       const [year, month, day] = value.split('-');
       return `${day}/${month}/${year}`;
     };
+
+    function actualizarRegistroCambios() {
+      const message = document.getElementById('auditLogMessage');
+      const tbody = document.getElementById('auditLogBody');
+
+      window.apiFetch('/api/audit-logs', { cache: 'no-store' })
+        .then(async (response) => {
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(result.error || `Error ${response.status} al consultar la bitácora.`);
+          return result;
+        })
+        .then((result) => {
+          const logs = Array.isArray(result.logs) ? result.logs : [];
+          tbody.replaceChildren();
+          if (!logs.length) {
+            message.textContent = 'No hay cambios registrados.';
+            message.style.color = '#666';
+            return;
+          }
+          message.textContent = `${logs.length} cambio(s) registrado(s).`;
+          message.style.color = '#666';
+          logs.forEach((log) => {
+            const details = log.details && typeof log.details === 'object'
+              ? JSON.stringify(log.details, null, 2)
+              : String(log.details || '');
+            const row = document.createElement('tr');
+            [ 
+              formatDateTimeVenezuela(log.created_at),
+              log.actor_name || 'Usuario no identificado',
+              log.action || 'Cambio',
+              log.student_name || '—',
+              details || '—',
+            ].forEach((value) => {
+              const cell = document.createElement('td');
+              cell.style.verticalAlign = 'top';
+              cell.style.whiteSpace = typeof value === 'string' && value.includes('\n') ? 'pre-wrap' : 'normal';
+              cell.textContent = value;
+              row.appendChild(cell);
+            });
+            tbody.appendChild(row);
+          });
+        })
+        .catch((error) => {
+          tbody.replaceChildren();
+          message.textContent = `No se pudo cargar el registro de cambios: ${error.message}`;
+          message.style.color = 'var(--danger)';
+        });
+    }
 
     function actualizarHistorialAsistencia(startDate, endDate) {
       const requestId = ++historialRequestId;

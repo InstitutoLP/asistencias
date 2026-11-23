@@ -33,6 +33,21 @@ const supabaseFetch = async (path, options = {}) => {
   return fetch(url, { ...options, headers });
 };
 
+const saveAuditLog = async ({ actorName, action, entityType, entityId, studentName, details }) => {
+  await supabaseFetch('/audit_logs', {
+    method: 'POST',
+    headers: { Prefer: 'return=representation' },
+    body: JSON.stringify([{
+      actor_name: String(actorName || '').trim() || 'Usuario no identificado',
+      action,
+      entity_type: entityType,
+      entity_id: entityId ? String(entityId) : null,
+      student_name: studentName || null,
+      details: details && typeof details === 'object' ? details : {},
+    }]),
+  }).catch(() => null);
+};
+
 const isValidDate = (date) => typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date);
 
 const listAttendanceHistory = async (req, res) => {
@@ -167,6 +182,9 @@ module.exports = async function handler(req, res) {
     attendanceMap[subject] = { status, label: subjectLabel || subject };
 
     const attendanceByDateMap = currentStudent.attendance_by_date || {};
+    const previousStatus = attendanceByDateMap[attendanceDate]?.[subject]?.status
+      || currentStudent.attendance?.[subject]?.status
+      || 'Sin registro';
     attendanceByDateMap[attendanceDate] = attendanceByDateMap[attendanceDate] || {};
     const markedAt = new Date().toISOString();
     attendanceByDateMap[attendanceDate][subject] = {
@@ -220,6 +238,19 @@ module.exports = async function handler(req, res) {
     }
 
     const attendanceRecord = Array.isArray(attendanceResult) ? attendanceResult[0] : attendanceResult;
+    await saveAuditLog({
+      actorName: teacherName,
+      action: 'Cambió estado de asistencia',
+      entityType: 'attendance',
+      entityId: String(id),
+      studentName: name,
+      details: {
+        fecha: attendanceDate,
+        materia: subjectLabel || subject,
+        antes: previousStatus,
+        despues: status,
+      },
+    });
 
     return res.status(200).json({
       success: true,

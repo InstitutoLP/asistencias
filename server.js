@@ -24,6 +24,7 @@ const EMAIL_FROM = process.env.EMAIL_FROM || GMAIL_USER;
 const SUPABASE_URL = (process.env.SUPABASE_URL || '').replace(/\/rest\/v1\/?$/, '').replace(/\/$/, '');
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
 const ATTENDANCE_FILE = path.join(__dirname, 'attendance-data.json');
+const AUDIT_FILE = path.join(__dirname, 'audit-log-data.json');
 const IS_SUPABASE_CONFIGURED = Boolean(SUPABASE_URL && SUPABASE_KEY);
 
 const timeoutMs = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout en Supabase.')), ms));
@@ -73,6 +74,58 @@ const saveAttendanceData = (data) => {
   } catch (error) {
     console.error('Error guardando attendance-data.json:', error);
   }
+};
+
+const loadAuditLogs = () => {
+  try {
+    if (!fs.existsSync(AUDIT_FILE)) return [];
+    const parsed = JSON.parse(fs.readFileSync(AUDIT_FILE, 'utf8'));
+    return Array.isArray(parsed.logs) ? parsed.logs : [];
+  } catch (error) {
+    console.error('Error leyendo audit-log-data.json:', error);
+    return [];
+  }
+};
+
+const saveAuditLog = async ({ actorName, action, entityType, entityId, studentName, details }) => {
+  const now = new Date().toISOString();
+  const log = {
+    id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    created_at: now,
+    actor_name: String(actorName || '').trim() || 'Usuario no identificado',
+    action: String(action || '').trim(),
+    entity_type: String(entityType || '').trim(),
+    entity_id: entityId ? String(entityId) : null,
+    student_name: studentName ? String(studentName) : null,
+    details: details && typeof details === 'object' ? details : {},
+  };
+
+  if (IS_SUPABASE_CONFIGURED) {
+    try {
+      const response = await supabaseFetch('/audit_logs', {
+        method: 'POST',
+        body: JSON.stringify([{
+          actor_name: log.actor_name,
+          action: log.action,
+          entity_type: log.entity_type,
+          entity_id: log.entity_id,
+          student_name: log.student_name,
+          details: log.details,
+        }]),
+        headers: { Prefer: 'return=representation' },
+      });
+      const saved = await response.json().catch(() => []);
+      if (response.ok) return Array.isArray(saved) ? saved[0] : log;
+      console.error('Error guardando audit_logs en Supabase:', saved);
+    } catch (error) {
+      console.error('Error guardando audit_logs en Supabase:', error);
+    }
+  }
+
+  const logs = loadAuditLogs();
+  logs.unshift(log);
+  fs.writeFileSync(AUDIT_FILE, JSON.stringify({ logs: logs.slice(0, 500) }, null, 2));
+  return log;
 };
 
 const normalizeStudentRecord = (row = {}, fallbackYear = 1) => {
@@ -494,6 +547,38 @@ app.use([
   '/api/send-whatsapp',
   '/api/send-email',
 ], requireTeacherSession);
+app.get('/api/audit-logs', requireTeacherSession, async (req, res) => {
+  if (IS_SUPABASE_CONFIGURED) {
+    try {
+      const response = await supabaseFetch('/audit_logs?select=id,created_at,actor_name,action,entity_type,entity_id,student_name,details&order=created_at.desc&limit=500');
+      const result = await response.json().catch(() => []);
+      if (!response.ok) throw new Error(result.message || result.error || 'No se pudo consultar la bitácora.');
+      return res.json({ logs: Array.isArray(result) ? result : [] });
+    } catch (error) {
+      return res.status(500).json({ error: error.message || 'No se pudo consultar la bitácora.' });
+    }
+  }
+  return res.json({ logs: loadAuditLogs() });
+});
+app.post('/api/audit-logs', requireTeacherSession, async (req, res) => {
+  const body = req.body || {};
+  if (!body.actorName || !body.action || !body.entityType) {
+    return res.status(400).json({ error: 'Falta actor, acción o tipo de entidad.' });
+  }
+  try {
+    const log = await saveAuditLog({
+      actorName: body.actorName,
+      action: body.action,
+      entityType: body.entityType,
+      entityId: body.entityId,
+      studentName: body.studentName,
+      details: body.details,
+    });
+    return res.status(201).json({ log });
+  } catch (error) {
+    return res.status(500).json({ error: error.message || 'No se pudo guardar el registro de cambios.' });
+  }
+});
 app.use(express.static(path.join(__dirname)));
 
 app.get('/api/students', async (req, res) => {
@@ -572,6 +657,14 @@ app.post('/api/students', async (req, res) => {
     if (IS_SUPABASE_CONFIGURED) {
       const savedStudent = await upsertStudentToSupabase(student);
       syncLocalStudent(savedStudent);
+      await saveAuditLog({
+        actorName: req.body.actorName,
+        action: 'Agregó estudiante',
+        entityType: 'student',
+        entityId: savedStudent.id,
+        studentName: savedStudent.name,
+        details: { year: savedStudent.year, cedula: savedStudent.cedula || '' },
+      });
       return res.status(201).json(savedStudent);
     }
 
@@ -581,6 +674,14 @@ app.post('/api/students', async (req, res) => {
     const merged = { ...existing, ...student };
     data.students[studentId] = merged;
     saveAttendanceData(data);
+    await saveAuditLog({
+      actorName: req.body.actorName,
+      action: 'Agregó estudiante',
+      entityType: 'student',
+      entityId: studentId,
+      studentName: student.name,
+      details: { year: student.year, cedula: student.cedula || '' },
+    });
     return res.status(201).json(merged);
   } catch (error) {
     console.error('Error guardando estudiante:', error);
@@ -610,6 +711,13 @@ app.patch('/api/students', async (req, res) => {
   }
 
   try {
+    let previousStudent = null;
+    if (IS_SUPABASE_CONFIGURED) {
+      const found = await getStudentsFromSupabase(undefined, id);
+      previousStudent = found[0] || null;
+    } else {
+      previousStudent = loadAttendanceData().students[id] || null;
+    }
     const changes = {
       name: name !== undefined ? sanitizeText(name, 120) : undefined,
       cedula: cedula !== undefined ? sanitizeText(cedula, 25) : undefined,
@@ -639,6 +747,14 @@ app.patch('/api/students', async (req, res) => {
     if (IS_SUPABASE_CONFIGURED) {
       const updated = await patchStudentToSupabase(id, changes);
       syncLocalStudent(updated);
+      await saveAuditLog({
+        actorName: req.body.actorName,
+        action: 'Modificó datos del estudiante',
+        entityType: 'student',
+        entityId: id,
+        studentName: updated.name || previousStudent?.name || name || '',
+        details: { campos_modificados: Object.keys(changes), antes: previousStudent || {}, despues: updated },
+      });
       return res.json(updated);
     }
 
@@ -661,6 +777,14 @@ app.patch('/api/students', async (req, res) => {
     if (paidAmount !== undefined) student.paidAmount = paidAmount;
     data.students[id] = student;
     saveAttendanceData(data);
+    await saveAuditLog({
+      actorName: req.body.actorName,
+      action: 'Modificó datos del estudiante',
+      entityType: 'student',
+      entityId: id,
+      studentName: student.name || previousStudent?.name || '',
+      details: { campos_modificados: Object.keys(changes), antes: previousStudent || {}, despues: student },
+    });
     return res.json(student);
   } catch (error) {
     console.error('Error actualizando estudiante:', error);
@@ -675,11 +799,26 @@ app.delete('/api/students', async (req, res) => {
   }
 
   try {
+    let deletedStudent = null;
+    if (IS_SUPABASE_CONFIGURED) {
+      const found = await getStudentsFromSupabase(undefined, id);
+      deletedStudent = found[0] || null;
+    } else {
+      deletedStudent = loadAttendanceData().students[id] || null;
+    }
     if (IS_SUPABASE_CONFIGURED) {
       const result = await deleteStudentFromSupabase(id);
       const data = loadAttendanceData();
       delete data.students[id];
       saveAttendanceData(data);
+      await saveAuditLog({
+        actorName: req.body?.actorName || req.query.actorName,
+        action: 'Eliminó estudiante',
+        entityType: 'student',
+        entityId: id,
+        studentName: deletedStudent?.name || '',
+        details: { datos_eliminados: deletedStudent || { id } },
+      });
       return res.json({ success: true, id, ...result });
     }
 
@@ -687,8 +826,17 @@ app.delete('/api/students', async (req, res) => {
     if (!data.students[id]) {
       return res.status(404).json({ error: 'Estudiante no encontrado.' });
     }
+    deletedStudent = data.students[id];
     delete data.students[id];
     saveAttendanceData(data);
+    await saveAuditLog({
+      actorName: req.body?.actorName || req.query.actorName,
+      action: 'Eliminó estudiante',
+      entityType: 'student',
+      entityId: id,
+      studentName: deletedStudent.name || '',
+      details: { datos_eliminados: deletedStudent },
+    });
     return res.json({ success: true, id });
   } catch (error) {
     console.error('Error eliminando estudiante:', error);
@@ -722,6 +870,11 @@ app.post('/api/attendance', async (req, res) => {
 
   try {
     const attendanceDate = date || new Date().toISOString().slice(0, 10);
+    const localData = loadAttendanceData();
+    const previousLocalStudent = localData.students[id] || null;
+    const previousStatus = previousLocalStudent?.attendanceByDate?.[attendanceDate]?.[subject]?.status
+      || previousLocalStudent?.attendance?.[subject]?.status
+      || null;
     const student = {
       id,
       name,
@@ -756,6 +909,19 @@ app.post('/api/attendance', async (req, res) => {
       };
       data.students[id] = currentStudent;
       saveAttendanceData(data);
+      await saveAuditLog({
+        actorName: teacherName,
+        action: 'Cambió estado de asistencia',
+        entityType: 'attendance',
+        entityId: String(id),
+        studentName: name,
+        details: {
+          fecha: attendanceDate,
+          materia: subjectLabel || subject,
+          antes: previousStatus || 'Sin registro',
+          despues: status,
+        },
+      });
 
       return res.json({ ...currentStudent, success: true, attendanceTime: attendanceRecord?.marked_at });
     }
@@ -779,6 +945,19 @@ app.post('/api/attendance', async (req, res) => {
     };
     data.students[id] = currentStudent;
     saveAttendanceData(data);
+    await saveAuditLog({
+      actorName: teacherName,
+      action: 'Cambió estado de asistencia',
+      entityType: 'attendance',
+      entityId: String(id),
+      studentName: name,
+      details: {
+        fecha: attendanceDate,
+        materia: subjectLabel || subject,
+        antes: previousStatus || 'Sin registro',
+        despues: status,
+      },
+    });
 
     return res.json({ ...currentStudent, success: true, attendanceTime });
   } catch (error) {
