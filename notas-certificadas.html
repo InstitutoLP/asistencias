@@ -227,7 +227,7 @@
     .grade-unit h3 {
       margin: 0 0 2px;
       text-align: center;
-      font-size: 9px;
+      font-size: 11px;
       line-height: 1.05;
       font-weight: 700;
     }
@@ -236,7 +236,7 @@
       width: 100%;
       border-collapse: collapse;
       table-layout: fixed;
-      font-size: 9px;
+      font-size: 11px;
       line-height: 1.05;
     }
 
@@ -251,6 +251,7 @@
     .grades tbody td { height: 17.75px; }
 
     .grades th:first-child, .grades td:first-child { text-align: left; }
+    .grades td.centered-stars { text-align: center; }
 
     .grades col:nth-child(1) { width: 45%; }
     .grades col:nth-child(2) { width: 6%; }
@@ -267,6 +268,7 @@
       text-align: center;
     }
     .grades thead tr:nth-child(2) th { height: 14px; }
+    .grades thead tr:nth-child(2) th:first-child { text-align: center; }
 
     .fifth-pair {
       grid-template-columns: 1fr 1fr;
@@ -280,15 +282,15 @@
       grid-template-rows: auto minmax(0, 1fr);
     }
 
-    .areas { font-size: 9px; }
+    .areas { font-size: 11px; }
     .areas th:first-child, .areas td:first-child {
       width: 46%;
       text-align: center;
     }
 
     .areas col:nth-child(1) { width: 46%; }
-    .areas col:nth-child(2) { width: 7%; }
-    .areas col:nth-child(3) { width: 31%; }
+    .areas col:nth-child(2) { width: 11%; }
+    .areas col:nth-child(3) { width: 27%; }
     .areas col:nth-child(4) { width: 16%; }
 
     .institution-heading {
@@ -303,7 +305,7 @@
       top: 50%;
       left: 50%;
       font-family: Arial, Helvetica, sans-serif;
-      font-size: 6px;
+      font-size: 7px;
       white-space: nowrap;
       transform: translate(-50%, -50%) rotate(-90deg);
       transform-origin: center;
@@ -314,13 +316,13 @@
       border-right: 1px solid #444;
       border-bottom: 1px solid #444;
       border-left: 1px solid #444;
-      font-size: 9px;
+      font-size: 11px;
     }
 
     .observations .section-title {
       margin: 0;
       padding: 0 2px;
-      font-size: 9px;
+      font-size: 11px;
     }
 
     .observations-box {
@@ -398,6 +400,18 @@
       margin-top: auto;
       border-bottom: 0;
       transform: translateY(-5px);
+    }
+
+    .signatures .signature:first-child h3,
+    .signatures .signature:first-child .line,
+    .signatures .signature:first-child .stamp {
+      font-size: 11px;
+    }
+
+    .signatures .signature:nth-child(2) h3,
+    .signatures .signature:nth-child(2) .line,
+    .signatures .signature:nth-child(2) .stamp {
+      font-size: 11px;
     }
 
     .stamp {
@@ -625,7 +639,7 @@
               <tr><td contenteditable="true" spellcheck="false">Química</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td></tr>
               <tr><td contenteditable="true" spellcheck="false">Biología</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td></tr>
               <tr><td contenteditable="true" spellcheck="false">Geografía, Historia y Ciudadanía</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td></tr>
-              <tr><td contenteditable="true" spellcheck="false">**************************</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td></tr>
+              <tr><td class="centered-stars" contenteditable="true" spellcheck="false">**************************</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">***</td><td contenteditable="true" spellcheck="false">**</td></tr>
             </tbody>
           </table>
         </section>
