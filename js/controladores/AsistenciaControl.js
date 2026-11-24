@@ -104,16 +104,21 @@ const getAllowedYears = () => {
   return [1, 2, 3, 4, 5];
 };
 
-const canManageStudents = () => Boolean(currentUser?.puedeAgregarEstudiantes);
-const canViewStudentPersonalData = () => Boolean(currentUser?.puedeVerDatosPersonales);
-const canManageBoletas = () => Boolean(currentUser?.puedeGestionarBoletas);
+const canManageStudents = () => Boolean(currentUser?.esAdmin || currentUser?.puedeAgregarEstudiantes);
+const canViewStudentPersonalData = () => Boolean(currentUser?.esAdmin || currentUser?.puedeVerDatosPersonales);
+const canManageBoletas = () => Boolean(currentUser?.esAdmin || currentUser?.puedeGestionarBoletas);
 const canLoadStudentGrades = () => {
   const name = normalizePersonName(`${currentUser?.name || ''} ${currentUser?.username || ''}`);
   const isRestrictedTeacher = name.includes('nestor')
     || name.includes('prof: abrahan')
     || name.includes('prof: patricia')
     || canSendDailyEmails();
-  return Boolean(currentUser && !currentUser.soloAdmin && !currentUser.soloReportes && !isRestrictedTeacher);
+  return Boolean(
+    currentUser
+    && !currentUser.soloAdmin
+    && !currentUser.soloReportes
+    && (currentUser.esAdmin || !isRestrictedTeacher)
+  );
 };
 const isProfessorNestor = () => Boolean(currentUser?.name?.includes('Néstor') || currentUser?.name?.includes('Nestor'));
 const normalizePersonName = (name) => String(name || '')
@@ -122,27 +127,29 @@ const normalizePersonName = (name) => String(name || '')
   .toLowerCase();
 const canManageAcademicMaterial = () => {
   const name = normalizePersonName(`${currentUser?.name || ''} ${currentUser?.username || ''}`);
-  return (name.includes('nestor') && name.includes('perez'))
+  return currentUser?.esAdmin === true
+    || (name.includes('nestor') && name.includes('perez'))
     || (name.includes('andy') && name.includes('suarez'));
 };
 const canSendDailyEmails = () => {
   const name = normalizePersonName(`${currentUser?.name || ''} ${currentUser?.username || ''}`);
-  return (name.includes('patricia') && name.includes('salinas'))
+  return currentUser?.esAdmin === true
+    || (name.includes('patricia') && name.includes('salinas'))
     || (name.includes('abraham') && name.includes('ramirez'));
 };
 const canViewCertifiedGrades = () => {
   const name = normalizePersonName(`${currentUser?.name || ''} ${currentUser?.username || ''}`);
-  return name.includes('andy') && name.includes('suarez');
+  return currentUser?.esAdmin === true || (name.includes('andy') && name.includes('suarez'));
 };
 const canViewReports = () => {
   const name = normalizePersonName(`${currentUser?.name || ''} ${currentUser?.username || ''}`);
-  return Boolean(currentUser?.puedeVerReportes || currentUser?.soloReportes
+  return Boolean(currentUser?.esAdmin || currentUser?.puedeVerReportes || currentUser?.soloReportes
     || (name.includes('patricia') && name.includes('salinas'))
     || (name.includes('abraham') && name.includes('ramirez'))
     || name.includes('prof: patricia')
     || name.includes('prof: abrahan'));
 };
-const canMarkAttendance = () => !isProfessorNestor();
+const canMarkAttendance = () => currentUser?.esAdmin === true || !isProfessorNestor();
 
 const syncStudentManagementControls = () => {
   const mainBtn = document.getElementById('mainAddStudent');
@@ -165,8 +172,9 @@ const syncStudentManagementControls = () => {
   if (btnAdminNestor) {
     const esProfNestor = currentUser && (currentUser.name.includes("Néstor") || currentUser.name.includes("Nestor"));
     const esAdminExclusivo = currentUser && currentUser.soloAdmin;
+    const esAdminGeneral = currentUser?.esAdmin === true;
 
-    if (esProfNestor || esAdminExclusivo) {
+    if (esProfNestor || esAdminExclusivo || esAdminGeneral) {
       btnAdminNestor.classList.remove('hidden');
       btnAdminNestor.style.display = 'inline-block';
     } else {
@@ -821,7 +829,7 @@ const applyStudentNameFilter = () => {
   }
 };
 
-const canViewAttendanceTime = () => isProfessorNestor() || Boolean(currentUser?.soloAdmin);
+const canViewAttendanceTime = () => isProfessorNestor() || Boolean(currentUser?.soloAdmin || currentUser?.esAdmin);
 
 const renderStudentList = () => {
   let students = getCurrentStudents().filter((student) => !isRemovedStudent(student));
@@ -1320,8 +1328,9 @@ window.actualizarVistaAsistenciaAdmin = actualizarVistaAsistenciaAdmin;
 const abrirAdminNestor = async () => {
   const esProfNestor = currentUser && (currentUser.name.includes("Néstor") || currentUser.name.includes("Nestor"));
   const esAdminExclusivo = currentUser && currentUser.soloAdmin;
+  const esAdminGeneral = currentUser?.esAdmin === true;
 
-  if (!esProfNestor && !esAdminExclusivo) {
+  if (!esProfNestor && !esAdminExclusivo && !esAdminGeneral) {
     showToast('⚠️ Acceso restringido al Módulo Administrativo.');
     return;
   }

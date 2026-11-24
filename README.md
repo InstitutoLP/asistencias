@@ -73,6 +73,8 @@ Las cuentas de profesores se crean en Supabase Authentication. Ejecuta `supabase
 
 Configura `SUPABASE_URL` y `SUPABASE_KEY` (clave secreta/service role solo en el servidor) en el entorno local y en Vercel. `SUPABASE_ANON_KEY` es recomendada; si no está configurada, el servidor usa `SUPABASE_KEY` para las llamadas de Auth. No pongas claves de servidor en JavaScript ni HTML. Las rutas privadas de API requieren una sesión válida de Supabase; las consultas públicas del portal del estudiante por cédula o ID siguen disponibles.
 
+Para asignar acceso completo al usuario con UID `3ff3ba19-5676-4b3f-9c82-9dbdc58f96e9`, créalo primero en Supabase Authentication y ejecuta `supabase-admin-full-access.sql`. Iniciará sesión con el nombre de usuario `sistemas123`.
+
 El recibo de pago se descarga como PDF con el diseño mostrado en pantalla, incluyendo sello, datos del estudiante, detalle de pagos y total.
 
 ## Ejecución local
