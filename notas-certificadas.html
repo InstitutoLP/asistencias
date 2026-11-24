@@ -4,6 +4,26 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Notas Certificadas</title>
+  <script>
+    (() => {
+      let sessionUser = null;
+      try {
+        sessionUser = JSON.parse(sessionStorage.getItem('activeUser') || 'null');
+      } catch (error) {
+        console.error('No se pudo leer el perfil para acceder a las notas certificadas:', error);
+      }
+
+      const name = `${sessionUser?.name || ''} ${sessionUser?.username || ''}`
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+      const isProfessorNestor = name.includes('nestor');
+      const canViewCertifiedGrades = !isProfessorNestor && Boolean(
+        sessionUser?.esAdmin || (name.includes('andy') && name.includes('suarez')),
+      );
+      if (!canViewCertifiedGrades) window.location.replace('index.html');
+    })();
+  </script>
   <style>
     * { box-sizing: border-box; }
 

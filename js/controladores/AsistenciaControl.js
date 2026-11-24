@@ -117,6 +117,7 @@ const canLoadStudentGrades = () => {
     currentUser
     && !currentUser.soloAdmin
     && !currentUser.soloReportes
+    && !name.includes('nestor')
     && (currentUser.esAdmin || !isRestrictedTeacher)
   );
 };
@@ -139,7 +140,8 @@ const canSendDailyEmails = () => {
 };
 const canViewCertifiedGrades = () => {
   const name = normalizePersonName(`${currentUser?.name || ''} ${currentUser?.username || ''}`);
-  return currentUser?.esAdmin === true || (name.includes('andy') && name.includes('suarez'));
+  return !name.includes('nestor')
+    && (currentUser?.esAdmin === true || (name.includes('andy') && name.includes('suarez')));
 };
 const canViewReports = () => {
   const name = normalizePersonName(`${currentUser?.name || ''} ${currentUser?.username || ''}`);

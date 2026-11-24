@@ -122,6 +122,7 @@ const updateMatterPendingStudentCount = () => {
 
 const normalizeText = (value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 const normalizeCedula = (value) => String(value || '').toUpperCase().replace(/\D/g, '');
+const isProfessorNestor = () => normalizeText(`${currentUser?.name || ''} ${currentUser?.username || ''}`).includes('nestor');
 
 const setStatus = (message, type = '') => {
   statusMessage.textContent = message;
@@ -1607,7 +1608,7 @@ const initialize = async () => {
     return;
   }
 
-  if (!currentUser?.name || currentUser.soloAdmin || currentUser.soloReportes) {
+  if (!currentUser?.name || currentUser.soloAdmin || currentUser.soloReportes || isProfessorNestor()) {
     window.location.replace('index.html');
     return;
   }
