@@ -206,7 +206,6 @@
               <th>Usuario</th>
               <th>Cambio realizado</th>
               <th>Estudiante</th>
-              <th>Detalle</th>
             </tr>
           </thead>
           <tbody id="auditLogBody"></tbody>
@@ -660,16 +659,12 @@
           message.textContent = `${logs.length} cambio(s) registrado(s).`;
           message.style.color = '#666';
           logs.forEach((log) => {
-            const details = log.details && typeof log.details === 'object'
-              ? JSON.stringify(log.details, null, 2)
-              : String(log.details || '');
             const row = document.createElement('tr');
             [ 
               formatDateTimeVenezuela(log.created_at),
               log.actor_name || 'Usuario no identificado',
               log.action || 'Cambio',
               log.student_name || '—',
-              details || '—',
             ].forEach((value) => {
               const cell = document.createElement('td');
               cell.style.verticalAlign = 'top';
