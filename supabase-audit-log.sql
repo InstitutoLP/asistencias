@@ -17,3 +17,6 @@ create index if not exists audit_logs_actor_name_idx
 
 create index if not exists audit_logs_entity_type_idx
   on public.audit_logs (entity_type);
+
+grant select, insert on table public.audit_logs to anon, authenticated;
+grant usage, select on sequence public.audit_logs_id_seq to anon, authenticated;

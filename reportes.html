@@ -195,6 +195,7 @@
           <h3 style="margin: 0;">Registro de cambios</h3>
           <p style="margin: 6px 0 0; color: #666;">Cambios realizados en asistencia y datos de estudiantes.</p>
         </div>
+        <button type="button" class="btn btn-secondary" onclick="actualizarRegistroCambios()">Actualizar</button>
       </div>
       <p id="auditLogMessage" role="status" style="color: #666;">Cargando registro de cambios...</p>
       <div style="overflow-x: auto;">
@@ -454,6 +455,7 @@
       }
       actualizarFiltroMaterias();
       actualizarRegistroCambios();
+      window.setInterval(actualizarRegistroCambios, 30000);
     } else {
       document.getElementById('accessDenied').classList.remove('hidden');
     }
