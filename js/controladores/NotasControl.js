@@ -58,6 +58,8 @@ let draftEarnedPoints = {};
 let originalEarnedPoints = {};
 let manualEarnedPoints = {};
 let originalManualEarnedPoints = {};
+let draftManualLapsoGrades = {};
+let originalManualLapsoGrades = {};
 let sheetRowsPromise = null;
 let pendingStudentId = '';
 let pendingDrafts = {};
@@ -227,6 +229,7 @@ const canManageActivities = () => currentUser?.puedeGestionarActividades === tru
   || normalizeText(currentUser?.name) === 'prof: andy';
 
 const isActivityLockedForCurrentUser = (activity) => activity.locked === true && !canManageActivities();
+const areManualLapsoGradesLocked = () => activities.some(isActivityLockedForCurrentUser);
 
 const getSubjectsForYear = (year) => {
   const subjects = SUBJECTS_BY_YEAR[Number(year)] || [];
@@ -269,6 +272,12 @@ const captureDraftEarnedPoints = () => {
   });
 };
 
+const captureDraftManualLapsoGrades = () => {
+  studentsBody.querySelectorAll('.manual-lapso-grade-input').forEach((input) => {
+    draftManualLapsoGrades[input.dataset.studentId] = input.value;
+  });
+};
+
 const getPreciseWeightedGrade = (studentId) => {
   const points = draftEarnedPoints[studentId] || {};
   let weightedPoints = 0;
@@ -287,6 +296,17 @@ const getWeightedGrade = (studentId) => {
   const grade = getPreciseWeightedGrade(studentId);
   return grade === null ? null : Math.round(grade);
 };
+
+const getManualLapsoGrade = (studentId) => {
+  const value = draftManualLapsoGrades[studentId];
+  if (value === null || value === undefined || value === '') return null;
+  const grade = Number(value);
+  return Number.isInteger(grade) && grade >= 1 && grade <= 20 ? grade : null;
+};
+
+const getLapsoGradeForCurrentEdit = (studentId) => (
+  getWeightedGrade(studentId) ?? getManualLapsoGrade(studentId)
+);
 
 const LAPSO_PERIODS = ['1er', '2do', '3er'];
 
@@ -343,9 +363,29 @@ const renderDefinitiveGrade = (cell, student) => {
   renderGradePair(cell, definitiveGrade?.exactGrade ?? null, definitiveGrade?.roundedGrade ?? null);
 };
 
-const renderFinalGrade = (cell, studentId) => {
+const renderFinalGrade = (cell, student) => {
+  const studentId = String(student.id);
   const preciseGrade = getPreciseWeightedGrade(studentId);
-  renderGradePair(cell, preciseGrade, preciseGrade === null ? null : Math.round(preciseGrade));
+  if (preciseGrade !== null) {
+    cell.dataset.label = `Nota ponderada (${PERIOD_LABELS[periodSelect.value]})`;
+    renderGradePair(cell, preciseGrade, Math.round(preciseGrade));
+    return;
+  }
+
+  cell.dataset.label = `Nota final manual (${PERIOD_LABELS[periodSelect.value]})`;
+  const input = document.createElement('input');
+  input.className = 'manual-lapso-grade-input';
+  input.type = 'number';
+  input.min = '1';
+  input.max = '20';
+  input.step = '1';
+  input.inputMode = 'numeric';
+  input.placeholder = '1-20';
+  input.dataset.studentId = studentId;
+  input.disabled = areManualLapsoGradesLocked();
+  input.value = draftManualLapsoGrades[studentId] ?? '';
+  input.setAttribute('aria-label', `Nota final de ${PERIOD_LABELS[periodSelect.value]} para ${student.name || 'estudiante'} (de 1 a 20)`);
+  cell.replaceChildren(input);
 };
 
 
@@ -440,7 +480,9 @@ const updateCalculatedGrades = () => {
       if (student) renderDefinitiveGrade(cell, student);
       else cell.textContent = '-';
     } else {
-      renderFinalGrade(cell, row.dataset.studentId);
+      const student = students.find((entry) => String(entry.id) === row.dataset.studentId);
+      if (student) renderFinalGrade(cell, student);
+      else cell.textContent = '-';
     }
   });
   updateGradeSummary();
@@ -451,7 +493,7 @@ const updateGradeSummary = () => {
   students.forEach((student) => {
     const grade = periodSelect.value === 'Final'
       ? getDefinitiveGrade(student)?.roundedGrade ?? null
-      : getWeightedGrade(String(student.id));
+      : getLapsoGradeForCurrentEdit(String(student.id));
     if (grade === null) summary.pending += 1;
     else if (grade >= 10) summary.passed += 1;
     else summary.failed += 1;
@@ -588,9 +630,14 @@ const loadGradeContext = () => {
   draftScores = {};
   draftEarnedPoints = {};
   manualEarnedPoints = {};
+  draftManualLapsoGrades = {};
   students.forEach((student) => {
     const studentId = String(student.id);
     const grades = subjectGrades(student);
+    const savedLapsoGrade = grades[period];
+    draftManualLapsoGrades[studentId] = savedLapsoGrade === null || savedLapsoGrade === undefined
+      ? ''
+      : String(savedLapsoGrade);
     const persistedActivities = grades.assessments?.[period];
     draftScores[studentId] = {};
     draftEarnedPoints[studentId] = {};
@@ -623,6 +670,7 @@ const loadGradeContext = () => {
   originalScores = copyJson(draftScores);
   originalEarnedPoints = copyJson(draftEarnedPoints);
   originalManualEarnedPoints = copyJson(manualEarnedPoints);
+  originalManualLapsoGrades = copyJson(draftManualLapsoGrades);
   renderActivityEditor();
   renderStudents();
 };
@@ -630,10 +678,12 @@ const loadGradeContext = () => {
 const hasUnsavedChanges = () => {
   captureDraftScores();
   captureDraftEarnedPoints();
+  captureDraftManualLapsoGrades();
   return JSON.stringify(activities) !== JSON.stringify(originalActivities)
     || JSON.stringify(draftScores) !== JSON.stringify(originalScores)
     || JSON.stringify(draftEarnedPoints) !== JSON.stringify(originalEarnedPoints)
-    || JSON.stringify(manualEarnedPoints) !== JSON.stringify(originalManualEarnedPoints);
+    || JSON.stringify(manualEarnedPoints) !== JSON.stringify(originalManualEarnedPoints)
+    || JSON.stringify(draftManualLapsoGrades) !== JSON.stringify(originalManualLapsoGrades);
 };
 
 const confirmDiscardChanges = () => !hasUnsavedChanges()
@@ -719,8 +769,7 @@ const renderStudents = () => {
         calculatedCell.dataset.label = 'Definitiva de la materia';
         renderDefinitiveGrade(calculatedCell, student);
       } else {
-        calculatedCell.dataset.label = `Nota ponderada (${PERIOD_LABELS[period]})`;
-        renderFinalGrade(calculatedCell, studentId);
+        renderFinalGrade(calculatedCell, student);
       }
     });
   }
@@ -1331,6 +1380,7 @@ const saveGrades = async () => {
 
   captureDraftScores();
   captureDraftEarnedPoints();
+  captureDraftManualLapsoGrades();
   if (canManageActivities() && (!activities.length || activities.some((activity) => !activity.name.trim()))) {
     setStatus('Escribe un nombre para cada actividad.', 'error');
     return;
@@ -1372,8 +1422,21 @@ const saveGrades = async () => {
   }));
   if (invalidEarnedPoints) return;
 
+  const invalidManualLapsoGrade = Object.entries(draftManualLapsoGrades).some(([studentId, grade]) => {
+    if (areManualLapsoGradesLocked() || getPreciseWeightedGrade(studentId) !== null || grade === '') return false;
+    const parsedGrade = Number(grade);
+    if (Number.isInteger(parsedGrade) && parsedGrade >= 1 && parsedGrade <= 20) return false;
+    const input = Array.from(studentsBody.querySelectorAll('.manual-lapso-grade-input')).find(
+      (item) => item.dataset.studentId === studentId,
+    );
+    input?.focus();
+    setStatus('La nota final manual debe ser un número entero entre 1 y 20.', 'error');
+    return true;
+  });
+  if (invalidManualLapsoGrade) return;
+
   if (!students.length) {
-    setStatus('No hay estudiantes donde guardar estas actividades.', 'error');
+    setStatus('No hay estudiantes donde guardar estas notas.', 'error');
     return;
   }
 
@@ -1388,7 +1451,10 @@ const saveGrades = async () => {
   studentsBody.querySelectorAll('.earned-points-input').forEach((input) => {
     input.disabled = true;
   });
-  setStatus('Guardando actividades y notas...');
+  studentsBody.querySelectorAll('.manual-lapso-grade-input').forEach((input) => {
+    input.disabled = true;
+  });
+  setStatus('Guardando notas del lapso...');
   let savedCount = 0;
   let recoveryAddedCount = 0;
   const errors = [];
@@ -1425,15 +1491,20 @@ const saveGrades = async () => {
     });
     savedAssessments[periodSelect.value] = assessmentEntries;
     subjectGrades.assessments = savedAssessments;
-    const weightedGrade = getWeightedGrade(String(student.id));
-    subjectGrades[periodSelect.value] = weightedGrade;
+    const studentId = String(student.id);
+    const weightedGrade = getWeightedGrade(studentId);
+    const manualGrade = areManualLapsoGradesLocked()
+      ? subjectGrades[periodSelect.value] ?? null
+      : getManualLapsoGrade(studentId);
+    const lapsoGrade = weightedGrade ?? manualGrade;
+    subjectGrades[periodSelect.value] = lapsoGrade;
     grades[subject.id] = subjectGrades;
     const pendingSubjects = copyJson(
       Array.isArray(student.pendingSubjects) ? student.pendingSubjects : [],
     );
     const shouldAddRecovery = periodSelect.value !== 'Final'
-      && weightedGrade !== null
-      && weightedGrade < 10
+      && lapsoGrade !== null
+      && lapsoGrade < 10
       && !pendingSubjects.some((assignment) => assignment.subjectId === subject.id);
     if (shouldAddRecovery) {
       pendingSubjects.push({
@@ -1496,6 +1567,9 @@ const saveGrades = async () => {
     const activity = activities.find((entry) => entry.id === input.dataset.activityId);
     input.disabled = activity ? isActivityLockedForCurrentUser(activity) : false;
   });
+  studentsBody.querySelectorAll('.manual-lapso-grade-input').forEach((input) => {
+    input.disabled = areManualLapsoGradesLocked();
+  });
   if (recoveryAddedCount && pendingStudentId && pendingDrafts[pendingStudentId]) {
     renderPendingAssignments();
   }
@@ -1516,10 +1590,11 @@ const saveGrades = async () => {
     originalScores = copyJson(draftScores);
     originalEarnedPoints = copyJson(draftEarnedPoints);
     originalManualEarnedPoints = copyJson(manualEarnedPoints);
+    originalManualLapsoGrades = copyJson(draftManualLapsoGrades);
     const recoveryMessage = recoveryAddedCount
       ? ` ${recoveryAddedCount} estudiante(s) con nota menor a 10 se registraron en Recuperación.`
       : '';
-    setStatus(`Actividades y notas guardadas. Nota ponderada actualizada para ${savedCount} estudiante(s).${recoveryMessage}`, 'success');
+    setStatus(`Notas del lapso guardadas para ${savedCount} estudiante(s).${recoveryMessage}`, 'success');
   }
 };
 
@@ -1686,6 +1761,11 @@ const initialize = async () => {
     activityList.querySelector(`[data-activity-id="${activity.id}"] .activity-name-input`).focus();
   });
   studentsBody.addEventListener('input', (event) => {
+    if (event.target.matches('.manual-lapso-grade-input')) {
+      draftManualLapsoGrades[event.target.dataset.studentId] = event.target.value;
+      updateGradeSummary();
+      return;
+    }
     if (event.target.matches('.earned-points-input')) {
       const { studentId, activityId } = event.target.dataset;
       if (!draftEarnedPoints[studentId]) draftEarnedPoints[studentId] = {};
