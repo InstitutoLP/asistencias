@@ -32,6 +32,9 @@
     }
   ],
   "routes": [
+    { "src": "/api/auth/login", "dest": "/api/auth.js?action=login" },
+    { "src": "/api/auth/logout", "dest": "/api/auth.js?action=logout" },
+    { "src": "/api/auth/refresh", "dest": "/api/auth.js?action=refresh" },
     { "src": "/api/(.*)", "dest": "/api/$1.js" },
     { "handle": "filesystem" },
     { "src": "/portal-estudiantes.html/(.*)", "dest": "/portal-estudiantes.html" },
