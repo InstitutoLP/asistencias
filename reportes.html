@@ -189,7 +189,7 @@
       <button id="reportExitButton" class="btn" onclick="salirDeReportes()">Volver al Panel de Registro de Asistencia</button>
     </div>
 
-    <div class="card">
+    <div id="auditLogCard" class="card hidden">
       <div class="table-header">
         <div>
           <h3 style="margin: 0;">Registro de cambios</h3>
@@ -437,6 +437,7 @@
     };
 
     const sessionUser = JSON.parse(sessionStorage.getItem('activeUser') || '{}');
+    const puedeVerRegistroCambios = String(sessionUser.username || '').trim().toLowerCase() === 'sistemas123';
     const deletedStudentIds = new Set();
     const estudianteEliminado = (student) => deletedStudentIds.has(String(student.id));
 
@@ -469,8 +470,11 @@
         document.getElementById('reportExitButton').textContent = 'Cerrar sesión';
       }
       actualizarFiltroMaterias();
-      actualizarRegistroCambios();
-      window.setInterval(actualizarRegistroCambios, 30000);
+      if (puedeVerRegistroCambios) {
+        document.getElementById('auditLogCard').classList.remove('hidden');
+        actualizarRegistroCambios();
+        window.setInterval(actualizarRegistroCambios, 30000);
+      }
     } else {
       document.getElementById('accessDenied').classList.remove('hidden');
     }
@@ -655,6 +659,7 @@
     };
 
     function actualizarRegistroCambios() {
+      if (!puedeVerRegistroCambios) return;
       const message = document.getElementById('auditLogMessage');
       const tbody = document.getElementById('auditLogBody');
 
