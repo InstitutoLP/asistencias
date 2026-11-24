@@ -107,7 +107,14 @@ const getAllowedYears = () => {
 const canManageStudents = () => Boolean(currentUser?.puedeAgregarEstudiantes);
 const canViewStudentPersonalData = () => Boolean(currentUser?.puedeVerDatosPersonales);
 const canManageBoletas = () => Boolean(currentUser?.puedeGestionarBoletas);
-const canLoadStudentGrades = () => Boolean(currentUser && !currentUser.soloAdmin && !currentUser.soloReportes);
+const canLoadStudentGrades = () => {
+  const name = normalizePersonName(`${currentUser?.name || ''} ${currentUser?.username || ''}`);
+  const isRestrictedTeacher = name.includes('nestor')
+    || name.includes('prof: abrahan')
+    || name.includes('prof: patricia')
+    || canSendDailyEmails();
+  return Boolean(currentUser && !currentUser.soloAdmin && !currentUser.soloReportes && !isRestrictedTeacher);
+};
 const isProfessorNestor = () => Boolean(currentUser?.name?.includes('Néstor') || currentUser?.name?.includes('Nestor'));
 const normalizePersonName = (name) => String(name || '')
   .normalize('NFD')
