@@ -411,6 +411,22 @@
     let historialRequestId = 0;
     let historialExpandido = false;
     const HISTORY_INITIAL_LIMIT = 5;
+    const normalizeAuditActorName = (name) => String(name || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toLowerCase();
+    const AUDIT_LOG_ACTORS = new Set([
+      'prof: nestor',
+      'nestor perez',
+      'prof: andy',
+      'andy suarez',
+      'prof: patricia',
+      'patricia salinas',
+      'prof: abrahan',
+      'prof: abraham',
+      'abraham ramirez',
+    ]);
 
     const SUBJECTS_BY_YEAR = {
       1: [{ id: 'matematicas', label: 'Matemáticas' }, { id: 'castellano', label: 'Castellano' }, { id: 'ingles', label: 'Inglés' }, { id: 'frances', label: 'Francés' }, { id: 'educacion-fisica', label: 'Educación Física' }, { id: 'arte-patrimonio', label: 'Arte y Patrimonio' }, { id: 'ciencias-naturales', label: 'Ciencias Naturales' }, { id: 'ghc', label: 'GHC' }, { id: 'orientacion-convivencia', label: 'Orientación y Convivencia' }, { id: 'crp', label: 'CRP' }],
@@ -649,10 +665,12 @@
           return result;
         })
         .then((result) => {
-          const logs = Array.isArray(result.logs) ? result.logs : [];
+          const logs = Array.isArray(result.logs)
+            ? result.logs.filter((log) => AUDIT_LOG_ACTORS.has(normalizeAuditActorName(log.actor_name)))
+            : [];
           tbody.replaceChildren();
           if (!logs.length) {
-            message.textContent = 'No hay cambios registrados.';
+            message.textContent = 'No hay cambios registrados por esos profesores.';
             message.style.color = '#666';
             return;
           }
