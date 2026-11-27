@@ -614,9 +614,7 @@ const normalizeStudentYearData = (data) => {
           payments: parsePayments(student.payments),
           BoletaVisible: String(student.BoletaVisible || student.boleta_visible || 'NO').toUpperCase() === 'SI' ? 'SI' : 'NO',
           attendance: student.attendance || {},
-          attendanceByDate: student.attendanceByDate || student.attendance_by_date || {
-            [selectedDate]: Object.fromEntries(Object.entries(student.attendance || {}).map(([subject, entry]) => [subject, entry?.status || entry])),
-          },
+          attendanceByDate: student.attendanceByDate || student.attendance_by_date || {},
         };
         normalizarPagosEstudiante(studentObj);
         studentsByYear.push(studentObj);
@@ -634,9 +632,7 @@ const normalizeStudentYearData = (data) => {
         payments: parsePayments(student.payments),
         BoletaVisible: String(student.BoletaVisible || student.boleta_visible || 'NO').toUpperCase() === 'SI' ? 'SI' : 'NO',
         attendance: student.attendance || {},
-        attendanceByDate: student.attendanceByDate || student.attendance_by_date || {
-          [selectedDate]: Object.fromEntries(Object.entries(student.attendance || {}).map(([subject, entry]) => [subject, entry?.status || entry])),
-        },
+        attendanceByDate: student.attendanceByDate || student.attendance_by_date || {},
         year: Number(student.year || year),
       };
       normalizarPagosEstudiante(studentObj);
@@ -680,9 +676,7 @@ const cargarTodosLosEstudiantesDesdeSupabase = async () => {
         payments: parsePayments(row.payments),
         BoletaVisible: row.BoletaVisible || row.boleta_visible || 'NO',
         attendance: row.attendance || {},
-        attendanceByDate: row.attendance_by_date || row.attendanceByDate || {
-          [selectedDate]: Object.fromEntries(Object.entries(row.attendance || {}).map(([subject, entry]) => [subject, entry?.status || entry])),
-        },
+        attendanceByDate: row.attendance_by_date || row.attendanceByDate || {},
         year,
       };
       normalizarPagosEstudiante(studentObj);
@@ -856,9 +850,7 @@ const renderStudentList = () => {
               payments: parsePayments(row.payments),
               BoletaVisible: row.BoletaVisible || row.boleta_visible || 'NO',
               attendance: row.attendance || {},
-              attendanceByDate: row.attendance_by_date || row.attendanceByDate || {
-                [selectedDate]: Object.fromEntries(Object.entries(row.attendance || {}).map(([subject, entry]) => [subject, entry?.status || entry])),
-              },
+              attendanceByDate: row.attendance_by_date || row.attendanceByDate || {},
               year: Number(selectedYear),
             };
             normalizarPagosEstudiante(studentObj);

@@ -808,7 +808,9 @@
           record.year ? `${record.year}°` : 'Sin año',
           record.subject_label || record.subject || 'Sin materia',
           record.status === 'asistente' ? 'Asistente' : record.status === 'inasistente' ? 'Inasistente' : 'Sin estado',
-          `${HOURS_PER_CLASS} horas`,
+          record.status === 'asistente' || record.status === 'inasistente'
+            ? `${HOURS_PER_CLASS} horas`
+            : '—',
           record.marked_by || 'No registrado',
           formatDateTimeVenezuela(sentAt),
           comparison,
