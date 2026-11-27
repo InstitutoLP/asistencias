@@ -278,17 +278,17 @@
     <!-- Gráficos -->
     <div class="charts-grid">
       <div class="card">
-        <h3 style="margin-top: 0; margin-bottom: 10px;">Proporción Seleccionada</h3>
+        <h3 style="margin-top: 0; margin-bottom: 10px;">Distribución de horas seleccionadas</h3>
         <div style="display: flex; justify-content: space-around; margin-bottom: 15px; font-weight: bold; font-size: 15px;">
-          <span style="color: var(--success);">Asistencias: <span id="numAsistencias">0</span></span>
-          <span style="color: var(--danger);">Inasistencias: <span id="numInasistencias">0</span></span>
+          <span style="color: var(--success);">Horas de asistencia: <span id="numAsistencias">0</span></span>
+          <span style="color: var(--danger);">Horas de inasistencia: <span id="numInasistencias">0</span></span>
         </div>
         <div class="chart-container">
           <canvas id="graficaGeneral"></canvas>
         </div>
       </div>
       <div class="card">
-        <h3 style="margin-top: 0;">Top 5: Alumnos con más inasistencias</h3>
+        <h3 style="margin-top: 0;">Top 5: Alumnos con más horas de inasistencia</h3>
         <div class="chart-container">
           <canvas id="graficaTopFaltas"></canvas>
         </div>
@@ -314,8 +314,8 @@
             <tr>
               <th>Estudiante</th>
               <th>Representante (Teléfono)</th>
-              <th>Asistencias</th>
-              <th>Inasistencias</th>
+              <th>Horas de asistencia</th>
+              <th>Horas de inasistencia</th>
               <th>Estado (% Faltas)</th>
             </tr>
           </thead>
@@ -386,6 +386,7 @@
               <th>Año</th>
               <th>Materia</th>
               <th>Estado</th>
+              <th>Duración</th>
               <th>Profesor</th>
               <th>Hora del último correo</th>
               <th>Comparación con el correo</th>
@@ -410,6 +411,7 @@
     let historialAsistencia = [];
     let historialRequestId = 0;
     let historialExpandido = false;
+    const HOURS_PER_CLASS = 2;
     const HISTORY_INITIAL_LIMIT = 5;
     const normalizeAuditActorName = (name) => String(name || '')
       .normalize('NFD')
@@ -584,8 +586,8 @@
               endDate,
               subjectId: selectedSubject,
             });
-            const asistenciasEstudiante = asistencia.attendances;
-            const inasistenciasEstudiante = asistencia.absences;
+            const asistenciasEstudiante = asistencia.attendances * HOURS_PER_CLASS;
+            const inasistenciasEstudiante = asistencia.absences * HOURS_PER_CLASS;
             totalAsistencias += asistenciasEstudiante;
             totalInasistencias += inasistenciasEstudiante;
 
@@ -773,7 +775,7 @@
         return;
       }
 
-      message.textContent = `${records.length} registro(s) de asistencia.`;
+      message.textContent = `${records.length} registro(s) de asistencia; cada pase equivale a ${HOURS_PER_CLASS} horas.`;
       message.style.color = '#666';
       const recordsToShow = historialExpandido ? records : records.slice(0, HISTORY_INITIAL_LIMIT);
       recordsToShow.forEach((record) => {
@@ -806,6 +808,7 @@
           record.year ? `${record.year}°` : 'Sin año',
           record.subject_label || record.subject || 'Sin materia',
           record.status === 'asistente' ? 'Asistente' : record.status === 'inasistente' ? 'Inasistente' : 'Sin estado',
+          `${HOURS_PER_CLASS} horas`,
           record.marked_by || 'No registrado',
           formatDateTimeVenezuela(sentAt),
           comparison,
@@ -949,7 +952,7 @@
       chartGeneral = new Chart(ctx, {
         type: 'doughnut',
         data: {
-          labels: ['Asistencias', 'Inasistencias'],
+          labels: ['Horas de asistencia', 'Horas de inasistencia'],
           datasets: [{
             data: [asistencias, inasistencias],
             backgroundColor: ['#28a745', '#dc3545'],
@@ -981,7 +984,7 @@
         data: {
           labels: nombres,
           datasets: [{
-            label: 'Número de Inasistencias',
+            label: 'Horas de inasistencia',
             data: faltas,
             backgroundColor: coloresBarras,
             borderRadius: 4
